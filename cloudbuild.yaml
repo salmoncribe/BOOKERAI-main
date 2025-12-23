@@ -26,3 +26,5 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/bookerai-app'
+options:
+  logging: CLOUD_LOGGING_ONLY
