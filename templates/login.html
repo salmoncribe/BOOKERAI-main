@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}Log In — BookerAI{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-container vibrant-auth">
+  <div class="animated-bg"></div>
+
+  <div class="auth-card wow-card">
+    <h2 class="auth-title">Welcome Back 👋</h2>
+    <p class="auth-subtitle">
+      Log in to manage your appointments, update your schedule, and grow your business with BookerAI.
+    </p>
+
+    {# flash messages from app.py (e.g. "Invalid login") #}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-list">
+          {% for msg in messages %}
+            <div class="flash flash-error">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" class="form grid--2" novalidate>
+      <label class="form-field form-field--full">
+        <span>Email</span>
+        <input
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          autocomplete="email"
+          required
+        />
+      </label>
+
+      <label class="form-field form-field--full">
+        <span>Password</span>
+        <input
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        />
+      </label>
+
+      <div class="form-actions form-field--full">
+        <button type="submit" class="gradient-btn full-width">Log In</button>
+        <p class="muted" style="margin-top:1rem;">
+          New to BookerAI?
+          <a href="{{ url_for('signup') }}" class="signup-link-text">Create an account</a>
+        </p>
+      </div>
+    </form>
+
+    <!-- TRUST SECTION -->
+    <div class="auth-trust">
+      <h3>Why Professionals Choose BookerAI</h3>
+      <ul>
+        <li>🔒 Secure data handling</li>
+        <li>📅 Manage appointments anywhere</li>
+        <li>💬 Stay connected with your clients</li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,294 @@
+/* ============================================================
+   BOOKERAI — VIBRANT WOW BOOKING STYLES (CLEAN VERSION)
+   ============================================================ */
+
+:root {
+  --sky-blue: #0ea5e9;
+  --teal: #14b8a6;
+  --text-dark: #0f172a;
+  --muted: #64748b;
+  --bg: #f0faff;
+  --card: #ffffff;
+  --border: rgba(14,165,233,0.15);
+  --shadow: 0 8px 25px rgba(14,165,233,0.15);
+}
+
+/* ------------------------------
+   LAYOUT
+------------------------------ */
+body {
+  background: var(--bg);
+  color: var(--text-dark);
+  font-family: "Poppins", system-ui, sans-serif;
+}
+
+.book-wrap {
+  display: grid;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, #e0f7ff, #f9feff);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  max-width: 900px;
+  margin: 2rem auto;
+  box-shadow: var(--shadow);
+}
+
+/* ------------------------------
+   TOP BAR
+------------------------------ */
+.book-topbar .btn-secondary {
+  background: transparent;
+  border: 2px solid var(--sky-blue);
+  color: var(--sky-blue);
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.book-topbar .btn-secondary:hover {
+  background: var(--sky-blue);
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(14,165,233,0.25);
+}
+
+/* ------------------------------
+   BARBER HEADER
+------------------------------ */
+.book-header {
+  background: var(--card);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.3s ease;
+}
+.book-header:hover { transform: translateY(-3px); }
+
+.bh-avatar {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 5px 20px rgba(14,165,233,0.25);
+}
+.bh-name { color: var(--sky-blue); font-weight: 700; }
+.bh-meta { color: var(--muted); font-size: 0.9rem; }
+
+/* ------------------------------
+   STEP SECTIONS
+------------------------------ */
+.step-section {
+  background: var(--card);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+.label { font-weight: 600; color: var(--text-dark); }
+.dim { color: var(--muted); }
+
+/* ------------------------------
+   BUTTONS
+------------------------------ */
+.btn {
+  background: linear-gradient(to right, var(--sky-blue), var(--teal));
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.7rem 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(14,165,233,0.35);
+}
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ------------------------------
+   INPUTS
+------------------------------ */
+.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input:focus {
+  border-color: var(--sky-blue);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.25);
+  outline: none;
+}
+
+/* ------------------------------
+   DATE + TIME GRID
+------------------------------ */
+.day-strip,
+.slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.day-strip button,
+.slot-grid button {
+  flex: 1 1 80px;
+  border-radius: 0.75rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 0.6rem;
+  transition: all 0.2s ease;
+}
+.day-strip button:hover,
+.slot-grid button:hover {
+  border-color: var(--sky-blue);
+  color: var(--sky-blue);
+  box-shadow: 0 5px 10px rgba(14,165,233,0.15);
+}
+.day-strip .selected,
+.slot-grid .selected {
+  background: linear-gradient(to right, var(--sky-blue), var(--teal));
+  color: #fff;
+  border: none;
+}
+
+/* ------------------------------
+   SUMMARY
+------------------------------ */
+.summary {
+  background: var(--card);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+.summary .kicker {
+  color: var(--sky-blue);
+  margin-bottom: 0.75rem;
+}
+.sum-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.25rem 0;
+  color: var(--text-dark);
+}
+
+/* ------------------------------
+   MODAL
+------------------------------ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  animation: fadeInUp 0.4s ease;
+  box-shadow: var(--shadow);
+}
+@keyframes fadeInUp {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+/* ------------------------------
+   TIPS SIDEBAR
+------------------------------ */
+.tips {
+  background: #f9feff;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+/* ------------------------------
+   RESPONSIVE
+------------------------------ */
+@media (max-width: 700px) {
+  .book-wrap,
+  .step-section { padding: 1rem; }
+  .book-header { flex-direction: column; gap: 1rem; }
+  .bh-avatar { width: 50px; height: 50px; }
+}
+.hidden { display: none !important; }
+.bh-avatar {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.bh-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(14,165,233,0.35);
+}
+.bh-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+/* ------------------------------
+   YOUR INFO SECTION
+------------------------------ */
+.step-section[data-step="Step 3"],
+#step3Title {
+  margin-top: 1rem;
+}
+
+#step3Title {
+  font-size: 1.15rem;
+  color: var(--sky-blue);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.form-row {
+  display: grid;
+  gap: 1rem;                 /* Increase vertical spacing */
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;  /* Stack inputs on mobile */
+    gap: 0.75rem;
+  }
+}
+
+.input {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;          /* More breathing room */
+  font-size: 1rem;
+  box-shadow: 0 3px 10px rgba(14,165,233,0.08);
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.step-section[data-step="Step 3"] {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px rgba(14,165,233,0.08);
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+}

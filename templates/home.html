@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+{% block title %}Welcome — BookerAI{% endblock %}
+{% block content %}
+
+<!-- ============================
+     HERO SECTION
+     ============================ -->
+<section class="vibrant-hero home-hero">
+  <div class="animated-bg"></div>
+
+  <div class="hero-content wow-card">
+    <h1 class="hero-title gradient-text">Book Smarter. Work Easier.</h1>
+    <p class="hero-subtext muted">
+      BookerAI helps barbers and beauty pros grow their business with smart automation, instant booking, and modern tools that work as hard as you do.
+    </p>
+
+    <div class="hero-buttons">
+      <a href="{{ url_for('signup') }}" class="btn large">Get Started Free</a>
+      <a href="{{ url_for('login') }}" class="btn large" style="background:#fff;color:var(--sky-blue)!important;">Log In</a>
+    </div>
+
+    <div class="trust-logos">
+      <p class="muted">Trusted by professionals across the US</p>
+      <div class="logo-row">
+        <span class="bubble-small">💈</span>
+        <span class="bubble-small">💅</span>
+        <span class="bubble-small">💆‍♀️</span>
+        <span class="bubble-small">✂️</span>
+        <span class="bubble-small">💇‍♂️</span>
+      </div>
+    </div>
+  </div>
+ 
+
+</section>
+
+<!-- ============================
+     BUBBLE NAV / SERVICE DISCOVERY (simplified to 4)
+     ============================ -->
+<section class="looking-services">
+  <h2>Find a Professional Near You</h2>
+  <p class="muted">Browse top-rated barbers and beauty experts on BookerAI.</p>
+
+  <div class="service-bubbles">
+  <a href="{{ url_for('find_pro_route') }}" class="bubble">
+
+    <img src="{{ url_for('static', filename='img/barber.jpeg') }}" alt="Barber">
+    <span>Barbers</span>
+  </a>
+
+  <a href="{{ url_for('find_pro_route') }}" class="bubble">
+
+    <img src="{{ url_for('static', filename='img/nails.webp') }}" alt="Nail Techs">
+    <span>Nail Techs</span>
+  </a>
+
+  <a href="{{ url_for('find_pro_route') }}" class="bubble">
+
+    <img src="{{ url_for('static', filename='img/hair_style.jpg') }}" alt="Hair Stylists">
+    <span>Hair Stylists</span>
+  </a>
+
+  <a href="{{ url_for('find_pro_route') }}" class="bubble">
+
+    <img src="{{ url_for('static', filename='img/other.jpg') }}" alt="Other">
+    <span>Other</span>
+  </a>
+</div>
+
+</section>
+
+
+<!-- ============================
+     FEATURES GRID
+     ============================ -->
+<section class="features-section">
+  <div class="wow-card feature-card">
+    <h3>📅 Smart Scheduling</h3>
+    <p>Set your hours once — BookerAI syncs and saves automatically. No more missed appointments or double bookings.</p>
+  </div>
+
+  <div class="wow-card feature-card">
+    <h3>🌍 Public Booking Page</h3>
+    <p>Your custom link lets clients book anytime. Looks great on Instagram, TikTok, and Google profiles.</p>
+  </div>
+
+  <div class="wow-card feature-card">
+    <h3>💵 Payments & Deposits</h3>
+    <p>Secure payments through your link. Collect deposits upfront and skip no-shows effortlessly.</p>
+  </div>
+
+  <div class="wow-card feature-card">
+    <h3>🤝 Referral System</h3>
+    <p>Invite other barbers & stylists — earn credits every time someone joins through your link.</p>
+  </div>
+
+  <div class="wow-card feature-card">
+    <h3>🎨 Theme Customization</h3>
+    <p>Personalize your booking page with themes, colors, and background animations to match your brand.</p>
+  </div>
+
+  <div class="wow-card feature-card">
+    <h3>📊 Analytics Dashboard</h3>
+    <p>Track daily bookings, client trends, and income stats — all from your dashboard.</p>
+  </div>
+  <!-- Floating "See Demo" Button -->
+<a href="{{ url_for('demo') }}" class="floating-demo-btn">
+  💎 See Demo
+</a>
+
+</section>
+
+
+
+<!-- ============================
+     FOOTER CTA / FINAL IMPRESSION
+     ============================ -->
+<section class="footer-cta vibrant-auth">
+  <div class="animated-bg"></div>
+  <div class="footer-inner">
+    <h2 class="gradient-text">Built for the Next Generation of Professionals</h2>
+    <p class="muted">Manage your business smarter — anywhere, anytime.</p>
+    <div class="hero-buttons">
+      <a href="{{ url_for('signup') }}" class="btn large">Join BookerAI</a>
+      <a href="{{ url_for('login') }}" class="btn large" style="background:#fff;color:var(--sky-blue)!important;">Sign In</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

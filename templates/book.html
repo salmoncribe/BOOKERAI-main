@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="book-wrap bg-surface" role="main" style="display:grid; gap:1.5rem; padding:1rem; max-width:900px; margin:auto;">
+
+  <!-- Top bar -->
+  <div class="book-topbar flex justify-between items-center">
+    <a class="btn btn-secondary" href="{{ url_for('home') }}" aria-label="Go back to home">← Back</a>
+    <div class="brand-spacer"></div>
+  </div>
+
+  <!-- Barber header card -->
+  <header class="book-header card shadow-md" aria-labelledby="barberName"
+           style="display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-radius:1rem; background:var(--card-bg, #fff);">
+    <div class="bh-left flex items-center gap-3">
+      {% if barber.photo_url %}
+  <div class="bh-avatar" 
+       style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;box-shadow:0 0 15px rgba(14,165,233,0.25);border:2px solid rgba(255,255,255,0.3);">
+    <img src="{{ barber.photo_url }}?v={{ asset_ver }}" 
+         alt="{{ barber.name or 'Barber' }}" 
+         style="width:100%;height:100%;object-fit:cover;">
+  </div>
+{% else %}
+  <div class="bh-avatar flex items-center justify-center text-xl font-bold"
+       style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,var(--accent,#6d5dfc),var(--accent2,#9b8aff)); color:white;">
+    {{ (barber.name or 'B')[:1] | upper }}
+  </div>
+{% endif %}
+
+      <div>
+        <h2 id="barberName" class="bh-name" style="margin:0; font-size:1.25rem;">{{ barber.name or "Your Barber" }}</h2>
+        <div class="bh-meta muted small flex items-center gap-2">
+          <span class="bh-badge" aria-label="Barber role">Barber</span>
+          <span class="bh-dot">•</span>
+          <a href="tel:{{ barber.phone }}" class="bh-link" aria-label="Call {{ barber.name or 'barber' }}">{{ barber.phone }}</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Booking body -->
+  <section class="book-card card" aria-label="Booking steps"
+           style="padding:1.25rem; border-radius:1rem; display:grid; gap:1.5rem; background:var(--card-bg,#fff);">
+    <div class="book-col" style="display:grid; gap:1.25rem;">
+      <!-- STEP 1: DATE -->
+      <section id="screen-date" class="step-section" aria-labelledby="step1Title">
+        <div class="step-head only-title mb-2">
+          <label id="step1Title" class="label text-lg font-semibold" data-step="Step 1">Choose a date</label>
+          <p class="dim small">Pick a day to see available times.</p>
+        </div>
+
+        <button id="chooseBtn" type="button" class="btn glow w-full" aria-expanded="false" aria-controls="dateChooser">
+          <span class="cta-title">Choose a date</span>
+        </button>
+
+        <div id="dateChooser" class="date-chooser hidden mt-3" role="region" aria-label="Select a day">
+          <div id="dayStrip" class="day-strip" role="tablist" aria-label="Next seven days"></div>
+          
+        </div>
+      </section>
+
+      <!-- STEP 2: TIMES -->
+      <section id="screen-times" class="step-section hidden" aria-labelledby="step2Title">
+        <div class="step-head flex items-center justify-between mb-2">
+          <button id="backToDates" class="btn btn-secondary" type="button" aria-controls="screen-date">← Back</button>
+          <div class="step-title text-right">
+            <label id="step2Title" class="label font-semibold" data-step="Step 2">Available times</label>
+            <div class="dim small" id="pickedDateLabel" aria-live="polite">Select a day</div>
+          </div>
+        </div>
+
+        <div id="slotEmpty" class="slot-empty hidden text-center muted" role="status" aria-live="polite"></div>
+        <div id="slotGrid" class="slot-grid" role="list" aria-label="Time slots"></div>
+      </section>
+
+      <!-- STEP 3: INFO -->
+      <section class="step-section" aria-labelledby="step3Title">
+        <label id="step3Title" class="label font-semibold" data-step="Step 3">Your info</label>
+        <div class="form-row flex flex-col sm:flex-row gap-2 mt-2">
+          <input id="client_name" type="text" placeholder="Your name" autocomplete="name" aria-label="Your name"
+                 class="input" />
+          <input id="client_phone" type="tel" inputmode="tel" placeholder="Phone number" autocomplete="tel"
+                 aria-label="Phone number" class="input" />
+        </div>
+      </section>
+
+      <!-- SUMMARY -->
+      <section class="summary mt-3" aria-labelledby="sumTitle">
+        <h3 id="sumTitle" class="kicker font-semibold">Summary</h3>
+        <div class="sum-row flex justify-between"><span>Date</span><strong id="sumDate">—</strong></div>
+        <div class="sum-row flex justify-between"><span>Time</span><strong id="sumTime">—</strong></div>
+        <div class="sum-row flex justify-between"><span>Barber</span><strong>{{ barber.name or "Barber" }}</strong></div>
+      </section>
+
+      <!-- ACTIONS -->
+      <div class="actions-row mt-3 sticky-cta flex justify-end">
+        <button id="bookBtn" class="btn" type="button" disabled aria-disabled="true">Book appointment</button>
+      </div>
+    </div>
+
+    <!-- SIDE COLUMN (tips) -->
+    <aside class="book-col tips bg-surface-light p-3 rounded-xl" aria-label="Helpful information">
+      <h3 class="kicker font-semibold mb-2">Heads up</h3>
+      <ul class="tip-list list-disc ml-5 text-sm text-gray-600">
+        <li>Times show in your device’s local time.</li>
+        <li>For today, past times are hidden automatically.</li>
+      </ul>
+    </aside>
+  </section>
+</div>
+
+<!-- Confirmation modal -->
+<div id="confirmBackdrop" class="modal-backdrop hidden" aria-modal="true" role="dialog" aria-labelledby="confirmTitle">
+  <div class="modal card shadow-lg p-4 rounded-xl bg-white text-center max-w-sm mx-auto">
+    <h3 id="confirmTitle" class="text-xl font-semibold">All set!</h3>
+    <p class="mt-2">Your appointment is booked for <strong id="confirmText"></strong>.</p>
+    <div class="actions-row mt-3 flex justify-center gap-2">
+      <a id="icsLink" class="btn btn-secondary" download="appointment.ics">Add to calendar</a>
+      <a class="btn" href="{{ url_for('home') }}">Done</a>
+    </div>
+  </div>
+</div>
+
+<!-- Data for JS -->
+<script id="bk-hours" type="application/json">{{ (hours or {})|tojson }}</script>
+
+
+
+<script id="bk-barber" type="application/json">
+  {{ {"barberId": barber.id, "name": barber.name}|tojson }}
+</script>
+
+<script id="bk-appts" type="application/json">
+  {{ (appts or [])|tojson }}
+</script>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/booking.css', v=asset_ver) }}">
+<script defer src="{{ url_for('static', filename='js/booking.js', v=asset_ver) }}"></script>
+{% endblock %}

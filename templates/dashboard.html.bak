@@ -1,0 +1,220 @@
+document.addEventListener('DOMContentLoaded', () => {
+  // ==== 1) Chevron toggle (down by default; right when open) ====
+  document.querySelectorAll('.hours-edit').forEach(btn => {
+    const panel = document.getElementById(btn.getAttribute('aria-controls'));
+    if (!panel) return;
+    btn.classList.remove('is-open');
+    btn.setAttribute('aria-expanded', 'false');
+    panel.h
+     panel.classList.remove('show');
+
+    const toggle = () => {
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!isOpen));
+      btn.classList.toggle('is-open', !isOpen);
+      panel.hidden = isOpen; panel.classList.toggle('show', !isOpen);
+      // On open, default to "presets" mode (small, tidy)
+      if (!isOpen) setMode(panel, 'presets');
+    };
+    btn.addEventListener('click', toggle);
+  });
+
+  // ==== 2) Hours editor setup (hours only; presets + custom) ====
+  const hoursData = safeParseJSON(document.getElementById('hours-data')?.textContent) || {};
+  const HOURS = [12,1,2,3,4,5,6,7,8,9,10,11];
+  const DAYS = Array.from(document.querySelectorAll('.hours-row')).map(li => li.dataset.day);
+
+  document.querySelectorAll('.hours-row').forEach((row, idx) => {
+    const day = row.dataset.day;
+    const editor = row.querySelector('.hours-editor');
+    if (!editor) return;
+
+    // elements
+    const presetsRow = editor.querySelector('.presets-row');
+    const customSection = editor.querySelector('.custom-section');
+    const customBtn = editor.querySelector('.chip-custom');
+
+    const hhOpen  = editor.querySelector('.hh-open');
+    const amOpen  = editor.querySelector('.ampm-open');
+    const mmOpen  = editor.querySelector('.mm-open');   // hidden, fixed 00
+    const hhClose = editor.querySelector('.hh-close');
+    const amClose = editor.querySelector('.ampm-close');
+    const mmClose = editor.querySelector('.mm-close');  // hidden, fixed 00
+    const chkClosed = editor.querySelector('.closed-toggle');
+
+    // populate dials
+    fillSelect(hhOpen, HOURS);
+    fillSelect(hhClose, HOURS);
+    ensureFixedMinutes(mmOpen);
+    ensureFixedMinutes(mmClose);
+
+    // initial from server
+    const v = hoursData[day] || {};
+    if (v.isClosed) {
+      chkClosed.checked = true;
+      setDisabled(editor, true);
+    } else if (v.open && v.close) {
+      const {h: oh, p: op} = parseHM(v.open);
+      const {h: ch, p: cp} = parseHM(v.close);
+      hhOpen.value = String(oh); amOpen.value = op;
+      hhClose.value = String(ch); amClose.value = cp;
+    }
+
+    // Chip: presets
+    editor.querySelectorAll('.chip-preset').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chkClosed.checked = false; setDisabled(editor, false);
+        applyPreset(chip.dataset.range, {hhOpen, amOpen, hhClose, amClose});
+        setMode(editor, 'presets'); // keep compact
+      });
+    });
+
+    // Chip: closed
+    editor.querySelector('.chip-closed')?.addEventListener('click', () => {
+      chkClosed.checked = true; setDisabled(editor, true);
+      setMode(editor, 'presets');
+    });
+
+    // Chip: custom hours (toggles presets <-> custom)
+    customBtn?.addEventListener('click', () => {
+      const current = customBtn.dataset.mode || 'presets';
+      const next = current === 'presets' ? 'custom' : 'presets';
+      setMode(editor, next);
+    });
+
+    // Chip: same as yesterday
+    editor.querySelector('.chip-copy-yesterday')?.addEventListener('click', () => {
+      const prevIdx = (idx - 1 + DAYS.length) % DAYS.length;
+      const prev = document.querySelector(`.hours-row[data-day="${DAYS[prevIdx]}"] .hours-editor`);
+      copyEditor(prev, editor);
+      chkClosed.checked = editor.querySelector('.closed-toggle').checked;
+      setDisabled(editor, chkClosed.checked);
+    });
+
+    // Chip: copy to all
+    editor.querySelector('.chip-copy-all')?.addEventListener('click', () => {
+      const snap = snapshotEditor(editor);
+      document.querySelectorAll('.hours-editor').forEach(ed => {
+        restoreEditor(ed, snap);
+        const c = ed.querySelector('.closed-toggle');
+        setDisabled(ed, c.checked);
+      });
+    });
+
+    // Closed toggle disables dials in custom mode too
+    chkClosed.addEventListener('change', () => {
+      setDisabled(editor, chkClosed.checked);
+    });
+
+    // mode helper
+    function setMode(root, mode){
+      // mode: 'presets' | 'custom'
+      const cb = root.querySelector('.chip-custom');
+      const presetsRow = root.querySelector('.presets-row');
+      const customSection = root.querySelector('.custom-section');
+      if (!cb) return;
+      if (mode === 'custom') {
+        presetsRow?.setAttribute('hidden','');
+        customSection?.removeAttribute('hidden');
+        cb.textContent = 'Back to presets';
+        cb.dataset.mode = 'custom';
+        if (chkClosed) { chkClosed.checked = false; setDisabled(root, false); }
+      } else {
+        presetsRow?.removeAttribute('hidden');
+        customSection?.setAttribute('hidden','');
+        cb.textContent = 'Custom hours';
+        cb.dataset.mode = 'presets';
+      }
+    }
+  });
+
+  // ==== 3) Save (same payload shape your backend expects) ====
+  document.getElementById('hoursSaveBtn')?.addEventListener('click', async () => {
+    const payload = {};
+    document.querySelectorAll('.hours-row').forEach(row => {
+      const day = row.dataset.day;
+      const ed = row.querySelector('.hours-editor');
+      const closed = ed.querySelector('.closed-toggle').checked;
+      if (closed) {
+        payload[day] = { isClosed: true, open: "", close: "" };
+      } else {
+        const open = buildTime(ed.querySelector('.hh-open').value, "00", ed.querySelector('.ampm-open').value);
+        const close = buildTime(ed.querySelector('.hh-close').value, "00", ed.querySelector('.ampm-close').value);
+        payload[day] = { isClosed: false, open, close };
+      }
+    });
+
+    try {
+      const r = await fetch('/set_hours', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) throw new Error(`Save failed ${r.status}`);
+      toast('Hours saved ✅'); updateSummaries(payload);
+    } catch (e) {
+      console.error(e); toast('Could not save hours ❌');
+    }
+  });
+
+  // ==== helpers ====
+  function safeParseJSON(txt){ try{ return JSON.parse(txt || '{}'); }catch{ return {}; } }
+  function fillSelect(sel, values){ sel.innerHTML = values.map(v => `<option value="${v}">${v}</option>`).join(''); }
+  function ensureFixedMinutes(sel){ sel.innerHTML = `<option value="00" selected>00</option>`; sel.value = "00"; }
+  function setDisabled(editor, isDisabled){
+    editor.querySelectorAll('.hh-open,.hh-close,.ampm-open,.ampm-close').forEach(el => { el.disabled = isDisabled; });
+  }
+  function parseHM(str){
+    if (!str) return {h: 9, p: 'AM'};
+    const m = String(str).match(/(\d{1,2})(?::\d{2})?\s*(AM|PM)/i);
+    return m ? {h: Number(m[1]) % 12 || 12, p: m[2].toUpperCase()} : {h: 9, p:'AM'};
+  }
+  function applyPreset(range, refs){
+    const {hhOpen, amOpen, hhClose, amClose} = refs;
+    if (range === '24-7') { hhOpen.value='12'; amOpen.value='AM'; hhClose.value='11'; amClose.value='PM'; return; }
+    const [start, end] = range.split('-').map(n => Number(n));
+    hhOpen.value = String(start > 12 ? start - 12 : (start || 12));
+    amOpen.value = start >= 12 ? 'PM' : 'AM';
+    hhClose.value = String(end   > 12 ? end - 12   : (end   || 12));
+    amClose.value = end   >= 12 ? 'PM' : 'AM';
+
+  }
+  function snapshotEditor(editor){
+    return {
+      closed: editor.querySelector('.closed-toggle')?.checked ?? false,
+      oh: editor.querySelector('.hh-open')?.value ?? '9',
+      op: editor.querySelector('.ampm-open')?.value ?? 'AM',
+      ch: editor.querySelector('.hh-close')?.value ?? '5',
+      cp: editor.querySelector('.ampm-close')?.value ?? 'PM'
+    };
+  }
+  function restoreEditor(editor, s){
+    const c = editor.querySelector('.closed-toggle'); if (c) c.checked = s.closed;
+    const ho = editor.querySelector('.hh-open'); if (ho) ho.value = s.oh;
+    const po = editor.querySelector('.ampm-open'); if (po) po.value = s.op;
+    const hc = editor.querySelector('.hh-close'); if (hc) hc.value = s.ch;
+    const pc = editor.querySelector('.ampm-close'); if (pc) pc.value = s.cp;
+  }
+  function copyEditor(from, to){ if (!from || !to) return; restoreEditor(to, snapshotEditor(from)); }
+  function buildTime(h, m, p){ return `${Number(h)}:${m} ${p}`; }
+  function updateSummaries(payload){
+    Object.entries(payload).forEach(([day, v]) => {
+      const row = document.querySelector(`.hours-row[data-day="${day}"]`);
+      if (!row) return;
+      const txt = row.querySelector('.hours-text');
+      if (v.isClosed) { txt.textContent = 'Closed'; txt.classList.add('muted'); }
+      else { txt.textContent = `${v.open}–${v.close}`; txt.classList.remove('muted'); }
+    });
+  }
+  function toast(msg){
+    try{
+      const n = document.createElement('div');
+      n.textContent = msg;
+      n.style.position='fixed'; n.style.inset='auto 12px 12px auto';
+      n.style.background='rgba(0,0,0,.6)'; n.style.color='white';
+      n.style.padding='10px 12px'; n.style.borderRadius='10px';
+      n.style.zIndex='9999'; n.style.backdropFilter='blur(3px)';
+      document.body.appendChild(n); setTimeout(()=>n.remove(), 1600);
+    }catch{}
+  }
+});

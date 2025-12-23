@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% block content %}
+<section class="card" style="display:grid; gap:1rem;">
+  <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+    <div>
+      <h1 style="margin:0;">Book {{ barber.name }}</h1>
+      {% if barber.location %}<div class="muted small">{{ barber.location }}</div>{% endif %}
+    </div>
+    {% if barber.phone %}
+      <a class="btn btn-secondary" href="tel:{{ barber.phone|replace(' ','') }}">Call</a>
+    {% endif %}
+  </header>
+
+  <div class="grid2" style="display:grid; gap:1rem; grid-template-columns: 1.2fr .8fr;">
+    <!-- Booking form -->
+    <form id="bookingForm" class="card" style="display:grid; gap:.75rem;"
+          data-endpoint="{{ url_for('api_create_appointment', barber_id=barber.barberId) }}">
+      <div class="field">
+        <label class="label" for="service">Service (optional)</label>
+        <input class="input" id="service" name="service" placeholder="Fade, beard trim, etc.">
+      </div>
+
+      <div class="field">
+        <label class="label" for="client_name">Your name</label>
+        <input class="input" id="client_name" name="client_name" required>
+      </div>
+
+      <div class="field">
+        <label class="label" for="client_phone">Phone</label>
+        <input class="input" id="client_phone" name="client_phone" required inputmode="tel" placeholder="(555) 555-5555">
+      </div>
+
+      <div class="field">
+        <label class="label" for="when">Preferred time</label>
+        <input class="input" id="when" name="when" type="datetime-local" required>
+        <div class="small muted">We’ll validate against business hours automatically.</div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="note">Note (optional)</label>
+        <textarea class="input" id="note" name="note" rows="3" placeholder="Anything else we should know?"></textarea>
+      </div>
+
+      <button class="btn" id="submitBtn" type="submit">Request appointment</button>
+      <div id="formMsg" class="small muted" role="status" aria-live="polite"></div>
+    </form>
+
+    <!-- Hours / info -->
+    <aside class="card">
+      <h3 style="margin-top:0;">Business hours</h3>
+      {% if hours %}
+        <ul class="hours-list">
+          {% for k, v in hours.items() %}
+            <li><strong style="text-transform:uppercase">{{ k }}</strong> —
+              {% if v.isClosed %}<span class="muted">Closed</span>
+              {% else %}{{ v.open }}–{{ v.close }}{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="small muted">Hours not published yet.</div>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+
+<!-- If you already have /static/book.js, it will hook onto #bookingForm.
+     The markup matches names the backend expects. This is purely front-end. -->
+<script src="{{ url_for('static', filename='book.js', v=asset_ver) }}"></script>
+{% endblock %}

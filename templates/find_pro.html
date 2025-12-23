@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block title %}Find a Professional — BookerAI{% endblock %}
+
+{% block content %}
+
+<!-- =======================
+     FIND A PROFESSIONAL PAGE
+=========================== -->
+<section class="find-hero">
+  <div class="animated-bg"></div>
+
+  <div class="wow-card hero-inner">
+    <h1>Find a Professional Near You</h1>
+    <p>Discover trusted barbers, stylists, and beauty experts in your area — powered by <strong>BookerAI</strong>.</p>
+  </div>
+</section>
+
+<section class="find-form">
+  <form method="post" class="find-form-card wow-card">
+    <label>
+      <span>City / Location</span>
+      <input type="text" name="city" placeholder="e.g. Lubbock, TX" required>
+    </label>
+
+    <label>
+      <span>Service Type</span>
+      <select name="service" required>
+        <option value="">Select a service...</option>
+        <option>Barber</option>
+        <option>Hair Stylist</option>
+        <option>Makeup Artist</option>
+        <option>Nail Technician</option>
+        <option>Esthetician</option>
+        <option>Lash Tech</option>
+        <option>Wax Specialist</option>
+        <option>Color Specialist</option>
+        <option>Massage Therapist</option>
+        <option>Other</option>
+      </select>
+    </label>
+
+    <button type="submit" class="btn gradient-btn">🔍 Search Professionals</button>
+  </form>
+</section>
+
+{% endblock %}

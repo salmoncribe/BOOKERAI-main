@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+<section class="hero card" style="padding:2rem; display:grid; gap:1rem; text-align:center;">
+  <h1 style="margin:0; font-size:clamp(1.8rem,3vw,2.4rem);">Get booked. Stay focused.</h1>
+  <p class="muted" style="max-width:60ch; margin:0 auto;">
+    BookerAI helps barbers manage appointments without the hassle. Share your link, collect bookings, and keep your chair full.
+  </p>
+  <div style="display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap; margin-top:.2rem;">
+    <a class="btn" href="{{ url_for('signup') }}">Create free account</a>
+    <a class="btn btn-secondary" href="{{ url_for('login') }}">Log in</a>
+  </div>
+</section>
+
+<section class="wrap-features" style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); margin-top:1rem;">
+  <div class="card feature">
+    <div class="feature-icon">⚡</div>
+    <h3 class="feature-title">Instant booking link</h3>
+    <p class="muted">Share a single link and let clients pick a time. No back-and-forth.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon">📅</div>
+    <h3 class="feature-title">Hours you control</h3>
+    <p class="muted">Set business hours once; BookerAI enforces them automatically.</p>
+  </div>
+  <div class="card feature">
+    <div class="feature-icon">🔔</div>
+    <h3 class="feature-title">Fast notifications</h3>
+    <p class="muted">See new bookings right in your dashboard, ready to cut.</p>
+  </div>
+</section>
+{% endblock %}

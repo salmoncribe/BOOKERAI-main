@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block content %}
+<section class="card" style="display:grid; gap:1rem;">
+  <div class="dash-head" style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+    <div>
+      <h1 class="dash-title" style="margin:0;">Welcome{% if barber.name %}, {{ barber.name }}{% endif %}</h1>
+      <div class="muted small">Manage your hours and appointments below.</div>
+    </div>
+    <div class="dash-actions" style="display:flex; gap:.5rem; flex-wrap:wrap;">
+      <button id="copyLinkBtn" class="btn" data-copy="{{ public_link }}" title="Copy your public booking link">Copy booking link</button>
+      <a class="btn btn-secondary" href="{{ public_link }}" target="_blank" rel="noopener">Open public page</a>
+    </div>
+  </div>
+
+  <div class="card" style="display:grid; gap:.6rem;">
+    <div class="kpi-label muted">Your public booking link</div>
+    <div class="copy-row" style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+      <input class="input mono" value="{{ public_link }}" readonly style="flex:1; min-width:260px;">
+      <button id="copyLinkBtn2" class="btn btn-secondary" data-copy="{{ public_link }}">Copy</button>
+    </div>
+    <div class="small muted">Share this link with clients to accept appointments.</div>
+  </div>
+
+  <div class="card" style="display:grid; gap:0.75rem;">
+    <div class="table-head" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+      <h3 style="margin:0;">Upcoming appointments</h3>
+    </div>
+
+    {% if appts %}
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Phone</th>
+              <th>When</th>
+              <th>Note</th>
+              <th style="width:1%"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in appts %}
+              <tr>
+                <td>{{ a.client_name or a.clientName }}</td>
+                <td>{{ a.client_phone or a.clientPhone }}</td>
+                <td>{{ a.when or a.start }}</td>
+                <td>{{ a.note or a.notes }}</td>
+                <td>
+                  <form method="post" action="{{ url_for('cancel_appointment', appointment_id=(a.appointment_id or a.appointmentId)) }}">
+                    <button class="btn btn-secondary" style="padding:.35rem .6rem;" title="Cancel appointment">Cancel</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty" style="text-align:center; padding:1.25rem;">
+        <div class="empty-emoji" style="font-size:2rem;">💺</div>
+        <div class="empty-title" style="font-weight:700;">No appointments yet</div>
+        <div class="small muted">Share your public link to get booked.</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="display:grid; gap:.5rem;">
+    <h3 style="margin:0;">Business hours</h3>
+    <div class="small muted">Adjust hours from the Hours panel (if your UI exposes editing). These are the current values:</div>
+    {% if hours %}
+      <ul class="hours-list">
+        {% for k, v in hours.items() %}
+          <li><strong style="text-transform:uppercase">{{ k }}</strong> —
+            {% if v.isClosed %}<span class="muted">Closed</span>
+            {% else %}{{ v.open }}–{{ v.close }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="small muted">No hours set yet.</div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Copy to clipboard (front-end only) -->
+<script>
+  function copyText(t){ navigator.clipboard?.writeText(t).then(()=>toast('Link copied')).catch(()=>{}); }
+  function toast(msg){
+    let t = document.createElement('div'); t.className='toast card'; t.textContent=msg; document.body.appendChild(t);
+    setTimeout(()=>t.classList.add('show')); setTimeout(()=>t.classList.remove('show'), 1800); setTimeout(()=>t.remove(), 2300);
+  }
+  document.getElementById('copyLinkBtn')?.addEventListener('click', e=>copyText(e.currentTarget.dataset.copy));
+  document.getElementById('copyLinkBtn2')?.addEventListener('click', e=>copyText(e.currentTarget.dataset.copy));
+</script>
+{% endblock %}

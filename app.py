@@ -1,0 +1,1032 @@
+import os
+import re
+import uuid
+import mimetypes
+from functools import wraps
+from datetime import datetime, timedelta, date
+
+from flask import (
+    Flask, render_template, request, redirect,
+    url_for, session, jsonify, flash
+)
+from flask_session import Session
+from werkzeug.security import check_password_hash, generate_password_hash
+import stripe
+
+# ----------------------------------------------
+# Supabase
+# ----------------------------------------------
+from supabase import create_client, Client
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ----------------------------------------------
+# Flask
+# ----------------------------------------------
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY")
+
+app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_PERMANENT"] = True
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=4)
+app.config["SESSION_FILE_DIR"] = "./flask_session"
+os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
+
+Session(app)
+
+# ----------------------------------------------
+# Stripe
+# ----------------------------------------------
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+
+# ----------------------------------------------
+# Helpers
+# ----------------------------------------------
+def login_required(fn):
+    @wraps(fn)
+    def w(*a, **kw):
+        if "barberId" not in session:
+            return redirect(url_for("login"))
+        return fn(*a, **kw)
+    return w
+def premium_required(fn):
+    @wraps(fn)
+    def w(*a, **kw):
+        if "barberId" not in session:
+            return redirect(url_for("login"))
+
+        barber_id = session["barberId"]
+        barber = supabase.table("barbers").select("plan").eq("id", barber_id).execute().data
+        plan = (barber[0].get("plan") if barber else "free") or "free"
+
+        if plan != "premium":
+            flash("That feature is Premium. Upgrade to unlock it.", "error")
+            return redirect(url_for("dashboard"))
+        return fn(*a, **kw)
+    return w
+
+def generate_slots(start, end, step):
+    """Return list of 'HH:MM' slots. Accepts HH:MM or HH:MM:SS."""
+    
+    def normalize(t):
+        # Strip seconds if present
+        return t[:5]
+
+    start = normalize(start)
+    end = normalize(end)
+
+    slots = []
+    cur = datetime.strptime(start, "%H:%M")
+    end_dt = datetime.strptime(end, "%H:%M")
+    step_td = timedelta(minutes=step)
+
+    while cur + step_td <= end_dt:
+        slots.append(cur.strftime("%H:%M"))
+        cur += step_td
+
+    return slots
+
+
+def ensure_default_weekly_hours(barber_id):
+    existing = supabase.table("barber_weekly_hours") \
+        .select("id") \
+        .eq("barber_id", barber_id) \
+        .execute().data
+
+    if existing:
+        return
+
+    defaults = []
+    for day in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]:
+        defaults.append({
+            "barber_id": barber_id,
+            "weekday": day,
+            "start_time": "09:00",
+            "end_time": "17:00",
+            "is_closed": False,
+            "location_id": None
+        })
+
+    supabase.table("barber_weekly_hours").insert(defaults).execute()
+
+PLAN_FEATURES = {
+    "free": {
+        "find_pro": True,
+        "profile_media": False,
+        "analytics": False,
+        "ai_tools": False,
+        "boosted_visibility": False,
+        "locations": True,   # you already have /locations
+    },
+    "premium": {
+        "find_pro": True,
+        "profile_media": True,
+        "analytics": True,
+        "ai_tools": True,
+        "boosted_visibility": True,
+        "locations": True,
+    }
+}
+
+def get_features(plan: str):
+    plan = (plan or "free").lower().strip()
+    return PLAN_FEATURES.get(plan, PLAN_FEATURES["free"])
+
+# ============================================================
+# HEALTH CHECKS
+# ============================================================
+@app.get("/healthz")
+def health():
+    return jsonify({"ok": True}), 200
+
+@app.get("/status")
+def status():
+    return "ok"
+
+# ============================================================
+# AUTH — BARBER
+# ============================================================
+
+def generate_promo_code(name):
+    base = re.sub(r"[^A-Z]", "", (name or "PRO").upper())[:6]
+    suffix = str(uuid.uuid4().int)[-4:]
+    return f"{base}{suffix}"
+
+
+# ============================================================
+# AUTH — BARBER (SIGNUP / LOGIN / LOGOUT)
+# ============================================================
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        return render_template("signup.html")
+
+    # ------------------------------------------------------------
+    # Read form data
+    # ------------------------------------------------------------
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").lower().strip()
+    password = request.form.get("password")
+    phone = request.form.get("phone")
+    bio = request.form.get("bio", "")
+    address = request.form.get("address", "")
+    profession = request.form.get("profession", "")
+    selected_plan = request.form.get("selected_plan", "free")
+
+    used_promo_code = (
+        request.form.get("promo_code", "").upper().strip() or None
+    )
+
+    # ------------------------------------------------------------
+    # REQUIRED for ALL signups (free + premium)
+    # ------------------------------------------------------------
+    if selected_plan != "premium":
+        if not email or not password:
+            flash("Email and password are required.")
+            return redirect(url_for("signup"))
+
+    # Prevent duplicate accounts
+    existing = (
+        supabase.table("barbers")
+        .select("id")
+        .eq("email", email)
+        .execute()
+        .data
+    )
+    if existing:
+        flash("An account with this email already exists.")
+        return redirect(url_for("login"))
+
+    # ------------------------------------------------------------
+    # Validate promo code (if provided)
+    # ------------------------------------------------------------
+    if used_promo_code:
+        owner = (
+            supabase.table("barbers")
+            .select("id")
+            .eq("promo_code", used_promo_code)
+            .execute()
+            .data
+        )
+        if not owner:
+            flash("Invalid promo code.")
+            return redirect(url_for("signup"))
+
+    # ------------------------------------------------------------
+    # PREMIUM SIGNUP → STRIPE FIRST (ACCOUNT CREATED IN WEBHOOK)
+    # ------------------------------------------------------------
+    if selected_plan == "premium":
+        checkout = stripe.checkout.Session.create(
+            mode="subscription",
+            customer_email=email,
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            metadata={
+                "source": "signup",
+                "plan": "premium",
+                "name": name,
+                "email": email,
+                "phone": phone,
+                "bio": bio,
+                "address": address,
+                "profession": profession,
+                "used_promo_code": used_promo_code or "",
+                # Hash password ONCE, safely
+                "password_hash": generate_password_hash(password),
+            },
+            success_url=url_for("login", _external=True),
+            cancel_url=url_for("signup", _external=True),
+        )
+
+        return redirect(checkout.url, 303)
+
+    # ------------------------------------------------------------
+    # FREE SIGNUP → CREATE ACCOUNT IMMEDIATELY
+    # ------------------------------------------------------------
+    password_hash = generate_password_hash(password)
+
+    # Generate unique promo code
+    while True:
+        promo_code = generate_promo_code(name)
+        exists = (
+            supabase.table("barbers")
+            .select("id")
+            .eq("promo_code", promo_code)
+            .execute()
+            .data
+        )
+        if not exists:
+            break
+
+    res = supabase.table("barbers").insert({
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "bio": bio,
+        "address": address,
+        "profession": profession,
+        "password_hash": password_hash,
+        "slot_duration": 60,
+        "plan": "free",
+        "role": "barber",
+        "promo_code": promo_code,
+        "used_promo_code": used_promo_code,
+    }).execute()
+
+    if not res.data:
+        flash("Signup failed. Please try again.")
+        return redirect(url_for("signup"))
+
+    barber = res.data[0]
+
+    # Auto-login after free signup
+    session["barberId"] = barber["id"]
+    session["user_email"] = barber["email"]
+    session["barber_name"] = barber["name"]
+
+    return redirect(url_for("dashboard"))
+
+
+
+    
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template("login.html")
+
+    email = request.form.get("email", "").lower().strip()
+    password = request.form.get("password")
+
+    res = supabase.table("barbers").select("*").eq("email", email).execute()
+    if not res.data:
+        flash("Invalid login")
+        return redirect(url_for("login"))
+
+    barber = res.data[0]
+
+    if not check_password_hash(barber["password_hash"], password):
+        flash("Invalid login")
+        return redirect(url_for("login"))
+
+    session["barberId"] = barber["id"]
+    session["user_email"] = barber["email"]
+    session["barber_name"] = barber["name"]
+
+    return redirect(url_for("dashboard"))
+
+
+
+# ============================================================
+# DASHBOARD (BARBER)
+# ============================================================
+@app.get("/dashboard")
+@login_required
+def dashboard():
+    barber_id = session["barberId"]
+
+    barber = supabase.table("barbers").select("*").eq("id", barber_id).execute().data[0]
+
+    # Optional: auto-downgrade if premium expired (only if you want)
+    # If you DON'T want this behavior yet, skip this block.
+    expires = barber.get("premium_expires_at")
+    if barber.get("plan") == "premium" and expires:
+        try:
+            exp_dt = datetime.fromisoformat(expires)
+            if exp_dt < datetime.utcnow():
+                supabase.table("barbers").update({"plan": "free"}).eq("id", barber_id).execute()
+                barber["plan"] = "free"
+        except:
+            pass
+
+    appts = supabase.table("appointments").select("*") \
+        .eq("barber_id", barber_id) \
+        .order("date").order("start_time").execute().data
+
+    features = get_features(barber.get("plan"))
+
+    # ✅ Always ensure hours exist so free dashboard doesn't break
+    ensure_default_weekly_hours(barber_id)
+
+    # Choose which template to render
+    if barber.get("plan") == "premium":
+        return render_template("dashboard.html", barber=barber, appointments=appts, features=features)
+
+    return render_template("dashboard_free.html", barber=barber, appointments=appts, features=features)
+
+
+@app.post("/upload-photo")
+@premium_required
+def upload_photo():
+    flash("Upload wired for premium soon.", "info")
+    return redirect(url_for("dashboard"))
+
+@app.post("/upload-media")
+@premium_required
+def upload_media():
+    flash("Upload wired for premium soon.", "info")
+    return redirect(url_for("dashboard"))
+
+
+
+# ============================================================
+# WEEKLY HOURS
+# ============================================================
+@app.get("/api/barber/weekly-hours/<barber_id>")
+def get_weekly(barber_id):
+    rows = supabase.table("barber_weekly_hours").select("*")\
+        .eq("barber_id", barber_id).execute().data
+    return jsonify(rows)
+
+@app.post("/api/barber/weekly-hours/<barber_id>")
+def update_weekly(barber_id):
+    hours = request.json
+
+    for row in hours:
+        supabase.table("barber_weekly_hours").upsert({
+            "barber_id": barber_id,
+            "weekday": row["weekday"].lower()[:3],
+            "start_time": row["start_time"],
+            "end_time": row["end_time"],
+            "is_closed": row["is_closed"],
+            "location_id": row.get("location_id"),
+        }).execute()
+
+    regenerate_month(barber_id)
+    return jsonify({"success": True})
+
+
+# ============================================================
+# OVERRIDES
+# ============================================================
+@app.post("/api/barber/override")
+def override():
+    data = request.json
+    supabase.table("schedule_overrides").upsert(data).execute()
+    return jsonify({"success": True})
+
+
+
+
+def add_premium_month(barber_id):
+    barber = supabase.table("barbers")\
+        .select("premium_expires_at")\
+        .eq("id", barber_id).execute().data[0]
+
+    now = datetime.utcnow()
+
+    if barber["premium_expires_at"]:
+        try:
+            current = datetime.fromisoformat(barber["premium_expires_at"])
+            new_expiry = max(current, now) + timedelta(days=30)
+        except:
+            new_expiry = now + timedelta(days=30)
+    else:
+        new_expiry = now + timedelta(days=30)
+
+    supabase.table("barbers").update({
+        "plan": "premium",
+        "premium_expires_at": new_expiry.isoformat()
+    }).eq("id", barber_id).execute()
+
+@app.post("/create-premium-checkout")
+def create_premium_checkout():
+    checkout = stripe.checkout.Session.create(
+        mode="subscription",
+        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        success_url=url_for("login", _external=True),
+        cancel_url=url_for("signup", _external=True),
+        metadata={
+            "source": "signup"
+        }
+    )
+
+    return jsonify({"url": checkout.url})
+
+
+
+@app.post("/stripe/webhook")
+def stripe_webhook():
+    payload = request.data
+    sig = request.headers.get("Stripe-Signature")
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig, endpoint_secret
+        )
+    except Exception:
+        return "Invalid", 400
+
+    if event["type"] != "checkout.session.completed":
+        return "OK", 200
+
+    session_obj = event["data"]["object"]
+    metadata = session_obj.get("metadata", {})
+    session_id = session_obj.get("id")
+    email = session_obj.get("customer_email")
+
+    # ============================================================
+    # CASE 1: PREMIUM SIGNUP (ACCOUNT DOES NOT EXIST YET)
+    # ============================================================
+    if metadata.get("source") == "signup":
+        existing = (
+            supabase.table("barbers")
+            .select("id")
+            .eq("email", email)
+            .execute()
+            .data
+        )
+        if existing:
+            return "OK", 200
+
+        while True:
+            promo_code = generate_promo_code(metadata.get("name"))
+            exists = (
+                supabase.table("barbers")
+                .select("id")
+                .eq("promo_code", promo_code)
+                .execute()
+                .data
+            )
+            if not exists:
+                break
+
+        res = supabase.table("barbers").insert({
+            "name": metadata.get("name"),
+            "email": email,
+            "phone": metadata.get("phone"),
+            "bio": metadata.get("bio"),
+            "address": metadata.get("address"),
+            "profession": metadata.get("profession"),
+            "password_hash": metadata.get("password_hash"),
+            "slot_duration": 60,
+            "plan": "premium",
+            "role": "barber",
+            "promo_code": promo_code,
+            "used_promo_code": metadata.get("used_promo_code") or None,
+            "last_stripe_session_id": session_id,
+        }).execute()
+
+        barber_id = res.data[0]["id"]
+
+        ensure_default_weekly_hours(barber_id)
+        regenerate_month(barber_id)
+        add_premium_month(barber_id)
+
+        used_code = metadata.get("used_promo_code")
+        if used_code:
+            owner = (
+                supabase.table("barbers")
+                .select("id")
+                .eq("promo_code", used_code)
+                .execute()
+                .data
+            )
+            if owner:
+                add_premium_month(owner[0]["id"])
+
+        return "OK", 200
+
+    # ============================================================
+    # CASE 2: EXISTING USER UPGRADING
+    # ============================================================
+    barber = (
+        supabase.table("barbers")
+        .select("*")
+        .eq("email", email)
+        .execute()
+        .data
+    )
+
+    if not barber:
+        return "OK", 200
+
+    barber = barber[0]
+
+    if barber.get("last_stripe_session_id") == session_id:
+        return "OK", 200
+
+    supabase.table("barbers").update({
+        "last_stripe_session_id": session_id
+    }).eq("id", barber["id"]).execute()
+
+    add_premium_month(barber["id"])
+
+    if barber.get("used_promo_code"):
+        owner = (
+            supabase.table("barbers")
+            .select("id")
+            .eq("promo_code", barber["used_promo_code"])
+            .execute()
+            .data
+        )
+        if owner:
+            add_premium_month(owner[0]["id"])
+
+    return "OK", 200
+
+
+# ============================================================
+# 30-DAY SCHEDULE GENERATION (Manual + Auto)
+# ============================================================
+def regenerate_month(barber_id):
+    """Generate 30-day schedules based on weekly hours + overrides."""
+
+    # Slot duration
+    step = supabase.table("barbers") \
+        .select("slot_duration") \
+        .eq("id", barber_id) \
+        .execute().data[0]["slot_duration"]
+
+    # Weekly hours
+    weekly = supabase.table("barber_weekly_hours") \
+        .select("*") \
+        .eq("barber_id", barber_id) \
+        .execute().data
+
+    # SAFETY GUARD — never wipe schedules without weekly hours
+    if not weekly:
+        return
+
+    week_map = {w["weekday"]: w for w in weekly}
+
+    # Overrides
+    overrides = supabase.table("schedule_overrides") \
+        .select("*") \
+        .eq("barber_id", barber_id) \
+        .execute().data
+
+    ov_map = {o["date"]: o for o in overrides}
+
+    # Clear existing schedules
+    supabase.table("schedules") \
+        .delete() \
+        .eq("barber_id", barber_id) \
+        .execute()
+
+    today = date.today()
+    days = [today + timedelta(days=i) for i in range(30)]
+
+    for d in days:
+        dstr = d.isoformat()
+        weekday = d.strftime("%a").lower()[:3]
+
+        # Override takes priority
+        if dstr in ov_map:
+            ov = ov_map[dstr]
+            if ov["is_closed"]:
+                continue
+
+            slots = generate_slots(
+                ov["start_time"],
+                ov["end_time"],
+                step
+            )
+            loc = ov["location_id"]
+
+        else:
+            if weekday not in week_map:
+                continue
+
+            w = week_map[weekday]
+            if w["is_closed"]:
+                continue
+
+            slots = generate_slots(
+                w["start_time"],
+                w["end_time"],
+                step
+            )
+            loc = w["location_id"]
+
+        for s in slots:
+            end = (
+                datetime.strptime(s, "%H:%M")
+                + timedelta(minutes=step)
+            ).strftime("%H:%M")
+
+            supabase.table("schedules").insert({
+                "barber_id": barber_id,
+                "date": dstr,
+                "start_time": s,
+                "end_time": end,
+                "location_id": loc,
+                "is_available": True
+            }).execute()
+
+@app.post("/api/barber/generate/<barber_id>")
+def manual_generate(barber_id):
+    regenerate_month(barber_id)
+    return jsonify({"success": True})
+
+
+ 
+
+
+# ============================================================
+# PUBLIC BOOKING PAGE
+# ============================================================
+@app.get("/b/<barber_id>")
+def book_view(barber_id):
+    barber_res = supabase.table("barbers").select("*").eq("id", barber_id).execute()
+    if not barber_res.data:
+        return "Not found", 404
+
+    barber = barber_res.data[0]
+
+    ensure_default_weekly_hours(barber["id"])
+    regenerate_month(barber["id"])
+
+    weekly = (
+        supabase.table("barber_weekly_hours")
+        .select("*")
+        .eq("barber_id", barber_id)
+        .execute()
+        .data
+    ) or []
+
+    hours = {
+        row["weekday"]: {
+            "open": row.get("start_time"),
+            "close": row.get("end_time"),
+            "isClosed": row.get("is_closed"),
+        }
+        for row in weekly
+    }
+
+    appts = (
+        supabase.table("appointments")
+        .select("*")
+        .eq("barber_id", barber_id)
+        .execute()
+        .data
+    ) or []
+
+    return render_template(
+        "book.html",
+        barber=barber,
+        hours=hours,
+        barber_future_appts=appts,
+        appointments=appts,
+    )
+
+
+# ============================================================
+# FULL CALENDAR API
+# ============================================================
+@app.get("/api/calendar/<barber_id>")
+def calendar_slots(barber_id):
+    rows = supabase.table("schedules").select("*")\
+        .eq("barber_id", barber_id).eq("is_available", True)\
+        .order("date").order("start_time").execute().data
+    return jsonify(rows)
+
+# ============================================================
+# APPOINTMENT CREATION
+# ============================================================
+@app.post("/api/appointments/create")
+def create_appt():
+    data = request.json
+    required = ["barber_id", "date", "start_time", "client_name", "client_phone"]
+
+    for r in required:
+        if not data.get(r):
+            return jsonify({"error": f"Missing {r}"}), 400
+
+    barber_id = data["barber_id"]
+    d = data["date"]
+    start = data["start_time"]
+
+    # Check slot
+    slot = supabase.table("schedules").select("*")\
+        .eq("barber_id", barber_id).eq("date", d)\
+        .eq("start_time", start).eq("is_available", True).execute().data
+
+    if not slot:
+        return jsonify({"error": "Slot unavailable"}), 409
+
+    slot = slot[0]
+
+    # Create appointment
+    appt = supabase.table("appointments").insert({
+        "barber_id": barber_id,
+        "client_id": session.get("clientId"),  # None if guest
+        "client_name": data["client_name"],
+        "client_phone": data["client_phone"],
+        "date": d,
+        "start_time": start,
+        "end_time": slot["end_time"],
+        "status": "booked"
+    }).execute().data[0]
+
+    # Mark taken
+    supabase.table("schedules").update({"is_available": False})\
+        .eq("id", slot["id"]).execute()
+
+    return jsonify({"success": True, "appointment": appt})
+
+# ============================================================
+# CLIENT ACCOUNT
+# ============================================================
+@app.post("/client/signup")
+def client_signup():
+    name = request.form.get("name")
+    email = request.form.get("email", "").lower().strip()
+    phone = request.form.get("phone")
+    password = request.form.get("password")
+
+    hashed = generate_password_hash(password)
+
+    res = supabase.table("clients").insert({
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "password_hash": hashed
+    }).execute()
+
+    client = res.data[0]
+    session["clientId"] = client["id"]
+
+    flash("Account created!", "success")
+    return redirect(request.referrer)
+
+@app.post("/client/login")
+def client_login():
+    email = request.form.get("email", "").lower().strip()
+    password = request.form.get("password")
+
+    res = supabase.table("clients").select("*").eq("email", email).execute()
+    if not res.data:
+        flash("Invalid login")
+        return redirect(request.referrer)
+
+    client = res.data[0]
+
+    if not check_password_hash(client["password_hash"], password):
+        flash("Invalid login")
+        return redirect(request.referrer)
+
+    session["clientId"] = client["id"]
+    flash("Logged in!", "success")
+    return redirect(request.referrer)
+
+@app.get("/client/logout")
+def client_logout():
+    session.pop("clientId", None)
+    flash("Logged out")
+    return redirect(request.referrer or "/")
+
+# ============================================================
+# CANCEL APPT (CLIENT ONLY)
+# ============================================================
+@app.post("/client/appointments/cancel")
+def client_cancel():
+    cid = session.get("clientId")
+    appt_id = request.form.get("appointment_id")
+
+    if not cid:
+        return jsonify({"error": "Not logged in"}), 401
+
+    res = supabase.table("appointments").select("*")\
+        .eq("id", appt_id).eq("client_id", cid).execute().data
+
+    if not res:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    appt = res[0]
+
+    supabase.table("schedules").update({"is_available": True})\
+        .eq("barber_id", appt["barber_id"])\
+        .eq("date", appt["date"])\
+        .eq("start_time", appt["start_time"]).execute()
+
+    supabase.table("appointments").update({"status": "cancelled"})\
+        .eq("id", appt_id).execute()
+
+    return jsonify({"success": True})
+
+# ============================================================
+# LOCATIONS
+# ============================================================
+@app.get("/locations")
+@login_required
+def loc_page():
+    barber_id = session["barberId"]
+    rows = supabase.table("barber_locations").select("*")\
+        .eq("barber_id", barber_id).execute().data
+    return render_template("locations.html", locations=rows)
+
+@app.post("/locations/add")
+@login_required
+def loc_add():
+    barber_id = session["barberId"]
+    name = request.form.get("name")
+    address = request.form.get("address")
+
+    supabase.table("barber_locations").insert({
+        "barber_id": barber_id,
+        "name": name,
+        "address": address
+    }).execute()
+
+    flash("Location added")
+    return redirect(url_for("loc_page"))
+
+@app.post("/locations/delete")
+@login_required
+def loc_delete():
+    barber_id = session["barberId"]
+    loc_id = request.form.get("id")
+
+    supabase.table("barber_locations").delete()\
+        .eq("id", loc_id).eq("barber_id", barber_id).execute()
+
+    flash("Location removed")
+    return redirect(url_for("loc_page"))
+
+# ============================================================
+# PREMIUM (STRIPE)
+# ============================================================
+@app.route("/subscribe", methods=["GET", "POST"])
+@login_required
+def subscribe():
+    email = session["user_email"]
+
+    session_obj = stripe.checkout.Session.create(
+        customer_email=email,
+        mode="subscription",
+        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        success_url=url_for("dashboard", _external=True),
+        cancel_url=url_for("dashboard", _external=True),
+    )
+
+    return redirect(session_obj.url, 303)
+
+
+
+@app.get("/subscribe/success")
+@login_required
+def sub_success():
+    # ⚠️ IMPORTANT:
+    # Do NOT update plan or promo rewards here.
+    # Stripe webhook handles everything.
+
+    flash("Payment successful! Premium will activate shortly.")
+    return redirect(url_for("dashboard"))
+
+# ============================================================
+# BASIC PAGES / MARKETING
+# ============================================================
+@app.get("/")
+def home():
+    return render_template("home.html")
+    
+# if you want url_for('home') to be explicit:
+app.add_url_rule("/", "home", home)
+
+
+@app.get("/demo")
+def demo():
+    return render_template("demo.html")
+
+
+
+
+@app.get("/results")
+def results():
+    return render_template("results.html")
+
+
+
+
+# ============================================================
+# ERROR PAGES
+# ============================================================
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("error.html"), 500
+
+# ============================================================
+# PUBLIC BARBER PROFILE
+# ============================================================
+@app.get("/profile/<barber_id>")
+def profile(barber_id):
+    barber = supabase.table("barbers").select("*").eq("id", barber_id).execute().data
+    if not barber:
+        return "Not found", 404
+
+    weekly = supabase.table("barber_weekly_hours")\
+        .select("*").eq("barber_id", barber_id).execute().data
+
+    return render_template("barber_profile.html", barber=barber[0], weekly=weekly)
+
+# ============================================================
+# FIND A PRO (SEARCH)
+# ============================================================
+@app.route("/find-pro", methods=["GET", "POST"], endpoint="find_pro_route")
+def find_pro():
+
+    if request.method == "GET":
+        # just show the search form
+        return render_template("find_pro.html")
+
+    # POST – handle search
+    city = (request.form.get("city") or "").strip()
+    service = (request.form.get("service") or "").strip()
+
+    # basic guard: if empty, re-show form with flash or simple message
+    if not city:
+        flash("Please enter a city or location.", "error")
+        return render_template("find_pro.html")
+
+    # Build Supabase query
+    query = supabase.table("barbers").select("*")
+
+    # match city/location inside address/location fields (case-insensitive)
+    # adjust column names if yours are different
+    query = query.ilike("address", f"%{city}%")
+
+    if service:
+        # match against profession (e.g. "Barber", "Nail Tech", etc.)
+        query = query.ilike("profession", f"%{service}%")
+
+    res = query.execute()
+    rows = res.data or []
+
+    def plan_rank(barber):
+        return 1 if barber.get("plan") == "premium" else 0
+
+    rows.sort(key=plan_rank, reverse=True)
+
+    # Shape data for results.html (what that template expects)
+    barbers = []
+    for b in rows:
+        barbers.append({
+            "barberId": b["id"],
+            "name": b.get("name"),
+            "profession": b.get("profession"),
+            # results.html uses b.location → map from address (or your city field)
+            "location": b.get("address") or b.get("location") or "",
+            "media_url": b.get("media_url"),
+        })
+
+    return render_template(
+        "results.html",
+        barbers=barbers,
+        city=city,
+        service=service,
+    )
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)

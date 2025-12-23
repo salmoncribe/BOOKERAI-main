@@ -1,0 +1,13 @@
+Building using Dockerfile and deploying container to Cloud Run service [bookerai] in project [bookerai-474300] region [us-central1]
+Building and deploying...
+Uploading sources......INFO: Not using ignore file.
+....................................................................INFO: Uploading [/tmp/tmp3dg0fvnd/file.zip] to [run-sources-bookerai-474300-us-central1/services/bookerai/1761089407.593519-a833de363c034ce8a6e84404e95c0bc0.zip]
+...done
+Building Container.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................done
+Setting IAM Policy.........done
+Creating Revision.......................................................................................................................................done
+Routing traffic.....done
+Done.
+Service [bookerai] revision [bookerai-00120-8s2] has been deployed and is serving 100 percent of traffic.
+Service URL: https://bookerai-932575613361.us-central1.run.app
+INFO: Display format: "none"

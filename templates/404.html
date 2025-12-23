@@ -1,0 +1,9 @@
+{% extends 'layout.html' %}
+{% block title %}Not found — BookerAI{% endblock %}
+{% block content %}
+<section class="card card--padded center">
+  <h2>We couldn’t find that page</h2>
+  <p class="muted">The link may be broken or the barber no longer exists.</p>
+  <p><a class="btn" href="{{ url_for('home') }}">Back to home</a></p>
+</section>
+{% endblock %}

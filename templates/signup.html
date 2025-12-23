@@ -1,0 +1,286 @@
+{% extends "layout.html" %}
+{% block title %}Join BookerAI — Choose Your Plan{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}">
+<style>
+/* ============================
+   BookerAI — Plan Selector WOW
+   ============================ */
+
+body {
+  background: linear-gradient(135deg, #e0f7ff, #f9feff);
+  font-family: "Poppins", system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* ✨ Main section */
+.plan-choice {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 2rem;
+  padding: 3rem 1rem;
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🧩 Two-card layout */
+.plan-grid {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 2rem;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* 💎 Card design */
+.plan-card {
+  flex: 1 1 320px;
+  max-width: 340px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(15px);
+  border-radius: 1.25rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 6px 25px rgba(14,165,233,0.12);
+  border: 1.5px solid rgba(14,165,233,0.1);
+  transition: all 0.35s ease;
+  cursor: pointer;
+}
+
+.plan-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 10px 35px rgba(14,165,233,0.25);
+}
+
+/* Free Plan */
+.plan-card.free {
+  background: linear-gradient(135deg, #ffffff, #f0faff);
+  border-color: rgba(14,165,233,0.25);
+}
+
+/* Premium Plan */
+.plan-card.premium {
+  background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+  color: white;
+}
+
+/* Text */
+.plan-card h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.plan-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.plan-card li {
+  margin-bottom: 0.5rem;
+}
+
+.price {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-top: 0.75rem;
+}
+
+/* CTA Button */
+.choose-btn {
+  background: linear-gradient(to right, var(--sky-blue), var(--teal));
+  color: #fff;
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(14,165,233,0.25);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+.choose-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(14,165,233,0.35);
+}
+
+/* Hidden signup */
+.auth-container {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.auth-container.active {
+  display: flex;
+  opacity: 1;
+}
+
+/* Premium-only fields */
+.premium-section { display: none; }
+body.premium-selected .premium-section { display: block; }
+
+/* Mobile */
+@media (max-width: 720px) {
+  .plan-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+  .plan-card {
+    width: 90%;
+    max-width: 360px;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 🌈 Plan Selection -->
+<section id="planChoice" class="plan-choice">
+  <h1 style="font-size:2rem;font-weight:700;color:var(--text-dark);">Choose Your Plan</h1>
+  <p style="max-width:500px;color:var(--muted);font-size:1rem;">
+    Start free, or go premium for advanced tools, more exposure, and full AI-powered features.
+  </p>
+
+  <div class="plan-grid">
+    <div class="plan-card free" id="chooseFree">
+      <h2>Free Plan</h2>
+      <ul>
+        <li>✅ Appointment Scheduling</li>
+        <li>✅ Client Management</li>
+        <li>✅ Booking Link</li>
+        <li>✅ Mobile Access</li>
+      </ul>
+      <div class="price">Free Forever</div>
+      <button class="choose-btn" type="button">Continue Free</button>
+    </div>
+
+    <div class="plan-card premium" id="choosePremium">
+  <h2>Premium 💎</h2>
+  <ul>
+    <li>🌍 Location-Based Appointments</li>
+    <li>🎥 Post Photos &amp; Videos</li>
+    <li>🔎 Appear in “Find a Pro”</li>
+    <li>🖼️ Custom Profile Picture</li>
+  </ul>
+  <div class="price">$20 / month</div>
+
+  <!-- IMPORTANT: no href, handled by JS -->
+  <button class="choose-btn" type="button" id="goPremiumBtn">
+    Go Premium
+  </button>
+</div>
+
+  </div>
+</section>
+
+<!-- 📝 Signup Form -->
+<section class="auth-container vibrant-auth">
+  <div class="animated-bg"></div>
+  <div class="auth-card glass-card">
+    <h1 class="auth-title">Create Your Account</h1>
+    <p class="subtitle">
+      You selected the <strong id="planName">Free</strong> Plan.
+    </p>
+
+    {# No explicit action -> posts back to /signup, which matches app.py #}
+    <form method="post" novalidate class="signup-form">
+      <input type="hidden" name="selected_plan" id="selected_plan" value="free">
+
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="name">Full Name</label>
+          <input id="name" name="name" placeholder="e.g., Jordan Martinez" required />
+        </div>
+
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" placeholder="e.g., jordan@bookerpro.com" required />
+        </div>
+
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" placeholder="Minimum 8 characters" required />
+        </div>
+
+        <div class="input-group">
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" placeholder="e.g., (555) 987-6543" required />
+        </div>
+
+        <div class="input-group full">
+          <label for="address" style="display:flex;align-items:center;gap:6px;">
+            Work Address
+            <span class="hint-text" style="color:var(--muted);font-size:0.85rem;">
+              (make sure your city is included)
+            </span>
+          </label>
+          <input id="address" name="address" placeholder="e.g., 214 Main St, Lubbock, TX 79401" required />
+        </div>
+
+        <div class="input-group full">
+          <label for="bio">Bio</label>
+          <textarea id="bio" name="bio" rows="3"
+            placeholder="e.g., Fade specialist with 5+ years of experience."></textarea>
+        </div>
+
+        {# Profession selector — matches signup.js + app.py #}
+        <div class="input-group full">
+          <label for="profession">Profession</label>
+          <select id="profession" name="profession">
+            <option value="barber">Barber</option>
+            <option value="hairstylist">Hair Stylist</option>
+            <option value="nail tech">Nail Tech</option>
+            <option value="lash tech">Lash Tech</option>
+            <option value="makeup artist">Makeup Artist</option>
+            <option value="massage therapist">Massage Therapist</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="input-group full" id="otherProfessionGroup" style="display:none;">
+          <label for="other_profession">What do you do?</label>
+          <input id="other_profession" type="text" placeholder="e.g., Brow artist">
+        </div>
+      </div>
+
+      <!-- 💎 Premium Section (shown only when premium selected) -->
+      <div class="premium-section">
+        <div class="input-group" style="margin-top:1.25rem;">
+          <label for="promo_code">Promo Code</label>
+          <input id="promo_code" name="promo_code" placeholder="e.g., SAVE20 or BARBERAI10" style="text-transform:uppercase;" />
+          <p class="muted" style="font-size:0.85rem;margin-top:0.3rem;">
+            (Optional) Enter a valid promo code for discounts or free months.
+          </p>
+        </div>
+        <p style="margin-top:1.25rem;font-weight:600;">$20/month — Cancel Anytime</p>
+      </div>
+
+      <button class="gradient-btn large glow-hover" type="submit">Sign Up</button>
+      <p class="alt-link">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+    </form>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/signup.js') }}"></script>
+
+{% endblock %}
