@@ -47,6 +47,12 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 # ----------------------------------------------
 # Helpers
 # ----------------------------------------------
+@app.context_processor
+def inject_globals():
+    return {
+        "asset_ver": os.environ.get("GIT_REV") or datetime.now().strftime("%Y%m%d%H")
+    }
+
 def login_required(fn):
     @wraps(fn)
     def w(*a, **kw):

@@ -1,10 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard — BookerAI{% endblock %}
+
+{% block content %}
 {% set public_link = url_for('book_view', barber_id=barber.id, _external=True) %}
 
 <section class="dashboard" id="dashboardRoot" data-barber-id="{{ barber.id }}">
 
   <!-- Upgrade Banner -->
   <div class="upgrade-banner">
-    You’re live on BookerAI 🚀  
+    You’re live on BookerAI 🚀
     Unlock analytics, profile boosts, and automation with <strong>Premium</strong>.
     <a href="{{ url_for('demo') }}">See what’s possible</a>
   </div>
@@ -24,25 +28,18 @@
 
   <!-- Core Actions -->
   <div class="dash-actions">
-    <button
-      type="button"
-      class="btn-primary gradient-btn small"
-      data-copy="{{ public_link }}">
+    <button type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
       Copy booking link
     </button>
 
-    <a class="btn btn-secondary small"
-       href="{{ public_link }}"
-       target="_blank"
-       rel="noopener">
+    <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener">
       Open public page
     </a>
 
     {% if features.find_pro %}
-      <a class="btn btn-secondary small"
-         href="{{ url_for('find_pro_route') }}">
-        Find a Pro
-      </a>
+    <a class="btn btn-secondary small" href="{{ url_for('find_pro_route') }}">
+      Find a Pro
+    </a>
     {% endif %}
   </div>
 
@@ -51,6 +48,7 @@
     <h3>Upcoming Appointments</h3>
 
     {% if appointments %}
+    <div class="table-scroll">
       <table class="table">
         <thead>
           <tr>
@@ -61,16 +59,17 @@
         </thead>
         <tbody>
           {% for a in appointments %}
-            <tr>
-              <td>{{ a.client_name or "Unknown" }}</td>
-              <td>{{ a.client_phone or "—" }}</td>
-              <td>{{ a.date }} {{ a.start_time }}</td>
-            </tr>
+          <tr>
+            <td>{{ a.client_name or "Unknown" }}</td>
+            <td>{{ a.client_phone or "—" }}</td>
+            <td>{{ a.date }} {{ a.start_time }}</td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
     {% else %}
-      <p class="muted small">No upcoming appointments yet.</p>
+    <p class="muted small">No upcoming appointments yet.</p>
     {% endif %}
   </div>
 
@@ -93,12 +92,11 @@
     </p>
 
     {% if features.profile_media %}
-      <button class="btn-primary small">Upload Media</button>
+    <button class="btn-primary small">Upload Media</button>
     {% else %}
-      <a href="{{ url_for('subscribe') }}"
-         class="btn btn-secondary small">
-        Unlock Media Uploads 🔒
-      </a>
+    <a href="{{ url_for('subscribe') }}" class="btn btn-secondary small">
+      Unlock Media Uploads 🔒
+    </a>
     {% endif %}
   </div>
 
@@ -110,15 +108,8 @@
     </p>
 
     <div style="display:flex;gap:0.5rem;align-items:center;">
-      <input
-        type="text"
-        value="{{ barber.promo_code }}"
-        readonly
-        onclick="this.select()"
-      />
-      <button
-        type="button"
-        class="btn-primary small"
+      <input type="text" value="{{ barber.promo_code }}" readonly onclick="this.select()" />
+      <button type="button" class="btn-primary small"
         onclick="navigator.clipboard.writeText('{{ barber.promo_code }}')">
         Copy
       </button>
@@ -138,3 +129,8 @@
   </div>
 
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
