@@ -328,6 +328,15 @@ def login():
     return redirect(url_for("dashboard"))
 
 
+@app.route("/logout")
+def logout():
+    session.pop("barberId", None)
+    session.pop("user_email", None)
+    session.pop("barber_name", None)
+    flash("Logged out")
+    return redirect(url_for("login"))
+
+
 
 # ============================================================
 # DASHBOARD (BARBER)

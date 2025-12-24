@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block title %}{{ barber.name }} — BookerAI{% endblock %}
+{% block content %}
+<div class="card p-4">
+    <h1>{{ barber.name }}</h1>
+    <p>{{ barber.profession }}</p>
+    <p>{{ barber.bio }}</p>
+    <a href="{{ url_for('book_view', barber_id=barber.id) }}" class="btn">Book Now</a>
+</div>
+{% endblock %}

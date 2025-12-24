@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Locations — BookerAI{% endblock %}
+{% block content %}
+<div class="card p-4">
+    <h1>Locations</h1>
+    <p>Manage your locations here.</p>
+    {% if locations %}
+    <ul>
+        {% for loc in locations %}
+        <li>{{ loc.name }} - {{ loc.address }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No locations found.</p>
+    {% endif %}
+    <form action="{{ url_for('loc_add') }}" method="POST" class="mt-4">
+        <input name="name" placeholder="Location Name" class="input" required>
+        <input name="address" placeholder="Address" class="input" required>
+        <button class="btn">Add Location</button>
+    </form>
+</div>
+{% endblock %}
