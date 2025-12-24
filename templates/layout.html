@@ -1,141 +1,125 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
 
-    <meta name="theme-color" content="#0ea5e9" />
-    <title>{% block title %}BookerAI{% endblock %}</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- ✅ Global Styles -->
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}"
-    />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>{% block title %}BookerAI{% endblock %}</title>
 
-    <!-- ✅ Optional font + basic layout guard -->
-    <style>
-      html {
-        scroll-behavior: smooth;
-      }
-      body {
-        font-family: "Poppins", system-ui, sans-serif;
-        background: var(--bg-light, #f0faff);
-        color: var(--text-dark, #0f172a);
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        overflow-x: hidden;
-      }
-      main {
-        flex: 1;
-      }
-    </style>
-<style>
-  html, body {
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
+  <!-- ✅ Global Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}" />
 
-  .v2, main, .dashboard {
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow: visible !important;
-  }
+  <!-- ✅ Optional font + basic layout guard -->
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
 
-  .animated-bg {
-    position: fixed !important;
-    inset: 0 !important;
-    pointer-events: none !important;
-  }
-</style>
+    body {
+      font-family: "Poppins", system-ui, sans-serif;
+      background: var(--bg-light, #f0faff);
+      color: var(--text-dark, #0f172a);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
 
-    {% block head %}{% endblock %}
-  </head>
+    main {
+      flex: 1;
+    }
+  </style>
+  <style>
+    html,
+    body {
+      height: auto !important;
+      min-height: 100vh !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
 
-  <body>
-    <!-- =======================
+    .v2,
+    main,
+    .dashboard {
+      height: auto !important;
+      min-height: 100vh !important;
+      overflow: visible !important;
+    }
+
+    .animated-bg {
+      position: fixed !important;
+      inset: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+  <!-- =======================
          HEADER (outside .v2)
     ======================== -->
-    <header class="site-header" role="banner">
-      <div class="nav-wrap">
-        <!-- Logo -->
-        <a
-          class="logo"
-          href="{{ url_for('home') }}"
-          aria-label="BookerAI Home"
-          onclick="if(window.location.pathname === '/') window.location.reload();"
-        >
-          <span class="logo-dot"></span>
-          <span>BookerAI</span>
-        </a>
+  <header class="site-header" role="banner">
+    <div class="nav-wrap">
+      <!-- Logo -->
+      <a class="logo" href="{{ url_for('home') }}" aria-label="BookerAI Home"
+        onclick="if(window.location.pathname === '/') window.location.reload();">
+        <span class="logo-dot"></span>
+        <span>BookerAI</span>
+      </a>
 
-        <!-- Navigation -->
-        <nav class="nav-links" role="navigation" aria-label="Main navigation">
-          {% if session.get('barberId') %}
-          <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
-          {% else %}
-          <a href="{{ url_for('login') }}" class="nav-link">Login</a>
-          <a href="{{ url_for('signup') }}" class="nav-link signup-link"
-            >Sign Up</a
-          >
-          {% endif %}
-        </nav>
-      </div>
-    </header>
+      <!-- Navigation -->
+      <nav class="nav-links" role="navigation" aria-label="Main navigation">
+        {% if session.get('barberId') %}
+        <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+        <a href="{{ url_for('barber_logout') }}" class="nav-link">Logout</a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+        <a href="{{ url_for('signup') }}" class="nav-link signup-link">Sign Up</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
 
-    <!-- =======================
+  <!-- =======================
          MAIN APP WRAPPER (.v2)
     ======================== -->
-    <div class="v2">
-      <main
-        id="main"
-        class="site-main"
-        role="main"
-        tabindex="-1"
-        style="max-width:1200px;margin:auto;padding:2rem 1rem;"
-      >
-        {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-        <div class="flash-stack" role="status" aria-live="polite">
-          {% for cat, msg in messages %}
-          <div
-            class="alert {{ cat }}"
-            style="margin-bottom:0.5rem;padding:0.75rem 1rem;background:#e0f7ff;border-left:4px solid #0ea5e9;border-radius:0.5rem;"
-          >
-            <span>{{ msg }}</span>
-          </div>
-          {% endfor %}
+  <div class="v2">
+    <main id="main" class="site-main" role="main" tabindex="-1" style="max-width:1200px;margin:auto;padding:2rem 1rem;">
+      {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+      <div class="flash-stack" role="status" aria-live="polite">
+        {% for cat, msg in messages %}
+        <div class="alert {{ cat }}"
+          style="margin-bottom:0.5rem;padding:0.75rem 1rem;background:#e0f7ff;border-left:4px solid #0ea5e9;border-radius:0.5rem;">
+          <span>{{ msg }}</span>
         </div>
-        {% endif %}
-        {% endwith %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
 
-        {% block content %}{% endblock %}
-      </main>
-    </div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 
-    <!-- =======================
+  <!-- =======================
          FOOTER
     ======================== -->
-    <footer
-      class="site-footer"
-      role="contentinfo"
-      style="background:#f0faff;border-top:1px solid rgba(14,165,233,0.2);padding:1rem 0;text-align:center;color:#0f172a;font-size:0.9rem;"
-    >
-      © 2025 BookerAI · All rights reserved
+  <footer class="site-footer" role="contentinfo"
+    style="background:#f0faff;border-top:1px solid rgba(14,165,233,0.2);padding:1rem 0;text-align:center;color:#0f172a;font-size:0.9rem;">
+    © 2025 BookerAI · All rights reserved
 
-    </footer>
+  </footer>
 
-    <!-- =======================
+  <!-- =======================
          SCRIPTS
     ======================== -->
-    {% block scripts %}{% endblock %}
-  </body>
+  {% block scripts %}{% endblock %}
+</body>
+
 </html>

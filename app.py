@@ -329,7 +329,7 @@ def login():
 
 
 @app.route("/logout")
-def logout():
+def barber_logout():
     session.pop("barberId", None)
     session.pop("user_email", None)
     session.pop("barber_name", None)
