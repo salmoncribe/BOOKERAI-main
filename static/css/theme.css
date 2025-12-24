@@ -1087,7 +1087,8 @@ button.gradient-btn.full-width:hover {
 
 /* Center container for both hours + promo card */
 /* ✅ Only target inner sections, not the top-level dashboard */
-.dashboard>section {
+/* ✅ Target the dashboard container specifically */
+.dashboard.vibrant-auth {
   display: flex;
   flex-direction: column;
   align-items: center;

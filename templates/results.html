@@ -2,8 +2,7 @@
 {% block title %}Search Results — BookerAI{% endblock %}
 
 {% block head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}?v={{ asset_ver }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/results.css') }}?v={{ asset_ver }}">
 {% endblock %}
 
 {% block content %}
@@ -14,63 +13,57 @@
     <h2 class="auth-title">Professionals Near You 💈</h2>
 
     {% if barbers %}
-      <p class="muted">
-        Showing <strong>{{ barbers|length }}</strong> professionals
-        {% if city %} in <strong>{{ city|title }}</strong>{% endif %}
-        {% if service %} specializing in <strong>{{ service|title }}</strong>{% endif %}.
-      </p>
+    <p class="muted">
+      Showing <strong>{{ barbers|length }}</strong> professionals
+      {% if city %} in <strong>{{ city|title }}</strong>{% endif %}
+      {% if service %} specializing in <strong>{{ service|title }}</strong>{% endif %}.
+    </p>
     {% else %}
-      <p class="muted">
-        No professionals found matching your search. Try another service or nearby city.
-      </p>
+    <p class="muted">
+      No professionals found matching your search. Try another service or nearby city.
+    </p>
     {% endif %}
   </div>
 
   {% if barbers %}
   <div class="results-grid">
     {% for b in barbers %}
-      <div class="pro-card">
-        {# 🖼️ Media Gallery Preview #}
-        {% set media_list = (b.media_url or '').split(',') if b.media_url else [] %}
-        {% if media_list %}
-          <div class="pro-media">
-            {% for m in media_list[:3] %}
-              {% set url = m.strip() %}
-              {% if url.endswith(('.mp4', '.mov', '.webm', '.m4v')) %}
-                <video 
-                  src="{{ url }}" 
-                  class="media-thumb" 
-                  muted 
-                  loop 
-                  autoplay 
-                  playsinline>
-                </video>
-              {% else %}
-                <img src="{{ url }}" alt="{{ b.name }} work" class="media-thumb">
-              {% endif %}
-            {% endfor %}
-          </div>
+    <div class="pro-card">
+      {# 🖼️ Media Gallery Preview #}
+      {% set media_list = (b.media_url or '').split(',') if b.media_url else [] %}
+      {% if media_list %}
+      <div class="pro-media">
+        {% for m in media_list[:3] %}
+        {% set url = m.strip() %}
+        {% if url.endswith(('.mp4', '.mov', '.webm', '.m4v')) %}
+        <video src="{{ url }}" class="media-thumb" muted loop autoplay playsinline>
+        </video>
         {% else %}
-          <div class="pro-placeholder">
-            <span>No media yet</span>
-          </div>
+        <img src="{{ url }}" alt="{{ b.name }} work" class="media-thumb">
         {% endif %}
-
-        {# 👤 Info Section #}
-        <div class="pro-info">
-          <h3 class="pro-name">{{ b.name }}</h3>
-          <p class="muted small">{{ b.profession or "Independent Professional" }}</p>
-          <p class="pro-location">
-            📍 {{ b.location or b.address or "Location not set" }}
-          </p>
-        </div>
-
-        {# 🔗 CTA → public booking page /b/<id> #}
-        <a href="{{ url_for('book_view', barber_id=b.barberId) }}" class="btn-primary gradient-btn view-btn">
-  View Profile
-</a>
-
+        {% endfor %}
       </div>
+      {% else %}
+      <div class="pro-placeholder">
+        <span>No media yet</span>
+      </div>
+      {% endif %}
+
+      {# 👤 Info Section #}
+      <div class="pro-info">
+        <h3 class="pro-name">{{ b.name }}</h3>
+        <p class="muted small">{{ b.profession or "Independent Professional" }}</p>
+        <p class="pro-location">
+          📍 {{ b.location or b.address or "Location not set" }}
+        </p>
+      </div>
+
+      {# 🔗 CTA → public booking page /b/<id> #}
+        <a href="{{ url_for('book_view', barber_id=b.barberId) }}" class="btn-primary gradient-btn view-btn">
+          View Profile
+        </a>
+
+    </div>
     {% endfor %}
   </div>
   {% endif %}

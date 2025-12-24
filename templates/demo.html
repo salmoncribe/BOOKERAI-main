@@ -2,7 +2,6 @@
 {% block title %}Demo — BookerAI Premium Preview{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}">
 {% endblock %}
 
 {% block content %}
@@ -12,9 +11,8 @@
   <!-- Header -->
   <div class="dash-header-left" style="display:flex;align-items:center;gap:1rem;">
     <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;">
-      <img src="{{ url_for('static', filename='img/demo_barber.jpg') }}" 
-           alt="Demo Barber" 
-           style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+      <img src="{{ url_for('static', filename='img/demo_barber.jpg') }}" alt="Demo Barber"
+        style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
     </div>
     <div>
       <h1 class="dash-title">Welcome, Demo Barber 💈</h1>
@@ -34,9 +32,18 @@
 
   <!-- Insights -->
   <div class="insights-grid fade-up">
-    <div class="insight-card"><h4>Total Clients</h4><p>243</p></div>
-    <div class="insight-card"><h4>Bookings This Month</h4><p>76</p></div>
-    <div class="insight-card"><h4>Earnings</h4><p>$4,520</p></div>
+    <div class="insight-card">
+      <h4>Total Clients</h4>
+      <p>243</p>
+    </div>
+    <div class="insight-card">
+      <h4>Bookings This Month</h4>
+      <p>76</p>
+    </div>
+    <div class="insight-card">
+      <h4>Earnings</h4>
+      <p>$4,520</p>
+    </div>
   </div>
 
   <!-- Appointments -->
@@ -44,11 +51,33 @@
     <h3>Upcoming Appointments</h3>
     <div class="table-scroll">
       <table class="table">
-        <thead><tr><th>Client</th><th>Phone</th><th>When</th><th></th></tr></thead>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Phone</th>
+            <th>When</th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td>Sarah Lopez</td><td><a href="#">(806) 555-3921</a></td><td>Sat, Nov 9 • 2:30 PM</td><td><button class="btn btn-secondary small">Cancel</button></td></tr>
-          <tr><td>James Ortiz</td><td><a href="#">(806) 555-8942</a></td><td>Sun, Nov 10 • 11:00 AM</td><td><button class="btn btn-secondary small">Cancel</button></td></tr>
-          <tr><td>Maria Johnson</td><td><a href="#">(806) 555-0192</a></td><td>Mon, Nov 11 • 3:00 PM</td><td><button class="btn btn-secondary small">Cancel</button></td></tr>
+          <tr>
+            <td>Sarah Lopez</td>
+            <td><a href="#">(806) 555-3921</a></td>
+            <td>Sat, Nov 9 • 2:30 PM</td>
+            <td><button class="btn btn-secondary small">Cancel</button></td>
+          </tr>
+          <tr>
+            <td>James Ortiz</td>
+            <td><a href="#">(806) 555-8942</a></td>
+            <td>Sun, Nov 10 • 11:00 AM</td>
+            <td><button class="btn btn-secondary small">Cancel</button></td>
+          </tr>
+          <tr>
+            <td>Maria Johnson</td>
+            <td><a href="#">(806) 555-0192</a></td>
+            <td>Mon, Nov 11 • 3:00 PM</td>
+            <td><button class="btn btn-secondary small">Cancel</button></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -83,7 +112,7 @@
   <!-- Footer -->
   <footer style="text-align:center;margin-top:3rem;">
     <p class="muted small">
-      Want this real dashboard? 
+      Want this real dashboard?
       <a href="{{ url_for('signup') }}" class="gradient-btn small" style="margin-left:0.5rem;">Sign Up Free</a>
     </p>
   </footer>
@@ -93,18 +122,18 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".fade-up").forEach(el => {
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight - 80) el.classList.add("visible");
-  });
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".fade-up").forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 80) el.classList.add("visible");
+    });
 
-  document.querySelectorAll(".cancel-btn, .btn-secondary.small").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.preventDefault();
-      alert("This is a demo! You can’t cancel appointments here.");
+    document.querySelectorAll(".cancel-btn, .btn-secondary.small").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.preventDefault();
+        alert("This is a demo! You can’t cancel appointments here.");
+      });
     });
   });
-});
 </script>
 {% endblock %}
