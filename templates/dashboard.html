@@ -1,10 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}Dashboard — BookerAI{% endblock %}
 
-
-
 {% block content %}
-{# Build the public booking link directly here #}
 {% set public_link = url_for('book_view', barber_id=barber.id, _external=True) %}
 
 <section class="dashboard" id="dashboardRoot" data-barber-id="{{ barber.id }}">
@@ -12,231 +9,157 @@
   <div class="animated-bg"></div>
 
   <!-- Header Section -->
-  <div class="dash-header-left" style="display:flex;align-items:center;gap:1rem;">
-
-    <!-- Avatar Upload -->
-    <form id="photoForm" action="{{ url_for('upload_photo') }}" method="POST" enctype="multipart/form-data"
-      style="display:inline-block;">
-      <label for="photoInput" style="cursor:pointer;display:inline-block;">
-        {% if barber.photo_url %}
-        <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;">
-          <img src="{{ barber.photo_url }}" alt="{{ barber.name }}"
-            style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-          <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;
-                        background:linear-gradient(135deg,var(--sky-blue),var(--teal));
-                        border-radius:50%;display:flex;align-items:center;justify-content:center;
-                        color:#fff;font-size:0.75rem;">
-            📷
+  <div class="dash-head">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <!-- Avatar Upload -->
+      <form id="photoForm" action="{{ url_for('upload_photo') }}" method="POST" enctype="multipart/form-data"
+        style="display:inline-block;">
+        <label for="photoInput" style="cursor:pointer;display:inline-block;">
+          {% if barber.photo_url %}
+          <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;">
+            <img src="{{ barber.photo_url }}" alt="{{ barber.name }}"
+              style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+            <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;
+                          background:linear-gradient(135deg,var(--sky-blue),var(--teal));
+                          border-radius:50%;display:flex;align-items:center;justify-content:center;
+                          color:#fff;font-size:0.75rem;">
+              📷
+            </div>
           </div>
+          {% else %}
+          <div style="width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+                        background:linear-gradient(135deg,var(--sky-blue),var(--teal));color:#fff;font-weight:600;
+                        font-size:1.25rem;flex-shrink:0;">
+            {{ (barber.name or 'B')[:1] | upper }}
+          </div>
+          {% endif %}
+        </label>
+        <input id="photoInput" name="photo" type="file" accept="image/*" style="display:none;"
+          onchange="document.getElementById('photoForm').submit();">
+      </form>
+
+      <!-- Text -->
+      <div>
+        <h1 class="dash-title">
+          Welcome{% if barber.name %}, {{ barber.name }}{% endif %}
+        </h1>
+        <p class="muted small">Manage your hours and appointments below.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Upcoming Appointments -->
+      <div class="card appointments-card">
+        <h3>Upcoming Appointments</h3>
+        {% if appointments %}
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Phone</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in appointments %}
+              <tr>
+                <td>{{ a.client_name or "Unknown" }}</td>
+                <td>
+                  <a href="tel:{{ a.client_phone }}">{{ a.client_phone }}</a>
+                </td>
+                <td>{{ a.date }} {{ a.start_time }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
         {% else %}
-        <div style="width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-                      background:linear-gradient(135deg,var(--sky-blue),var(--teal));color:#fff;font-weight:600;
-                      font-size:1.25rem;flex-shrink:0;">
-          {{ (barber.name or 'B')[:1] | upper }}
-        </div>
+        <p class="muted small">No upcoming appointments yet.</p>
         {% endif %}
-      </label>
-      <input id="photoInput" name="photo" type="file" accept="image/*" style="display:none;"
-        onchange="document.getElementById('photoForm').submit();">
-    </form>
-
-    <!-- Text -->
-    <div>
-      <h1 class="dash-title">
-        Welcome{% if barber.name %}, {{ barber.name }}{% endif %}
-      </h1>
-      <p class="muted small">Manage your hours and appointments below.</p>
-    </div>
-  </div>
-
-  <!-- Action buttons -->
-  <div class="dash-actions">
-    <button id="copyLinkBtn" type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
-      Copy booking link
-    </button>
-    <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener">
-      Open public page
-    </a>
-  </div>
-
-
-  <!-- 🖼️ Media Upload Section -->
-  <div class="wow-card media-card">
-    <h3>Upload Media</h3>
-    <p class="muted small">Show off your work — upload photos or videos directly to your profile gallery.</p>
-
-    <form id="mediaForm" enctype="multipart/form-data">
-      <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;">
-      <button type="button" class="gradient-btn small" onclick="document.getElementById('mediaInput').click();">
-        📤 Upload File
-      </button>
-    </form>
-
-    <div id="mediaStatus" class="muted small" style="margin-top:0.5rem;"></div>
-
-    <!-- Preview gallery -->
-    <div id="mediaGallery" class="media-gallery" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;"></div>
-  </div>
-
-
-  <!-- Upcoming Appointments -->
-  <div class="wow-card appointments-card">
-    <h3>Upcoming Appointments</h3>
-    {% if appointments %}
-    <div class="table-scroll">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Client</th>
-            <th>Phone</th>
-            <th>When</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in appointments %}
-          <tr>
-            <td>{{ a.client_name or "Unknown" }}</td>
-            <td>
-              {% if a.client_phone %}
-              <a href="tel:{{ a.client_phone }}">{{ a.client_phone }}</a>
-              {% else %}
-              —
-              {% endif %}
-            </td>
-            <td>{{ a.date }} {{ a.start_time }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="muted small">No upcoming appointments yet.</p>
-    {% endif %}
-  </div>
-
-
-  <!-- Business Hours -->
-  <div class="wow-card hours-card">
-    <div class="hours-header">
-      <h3>Business Hours</h3>
-      <button id="toggleHoursBtn" class="edit-hours-btn">Edit Your Hours</button>
-    </div>
-
-    <div id="hoursCollapse" class="hours-collapse">
-      <div id="hoursList" class="hours-grid">
-        {# We render static days; dashboard.js will load real hours from /api/barber/weekly-hours #}
-        {% set days = [
-        ('mon', 'Monday'),
-        ('tue', 'Tuesday'),
-        ('wed', 'Wednesday'),
-        ('thu', 'Thursday'),
-        ('fri', 'Friday'),
-        ('sat', 'Saturday'),
-        ('sun', 'Sunday')
-        ] %}
-        {% for key, label in days %}
-        <div class="day-editor" data-day="{{ key }}">
-          <h4>{{ label }}</h4>
-          <div class="toggle-wrap">
-            <div class="day-toggle active" data-day="{{ key }}"></div>
-          </div>
-          <div class="time-inputs">
-            <input type="time" class="open-time" value="09:00">
-            <span>–</span>
-            <input type="time" class="close-time" value="17:00">
-          </div>
-          <div class="save-check">✅</div>
-        </div>
-        {% endfor %}
       </div>
-      <button id="copyMonday" class="copy-all">Copy Monday → All Days</button>
+
+      <!-- Business Hours -->
+      <div class="card hours-card">
+        <div class="hours-header" style="flex-direction:column; gap:0.5rem; margin-bottom:1rem;">
+          <h3>Business Hours</h3>
+          <p class="muted small" style="margin:0;">
+            Set your availability so clients can book you online.
+          </p>
+        </div>
+
+        <div style="text-align:center; margin-bottom:1rem;">
+          <button id="toggleHoursBtn" class="btn btn-secondary small">
+            Edit Hours
+          </button>
+        </div>
+
+        <!-- Collapsible Editor -->
+        <div id="hoursCollapse" class="hours-collapse">
+          <div style="text-align:center; margin-bottom:1rem;">
+            <button id="copyMonday" class="copy-all">Copy Monday → All Days</button>
+          </div>
+
+          <div class="hours-grid">
+            {% for d in ["mon","tue","wed","thu","fri","sat","sun"] %}
+            <div class="day-editor" data-day="{{ d }}">
+              <h4>{{ d|capitalize }}</h4>
+              <div class="toggle-wrap">
+                <div class="day-toggle active" data-day="{{ d }}"></div>
+              </div>
+              <div class="time-inputs">
+                <input type="time" class="open-time" value="09:00">
+                <span>–</span>
+                <input type="time" class="close-time" value="17:00">
+              </div>
+              <div class="save-check">✅</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar-sticky">
+      <!-- Action buttons -->
+      <div class="card">
+        <h3>Quick Actions</h3>
+        <div class="dash-actions" style="flex-direction:column;align-items:stretch;">
+          <button id="copyLinkBtn" type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
+            Copy booking link
+          </button>
+          <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener"
+            style="text-align:center;">
+            Open public page
+          </a>
+        </div>
+      </div>
+
+      <!-- 🖼️ Media Upload Section -->
+      <div class="card media-card">
+        <h3>Upload Media</h3>
+        <p class="muted small">Show off your work — upload photos or videos directly to your profile gallery.</p>
+        <form id="mediaForm" enctype="multipart/form-data" style="margin-top:1rem;">
+          <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;">
+          <button type="button" class="gradient-btn small" style="width:100%;"
+            onclick="document.getElementById('mediaInput').click();">
+            📤 Upload File
+          </button>
+        </form>
+        <div id="mediaStatus" class="muted small" style="margin-top:0.5rem;"></div>
+        <div id="mediaGallery" class="media-gallery" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;">
+        </div>
+      </div>
     </div>
   </div>
-
-
-  <div id="toast" class="toast">Hours saved successfully</div>
-
-  <!-- Promo Code Setup -->
-  <div class="promo-card">
-    <div class="promo-header">
-      <h3>Your Promo Code</h3>
-      <p>Share this code — when someone upgrades using it, you both get a free month.</p>
-    </div>
-
-    <div class="promo-body" style="display:flex;gap:0.5rem;align-items:center;">
-      <input type="text" id="promoCodeInput" value="{{ barber.promo_code }}" readonly onclick="this.select()"
-        style="cursor:pointer;" />
-
-      <button type="button" class="gradient-btn small"
-        onclick="navigator.clipboard.writeText('{{ barber.promo_code }}')">
-        Copy
-      </button>
-    </div>
-
-    <p class="muted small" style="margin-top:0.5rem;">
-      This promo code is permanent and cannot be changed.
-    </p>
-  </div>
-
 
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Confirm before cancel (kept in case you add a cancel route later)
-    document.querySelectorAll('form[action*="/cancel"]').forEach(form => {
-      form.addEventListener('submit', e => {
-        if (!confirm('Are you sure you want to cancel this appointment?')) e.preventDefault();
-      });
-    });
-
-    // Scroll fade-up animation
-    document.addEventListener("scroll", () => {
-      document.querySelectorAll(".fade-up").forEach(el => {
-        const rect = el.getBoundingClientRect();
-        if (rect.top < window.innerHeight - 80) el.classList.add("visible");
-      });
-    });
-
-    // Media upload logic
-    const mediaInput = document.getElementById('mediaInput');
-    const mediaStatus = document.getElementById('mediaStatus');
-    const gallery = document.getElementById('mediaGallery');
-
-    if (mediaInput) {
-      mediaInput.addEventListener('change', async () => {
-        const file = mediaInput.files[0];
-        if (!file) return;
-        mediaStatus.textContent = 'Uploading... ⏳';
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-          const res = await fetch('{{ url_for("upload_media") }}', { method: 'POST', body: formData });
-          const data = await res.json();
-          if (data.success) {
-            mediaStatus.textContent = '✅ Uploaded successfully!';
-            const isVideo = file.type.startsWith('video');
-            const el = document.createElement(isVideo ? 'video' : 'img');
-            el.src = data.url;
-            if (isVideo) { el.controls = true; el.width = 160; }
-            else { el.style.width = '160px'; el.style.borderRadius = '0.5rem'; }
-            gallery.prepend(el);
-          } else {
-            mediaStatus.textContent = '❌ Upload failed: ' + (data.error || 'Unknown error');
-          }
-        } catch (err) {
-          mediaStatus.textContent = '❌ Upload error.';
-          console.error(err);
-        }
-      });
-    }
-  });
-</script>
 {% endblock %}

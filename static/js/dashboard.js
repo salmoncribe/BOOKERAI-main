@@ -207,26 +207,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===============================
   const toggleBtn = document.getElementById("toggleHoursBtn");
   const hoursCollapse = document.getElementById("hoursCollapse");
-  const hoursCard = document.querySelector(".hours-card");
 
-  if (toggleBtn && hoursCollapse && hoursCard) {
+  if (toggleBtn && hoursCollapse) {
     toggleBtn.addEventListener("click", () => {
       const isOpening = !hoursCollapse.classList.contains("active");
-      hoursCollapse.classList.toggle("active");
-      hoursCard.classList.toggle("open");
 
       if (isOpening) {
+        hoursCollapse.classList.add("active");
+        // Force the height to the exact content size for the transition to work
         hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
+        toggleBtn.textContent = "Hide Hours";
       } else {
         hoursCollapse.style.maxHeight = "0px";
-      }
-
-      toggleBtn.textContent = isOpening ? "Hide Hours" : "Edit Your Hours";
-
-      if (isOpening) {
-        setTimeout(() => {
-          hoursCollapse.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 250);
+        hoursCollapse.classList.remove("active");
+        toggleBtn.textContent = "Edit Your Hours";
       }
     });
   }

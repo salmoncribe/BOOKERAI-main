@@ -158,6 +158,58 @@
     bookBtn.disabled = !ok;
   }
 
+  // ================= BOOK CLICK =================
+  bookBtn.addEventListener("click", async () => {
+    if (bookBtn.disabled) return;
+
+    bookBtn.disabled = true;
+    bookBtn.textContent = "Booking...";
+
+    const payload = {
+      barber_id: BARBER.barberId,
+      date: selected.dateISO,
+      start_time: selected.timeHM,
+      client_name: nameIn.value.trim(),
+      client_phone: phoneIn.value.trim(),
+    };
+
+    try {
+      const res = await fetch("/api/appointments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Show success modal
+        const confirmText = $("#confirmText");
+        const confirmBackdrop = $("#confirmBackdrop");
+
+        // Format date/time for display
+        const d = ISOToDate(selected.dateISO);
+        const dateStr = prettyDate(d);
+        const timeStr = to12h(selected.timeHM);
+
+        confirmText.textContent = `${dateStr} @ ${timeStr}`;
+        confirmBackdrop.classList.remove("hidden");
+
+        // Setup ICS link if needed
+        // (Optional: generate .ics blob here)
+
+      } else {
+        throw new Error(data.error || "Booking failed");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Error: " + err.message);
+      bookBtn.disabled = false;
+      bookBtn.textContent = "Book appointment";
+    }
+  });
+
   // ================= UTIL =================
   function todayISO() {
     return new Date().toISOString().slice(0, 10);

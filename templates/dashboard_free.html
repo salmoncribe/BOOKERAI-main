@@ -14,118 +14,158 @@
   </div>
 
   <!-- Header -->
-  <div class="dash-header-left">
-    <div class="dash-avatar">
-      {{ (barber.name or 'B')[:1] | upper }}
-    </div>
-    <div>
-      <h1>
-        Welcome{% if barber.name %}, {{ barber.name }}{% endif %}
-      </h1>
-      <p class="muted small">Free BookerAI Dashboard</p>
-    </div>
-  </div>
-
-  <!-- Core Actions -->
-  <div class="dash-actions">
-    <button type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
-      Copy booking link
-    </button>
-
-    <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener">
-      Open public page
-    </a>
-
-    {% if features.find_pro %}
-    <a class="btn btn-secondary small" href="{{ url_for('find_pro_route') }}">
-      Find a Pro
-    </a>
-    {% endif %}
-  </div>
-
-  <!-- Appointments -->
-  <div class="wow-card">
-    <h3>Upcoming Appointments</h3>
-
-    {% if appointments %}
-    <div class="table-scroll">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Client</th>
-            <th>Phone</th>
-            <th>When</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for a in appointments %}
-          <tr>
-            <td>{{ a.client_name or "Unknown" }}</td>
-            <td>{{ a.client_phone or "—" }}</td>
-            <td>{{ a.date }} {{ a.start_time }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="muted small">No upcoming appointments yet.</p>
-    {% endif %}
-  </div>
-
-  <!-- Business Hours -->
-  <div class="wow-card">
-    <h3>Business Hours</h3>
-    <p class="muted small">
-      Set your availability so clients can book you online.
-    </p>
-    <button id="toggleHoursBtn" class="btn btn-secondary small">
-      Edit Hours
-    </button>
-  </div>
-
-  <!-- Profile Media (Locked for Free) -->
-  <div class="wow-card">
-    <h3>Profile Photos & Videos</h3>
-    <p class="muted small">
-      Premium profiles get more bookings and higher visibility.
-    </p>
-
-    {% if features.profile_media %}
-    <button class="btn-primary small">Upload Media</button>
-    {% else %}
-    <a href="{{ url_for('subscribe') }}" class="btn btn-secondary small">
-      Unlock Media Uploads 🔒
-    </a>
-    {% endif %}
-  </div>
-
-  <!-- Promo Code -->
-  <div class="wow-card">
-    <h3>Your Promo Code</h3>
-    <p class="muted small">
-      Share this — when someone upgrades, you both get a free month.
-    </p>
-
-    <div style="display:flex;gap:0.5rem;align-items:center;">
-      <input type="text" value="{{ barber.promo_code }}" readonly onclick="this.select()" />
-      <button type="button" class="btn-primary small"
-        onclick="navigator.clipboard.writeText('{{ barber.promo_code }}')">
-        Copy
-      </button>
+  <div class="dash-head">
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <div class="dash-avatar"
+        style="width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--sky-blue),var(--teal));color:#fff;font-weight:600;font-size:1.25rem;flex-shrink:0;">
+        {{ (barber.name or 'B')[:1] | upper }}
+      </div>
+      <div>
+        <h1 class="dash-title">
+          Welcome{% if barber.name %}, {{ barber.name }}{% endif %}
+        </h1>
+        <p class="muted small">Free BookerAI Dashboard</p>
+      </div>
     </div>
   </div>
 
-  <!-- Upgrade CTA -->
-  <div class="upgrade-card">
-    <h3>Upgrade to Premium 💎</h3>
-    <p>
-      Get boosted in search, upload media, track earnings,
-      and automate your bookings.
-    </p>
-    <a href="{{ url_for('subscribe') }}" class="upgrade-btn">
-      Upgrade Now
-    </a>
+  <div class="dashboard-grid">
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Appointments -->
+      <div class="card">
+        <h3>Upcoming Appointments</h3>
+        {% if appointments %}
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Phone</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in appointments %}
+              <tr>
+                <td>{{ a.client_name or "Unknown" }}</td>
+                <td>{{ a.client_phone or "—" }}</td>
+                <td>{{ a.date }} {{ a.start_time }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="muted small">No upcoming appointments yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- Business Hours -->
+      <div class="card hours-card">
+        <div class="hours-header" style="flex-direction:column; gap:0.5rem; margin-bottom:1rem;">
+          <h3>Business Hours</h3>
+          <p class="muted small" style="margin:0;">
+            Set your availability so clients can book you online.
+          </p>
+        </div>
+
+        <div style="text-align:center; margin-bottom:1rem;">
+          <button id="toggleHoursBtn" class="edit-hours-btn">
+            Edit Hours
+          </button>
+        </div>
+
+        <!-- Collapsible Editor -->
+        <div id="hoursCollapse" class="hours-collapse">
+          <div style="text-align:center; margin-bottom:1rem;">
+            <button id="copyMonday" class="copy-all">Copy Monday → All Days</button>
+          </div>
+
+          <div class="hours-grid">
+            {% for d in ["mon","tue","wed","thu","fri","sat","sun"] %}
+            <div class="day-editor" data-day="{{ d }}">
+              <h4>{{ d|capitalize }}</h4>
+              <div class="toggle-wrap">
+                <div class="day-toggle active" data-day="{{ d }}"></div>
+              </div>
+              <div class="time-inputs">
+                <input type="time" class="open-time" value="09:00">
+                <span>–</span>
+                <input type="time" class="close-time" value="17:00">
+              </div>
+              <div class="save-check">✅</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar-sticky">
+      <!-- Core Actions -->
+      <div class="card">
+        <h3>Quick Actions</h3>
+        <div class="dash-actions" style="flex-direction:column;align-items:stretch;">
+          <button type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
+            Copy booking link
+          </button>
+          <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener"
+            style="text-align:center;">
+            Open public page
+          </a>
+          {% if features.find_pro %}
+          <a class="btn btn-secondary small" href="{{ url_for('find_pro_route') }}" style="text-align:center;">
+            Find a Pro
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Profile Media (Locked) -->
+      <div class="card">
+        <h3>Profile Photos & Videos</h3>
+        <p class="muted small">
+          Premium profiles get more bookings and higher visibility.
+        </p>
+        {% if features.profile_media %}
+        <button class="btn-primary small">Upload Media</button>
+        {% else %}
+        <a href="{{ url_for('subscribe') }}" class="btn btn-secondary small"
+          style="display:block;text-align:center;margin-top:1rem;">
+          Unlock Media Uploads 🔒
+        </a>
+        {% endif %}
+      </div>
+
+      <div class="card promo-card">
+        <h3>Your Promo Code</h3>
+        <p class="muted small">
+          Share this — when someone upgrades, you both get a free month.
+        </p>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem;">
+          <input type="text" value="{{ barber.promo_code }}" readonly onclick="this.select()"
+            style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc;">
+          <button type="button" class="btn-primary small"
+            onclick="navigator.clipboard.writeText('{{ barber.promo_code }}')">
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <!-- Upgrade CTA -->
+      <div class="card" style="background:linear-gradient(135deg,#f0faff,#e0f7ff);border:2px solid var(--sky-blue);">
+        <h3>Upgrade to Premium 💎</h3>
+        <p style="margin-bottom:1rem;">
+          Get boosted in search, upload media, track earnings,
+          and automate your bookings.
+        </p>
+        <a href="{{ url_for('subscribe') }}" class="gradient-btn small" style="display:block;text-align:center;">
+          Upgrade Now
+        </a>
+      </div>
+    </div>
   </div>
 
 </section>
