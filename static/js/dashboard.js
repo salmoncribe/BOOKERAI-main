@@ -11,6 +11,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===============================
+  // COLLAPSIBLE HOURS CARD (Moved to top for resilience)
+  // ===============================
+  const toggleBtn = document.getElementById("toggleHoursBtn");
+  const hoursCollapse = document.getElementById("hoursCollapse");
+
+  if (toggleBtn && hoursCollapse) {
+    toggleBtn.addEventListener("click", () => {
+      // Check if currently active
+      const isOpening = !hoursCollapse.classList.contains("active");
+
+      if (isOpening) {
+        hoursCollapse.classList.add("active");
+        // Calculate height with fallback
+        const scrollHeight = hoursCollapse.scrollHeight;
+        const finalHeight = scrollHeight > 0 ? scrollHeight : 1000;
+        hoursCollapse.style.maxHeight = finalHeight + "px";
+        toggleBtn.textContent = "Hide Hours";
+      } else {
+        hoursCollapse.style.maxHeight = "0px";
+        hoursCollapse.classList.remove("active");
+        toggleBtn.textContent = "Edit Hours";
+      }
+    });
+  }
+
+  // ===============================
   // Barber ID from dashboard root
   // ===============================
   const root = document.getElementById("dashboardRoot");
@@ -65,6 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const openInput = card.querySelector(".open-time");
       const closeInput = card.querySelector(".close-time");
 
+      if (!toggle || !openInput || !closeInput) return;
+
       openInput.value = row.start_time || "09:00";
       closeInput.value = row.end_time || "17:00";
 
@@ -90,9 +118,18 @@ document.addEventListener("DOMContentLoaded", () => {
     dayEditors.forEach(card => {
       const weekday = card.dataset.day; // e.g. "mon"
       const toggle = card.querySelector(".day-toggle");
+
+      // Safety check
+      if (!toggle) return;
+
       const isClosed = !toggle.classList.contains("active");
-      const open = card.querySelector(".open-time").value || "09:00";
-      const close = card.querySelector(".close-time").value || "17:00";
+      const openInput = card.querySelector(".open-time");
+      const closeInput = card.querySelector(".close-time");
+
+      // Defaults if inputs missing (robustness)
+      const open = openInput ? openInput.value : "09:00";
+      const close = closeInput ? closeInput.value : "17:00";
+
       const locId = card.dataset.locationId
         ? Number(card.dataset.locationId)
         : null;
@@ -154,6 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const openInput = card.querySelector(".open-time");
     const closeInput = card.querySelector(".close-time");
 
+    if (!toggle || !openInput || !closeInput) return;
+
     const updateDisabled = () => {
       const disabled = !toggle.classList.contains("active");
       openInput.disabled = disabled;
@@ -177,19 +216,26 @@ document.addEventListener("DOMContentLoaded", () => {
   if (copyMondayBtn) {
     copyMondayBtn.addEventListener("click", () => {
       const monday = [...dayEditors].find(c =>
-        c.dataset.day.toLowerCase().includes("mon")
+        c.dataset.day && c.dataset.day.toLowerCase().includes("mon")
       );
       if (!monday) return showToast("No Monday found");
 
       const monToggle = monday.querySelector(".day-toggle");
-      const monOpen = monday.querySelector(".open-time").value;
-      const monClose = monday.querySelector(".close-time").value;
+      const monOpenInput = monday.querySelector(".open-time");
+      const monCloseInput = monday.querySelector(".close-time");
+
+      if (!monToggle || !monOpenInput || !monCloseInput) return;
+
+      const monOpen = monOpenInput.value;
+      const monClose = monCloseInput.value;
       const monActive = monToggle.classList.contains("active");
 
       dayEditors.forEach(card => {
         const toggle = card.querySelector(".day-toggle");
         const open = card.querySelector(".open-time");
         const close = card.querySelector(".close-time");
+
+        if (!toggle || !open || !close) return;
 
         open.value = monOpen;
         close.value = monClose;
@@ -199,29 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       saveHours(monday);
       showToast("Copied Monday’s hours to all days ✅");
-    });
-  }
-
-  // ===============================
-  // COLLAPSIBLE HOURS CARD
-  // ===============================
-  const toggleBtn = document.getElementById("toggleHoursBtn");
-  const hoursCollapse = document.getElementById("hoursCollapse");
-
-  if (toggleBtn && hoursCollapse) {
-    toggleBtn.addEventListener("click", () => {
-      const isOpening = !hoursCollapse.classList.contains("active");
-
-      if (isOpening) {
-        hoursCollapse.classList.add("active");
-        // Force the height to the exact content size for the transition to work
-        hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
-        toggleBtn.textContent = "Hide Hours";
-      } else {
-        hoursCollapse.style.maxHeight = "0px";
-        hoursCollapse.classList.remove("active");
-        toggleBtn.textContent = "Edit Your Hours";
-      }
     });
   }
 });

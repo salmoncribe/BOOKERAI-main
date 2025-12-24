@@ -4,7 +4,7 @@
 {% block content %}
 {% set public_link = url_for('book_view', barber_id=barber.id, _external=True) %}
 
-<section class="dashboard" id="dashboardRoot" data-barber-id="{{ barber.id }}">
+<section class="dashboard vibrant-auth" id="dashboardRoot" data-barber-id="{{ barber.id }}">
 
   <!-- Upgrade Banner -->
   <div class="upgrade-banner">
@@ -22,7 +22,7 @@
       </div>
       <div>
         <h1 class="dash-title">
-          Welcome{% if barber.name %}, {{ barber.name }}{% endif %}
+          Welcome, {{ barber.name|default('Barber') }}
         </h1>
         <p class="muted small">Free BookerAI Dashboard</p>
       </div>
@@ -108,7 +108,7 @@
       <div class="card">
         <h3>Quick Actions</h3>
         <div class="dash-actions" style="flex-direction:column;align-items:stretch;">
-          <button type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
+          <button id="copyLinkBtn" type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
             Copy booking link
           </button>
           <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener"

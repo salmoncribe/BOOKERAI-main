@@ -41,7 +41,7 @@
       <!-- Text -->
       <div>
         <h1 class="dash-title">
-          Welcome{% if barber.name %}, {{ barber.name }}{% endif %}
+          Welcome, {{ barber.name|default('Barber') }}
         </h1>
         <p class="muted small">Manage your hours and appointments below.</p>
       </div>

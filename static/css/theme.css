@@ -1140,6 +1140,7 @@ section.dashboard.vibrant-auth {
     radial-gradient(circle at 80% 70%, rgba(20, 184, 166, 0.08), transparent 60%);
   animation: subtleFloat 12s ease-in-out infinite alternate;
   z-index: 0;
+  pointer-events: none;
 }
 
 @keyframes subtleFloat {
@@ -1290,11 +1291,13 @@ section.dashboard.vibrant-auth {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  transition: max-height 0.5s ease-in-out, opacity 0.3s ease;
+  transition: all 0.4s ease;
+  visibility: hidden;
 }
 
 .hours-collapse.active {
   opacity: 1;
+  visibility: visible;
 }
 
 
@@ -1310,6 +1313,8 @@ section.dashboard.vibrant-auth {
   box-shadow: 0 6px 18px rgba(14, 165, 233, 0.25);
   cursor: pointer;
   transition: all 0.25s ease;
+  position: relative;
+  z-index: 5;
 }
 
 .edit-hours-btn:hover {
