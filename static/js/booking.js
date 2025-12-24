@@ -15,9 +15,7 @@
   };
 
   // ================= DATA =================
-  const HOURS = safeJSON("#bk-hours") || {};
   const BARBER = safeJSON("#bk-barber") || {};
-  const APPTS = safeJSON("#bk-appts") || [];
 
   // ================= DOM =================
   const screenDate = $("#screen-date");
@@ -97,42 +95,40 @@
   }
 
   // ================= RENDER TIMES =================
-  function renderTimes(iso) {
+  async function renderTimes(iso) {
     slotGrid.innerHTML = "";
     hideEmpty();
+    showEmpty("Loading...", true); // Show loading state
 
-    const d = ISOToDate(iso);
-    const wd = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][d.getDay()];
-    const h = HOURS[wd];
-
-    pickedDateLabel.textContent = prettyDate(d);
-    sumDate.textContent = prettyDate(d);
+    pickedDateLabel.textContent = prettyDate(ISOToDate(iso));
+    sumDate.textContent = prettyDate(ISOToDate(iso));
     sumTime.textContent = "—";
     selected.timeHM = null;
     updateBookEnabled();
 
-    if (!h || h.isClosed) return showEmpty("Closed");
+    try {
+      const res = await fetch(`/api/public/slots/${BARBER.barberId}?date=${iso}`);
+      if (!res.ok) throw new Error("Failed to load slots");
 
-    const booked = new Set(
-      APPTS.filter((a) => a.date === iso).map((a) => a.start_time)
-    );
+      const slots = await res.json();
+      hideEmpty();
 
-    const now = new Date();
-    const isToday = iso === todayISO();
+      if (!slots || slots.length === 0) {
+        return showEmpty("No times available");
+      }
 
-    enumerateHours(h.open, h.close).forEach((hm) => {
-      if (booked.has(hm)) return;
-      if (isToday && isPastTime(iso, hm)) return;
+      slots.forEach((hm) => {
+        const btn = document.createElement("button");
+        btn.className = "slot";
+        btn.textContent = to12h(hm);
+        btn.onclick = () => selectTime(hm, btn);
+        slotGrid.appendChild(btn);
+      });
 
-      const btn = document.createElement("button");
-      btn.className = "slot";
-      btn.textContent = to12h(hm);
-
-      btn.onclick = () => selectTime(hm, btn);
-      slotGrid.appendChild(btn);
-    });
-
-    if (!slotGrid.children.length) showEmpty("No times available");
+    } catch (err) {
+      console.error(err);
+      showEmpty("Could not load times");
+    }
   }
 
   // ================= TIME SELECT =================
@@ -221,9 +217,11 @@
     });
   }
 
-  function showEmpty(t) {
+  function showEmpty(t, isLoading = false) {
     slotEmpty.textContent = t;
     slotEmpty.classList.remove("hidden");
+    if (isLoading) slotEmpty.classList.add("pulse");
+    else slotEmpty.classList.remove("pulse");
   }
 
   function hideEmpty() {

@@ -12,6 +12,7 @@ from flask import (
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 import stripe
+import db  # Added db import
 
 # ----------------------------------------------
 # Supabase
@@ -730,6 +731,15 @@ def calendar_slots(barber_id):
 # ============================================================
 # APPOINTMENT CREATION
 # ============================================================
+
+@app.get("/api/public/slots/<barber_id>")
+def public_slots(barber_id):
+    target_date = request.args.get("date")
+    if not target_date:
+        return jsonify([])
+    
+    slots = db.get_available_slots(barber_id, target_date)
+    return jsonify(slots)
 @app.post("/api/appointments/create")
 def create_appt():
     data = request.json

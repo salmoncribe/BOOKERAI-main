@@ -121,16 +121,8 @@
 </div>
 
 <!-- Data for JS -->
-<script id="bk-hours" type="application/json">{{ (hours or {})|tojson }}</script>
-
-
-
 <script id="bk-barber" type="application/json">
   {{ {"barberId": barber.id, "name": barber.name}|tojson }}
-</script>
-
-<script id="bk-appts" type="application/json">
-  {{ (appts or [])|tojson }}
 </script>
 
 

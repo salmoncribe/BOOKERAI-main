@@ -194,17 +194,96 @@ def create_schedule_slot(barber_id, date, start_time, end_time, location_id=None
     return res.data[0]
 
 
-def get_available_slots(barber_id):
-    res = (
-        supabase.table("schedules")
-        .select("*, locations(*)")
+def get_available_slots(barber_id, target_date_str):
+    """
+    Generate available slots dynamically:
+    1. Check overrides first.
+    2. Else check weekly hours.
+    3. Generate slots.
+    4. Subtract existing appointments.
+    """
+    # 1. Get Barber Slot Duration
+    barber_res = supabase.table("barbers").select("slot_duration").eq("id", barber_id).execute()
+    if not barber_res.data:
+        return []
+    step = barber_res.data[0].get("slot_duration", 60)
+
+    # 2. Check Overrides
+    override = (
+        supabase.table("schedule_overrides")
+        .select("*")
         .eq("barber_id", barber_id)
-        .eq("is_available", True)
-        .order("date")
-        .order("start_time")
+        .eq("date", target_date_str)
         .execute()
+        .data
     )
-    return res.data
+
+    start_time = None
+    end_time = None
+
+    if override:
+        ov = override[0]
+        if ov.get("is_closed"):
+            return []
+        start_time = ov["start_time"]
+        end_time = ov["end_time"]
+    else:
+        # 3. Fallback to Weekly Hours
+        # derive weekday (mon, tue...)
+        dt = datetime.strptime(target_date_str, "%Y-%m-%d")
+        weekday = dt.strftime("%a").lower()
+
+        hours = (
+            supabase.table("barber_weekly_hours")
+            .select("*")
+            .eq("barber_id", barber_id)
+            .eq("weekday", weekday)
+            .execute()
+            .data
+        )
+        if not hours:
+            return []
+        
+        h = hours[0]
+        if h.get("is_closed"):
+            return []
+        
+        start_time = h["start_time"]
+        end_time = h["end_time"]
+
+    if not start_time or not end_time:
+        return []
+
+    # 4. Generate All Potential Slots
+    # Helper to clean time string
+    def to_dt(t_str):
+        return datetime.strptime(f"{target_date_str} {t_str}", "%Y-%m-%d %H:%M:%S" if len(t_str) > 5 else "%Y-%m-%d %H:%M")
+
+    slots = []
+    current = to_dt(start_time)
+    end_dt = to_dt(end_time)
+    
+    while current + timedelta(minutes=step) <= end_dt:
+        time_str = current.strftime("%H:%M")
+        slots.append(time_str)
+        current += timedelta(minutes=step)
+
+    # 5. Remove Booked Slots
+    appointments = (
+        supabase.table("appointments")
+        .select("start_time")
+        .eq("barber_id", barber_id)
+        .eq("date", target_date_str)
+        .neq("status", "cancelled") 
+        .execute()
+        .data
+    )
+
+    booked_times = {a["start_time"][:5] for a in appointments} # ensure HH:MM format
+
+    final_slots = [s for s in slots if s not in booked_times]
+    
+    return final_slots
 
 
 def mark_slot_unavailable(schedule_id):
