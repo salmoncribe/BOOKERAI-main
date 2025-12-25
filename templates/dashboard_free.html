@@ -8,7 +8,7 @@
 
   <!-- Upgrade Banner -->
   <div class="upgrade-banner">
-    You’re live on BookerAI 🚀
+    You’re live on BookerAI <i data-lucide="rocket" style="width:18px;height:18px;vertical-align:middle;"></i>
     Unlock analytics, profile boosts, and automation with <strong>Premium</strong>.
     <a href="{{ url_for('demo') }}">See what’s possible</a>
   </div>
@@ -94,7 +94,7 @@
                 <span>–</span>
                 <input type="time" class="close-time" value="17:00">
               </div>
-              <div class="save-check">✅</div>
+              <div class="save-check"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
             </div>
             {% endfor %}
           </div>
@@ -148,7 +148,7 @@
           <input type="text" value="{{ barber.promo_code }}" readonly onclick="this.select()"
             style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc;">
           <button type="button" class="btn-primary small"
-            onclick="navigator.clipboard.writeText('{{ barber.promo_code }}')">
+            onclick="window.copyToClipboard('{{ barber.promo_code }}').then(ok => ok ? alert('Copied!') : alert('Failed'))">
             Copy
           </button>
         </div>
@@ -156,7 +156,7 @@
 
       <!-- Upgrade CTA -->
       <div class="card" style="background:linear-gradient(135deg,#f0faff,#e0f7ff);border:2px solid var(--sky-blue);">
-        <h3>Upgrade to Premium 💎</h3>
+        <h3>Upgrade to Premium <i data-lucide="gem" style="width:18px;height:18px;vertical-align:text-bottom;"></i></h3>
         <p style="margin-bottom:1rem;">
           Get boosted in search, upload media, track earnings,
           and automate your bookings.
@@ -172,5 +172,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/lucide@latest"></script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

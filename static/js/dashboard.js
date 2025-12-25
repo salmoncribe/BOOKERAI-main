@@ -10,6 +10,49 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => toastEl.classList.remove("show"), 2500);
   }
 
+  // Helper: Copy to Clipboard with HTTP fallback
+  window.copyToClipboard = async function (text) {
+    if (!text) return false;
+
+    // Try modern API first (if secure)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.warn("navigator.clipboard failed, trying fallback:", err);
+      }
+    }
+
+    // Fallback: TextArea hack
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      ta.style.top = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (success) return true;
+      throw new Error("execCommand returned false");
+    } catch (err) {
+      console.error("All copy methods failed:", err);
+      return false;
+    }
+  };
+
+  // Helper: Debounce
+  function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
   // ===============================
   // COLLAPSIBLE HOURS CARD (Moved to top for resilience)
   // ===============================
@@ -23,10 +66,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (isOpening) {
         hoursCollapse.classList.add("active");
-        // Calculate height with fallback
-        const scrollHeight = hoursCollapse.scrollHeight;
-        const finalHeight = scrollHeight > 0 ? scrollHeight : 1000;
-        hoursCollapse.style.maxHeight = finalHeight + "px";
+        // Calculate height dynamically
+        // hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
+        // Or simply set to a large enough value implies animation 
+        // But for perfect animation:
+        hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
         toggleBtn.textContent = "Hide Hours";
       } else {
         hoursCollapse.style.maxHeight = "0px";
@@ -55,11 +99,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const link = copyLinkBtn.dataset.copy;
       if (!link) return showToast("No link found ❌");
 
-      try {
-        await navigator.clipboard.writeText(link);
+      const success = await window.copyToClipboard(link);
+      if (success) {
         showToast("Booking link copied ✅");
-      } catch (err) {
-        console.error("Clipboard copy failed:", err);
+      } else {
         showToast("Failed to copy link ❌");
       }
     });
@@ -205,8 +248,14 @@ document.addEventListener("DOMContentLoaded", () => {
       saveHours(card);
     });
 
-    openInput.addEventListener("change", () => saveHours(card));
-    closeInput.addEventListener("change", () => saveHours(card));
+    // Debounced save for text inputs
+    const debouncedSave = debounce(() => saveHours(card), 500);
+
+    openInput.addEventListener("change", debouncedSave);
+    closeInput.addEventListener("change", debouncedSave);
+
+    // Also trigger on 'input' for smoother feeling if desired, 
+    // but 'change' is usually enough. keeping 'change' per requirements.
 
     updateDisabled();
   });
@@ -246,5 +295,9 @@ document.addEventListener("DOMContentLoaded", () => {
       saveHours(monday);
       showToast("Copied Monday’s hours to all days ✅");
     });
+  }
+  // Initialize Lucide icons if available
+  if (window.lucide) {
+    window.lucide.createIcons();
   }
 });

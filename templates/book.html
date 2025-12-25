@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="book-wrap bg-surface" role="main" style="display:grid; gap:1.5rem; padding:1rem; max-width:900px; margin:auto;">
+<div class="book-wrap bg-surface" role="main"
+  style="display:grid; gap:1.5rem; padding:1rem; max-width:900px; margin:auto;">
 
   <!-- Top bar -->
   <div class="book-topbar flex justify-between items-center">
@@ -10,28 +11,28 @@
 
   <!-- Barber header card -->
   <header class="book-header card shadow-md" aria-labelledby="barberName"
-           style="display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-radius:1rem; background:var(--card-bg, #fff);">
+    style="display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-radius:1rem; background:var(--card-bg, #fff);">
     <div class="bh-left flex items-center gap-3">
       {% if barber.photo_url %}
-  <div class="bh-avatar" 
-       style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;box-shadow:0 0 15px rgba(14,165,233,0.25);border:2px solid rgba(255,255,255,0.3);">
-    <img src="{{ barber.photo_url }}?v={{ asset_ver }}" 
-         alt="{{ barber.name or 'Barber' }}" 
-         style="width:100%;height:100%;object-fit:cover;">
-  </div>
-{% else %}
-  <div class="bh-avatar flex items-center justify-center text-xl font-bold"
-       style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,var(--accent,#6d5dfc),var(--accent2,#9b8aff)); color:white;">
-    {{ (barber.name or 'B')[:1] | upper }}
-  </div>
-{% endif %}
+      <div class="bh-avatar"
+        style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;box-shadow:0 0 15px rgba(14,165,233,0.25);border:2px solid rgba(255,255,255,0.3);">
+        <img src="{{ barber.photo_url }}?v={{ asset_ver }}" alt="{{ barber.name or 'Barber' }}"
+          style="width:100%;height:100%;object-fit:cover;">
+      </div>
+      {% else %}
+      <div class="bh-avatar flex items-center justify-center text-xl font-bold"
+        style="width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,var(--accent,#6d5dfc),var(--accent2,#9b8aff)); color:white;">
+        {{ (barber.name or 'B')[:1] | upper }}
+      </div>
+      {% endif %}
 
       <div>
         <h2 id="barberName" class="bh-name" style="margin:0; font-size:1.25rem;">{{ barber.name or "Your Barber" }}</h2>
         <div class="bh-meta muted small flex items-center gap-2">
           <span class="bh-badge" aria-label="Barber role">Barber</span>
           <span class="bh-dot">•</span>
-          <a href="tel:{{ barber.phone }}" class="bh-link" aria-label="Call {{ barber.name or 'barber' }}">{{ barber.phone }}</a>
+          <a href="tel:{{ barber.phone }}" class="bh-link" aria-label="Call {{ barber.name or 'barber' }}">{{
+            barber.phone }}</a>
         </div>
       </div>
     </div>
@@ -39,7 +40,7 @@
 
   <!-- Booking body -->
   <section class="book-card card" aria-label="Booking steps"
-           style="padding:1.25rem; border-radius:1rem; display:grid; gap:1.5rem; background:var(--card-bg,#fff);">
+    style="padding:1.25rem; border-radius:1rem; display:grid; gap:1.5rem; background:var(--card-bg,#fff);">
     <div class="book-col" style="display:grid; gap:1.25rem;">
       <!-- STEP 1: DATE -->
       <section id="screen-date" class="step-section" aria-labelledby="step1Title">
@@ -54,7 +55,7 @@
 
         <div id="dateChooser" class="date-chooser hidden mt-3" role="region" aria-label="Select a day">
           <div id="dayStrip" class="day-strip" role="tablist" aria-label="Next seven days"></div>
-          
+
         </div>
       </section>
 
@@ -77,9 +78,9 @@
         <label id="step3Title" class="label font-semibold" data-step="Step 3">Your info</label>
         <div class="form-row flex flex-col sm:flex-row gap-2 mt-2">
           <input id="client_name" type="text" placeholder="Your name" autocomplete="name" aria-label="Your name"
-                 class="input" />
+            class="input" />
           <input id="client_phone" type="tel" inputmode="tel" placeholder="Phone number" autocomplete="tel"
-                 aria-label="Phone number" class="input" />
+            aria-label="Phone number" class="input" />
         </div>
       </section>
 
@@ -88,7 +89,8 @@
         <h3 id="sumTitle" class="kicker font-semibold">Summary</h3>
         <div class="sum-row flex justify-between"><span>Date</span><strong id="sumDate">—</strong></div>
         <div class="sum-row flex justify-between"><span>Time</span><strong id="sumTime">—</strong></div>
-        <div class="sum-row flex justify-between"><span>Barber</span><strong>{{ barber.name or "Barber" }}</strong></div>
+        <div class="sum-row flex justify-between"><span>Barber</span><strong>{{ barber.name or "Barber" }}</strong>
+        </div>
       </section>
 
       <!-- ACTIONS -->
@@ -123,6 +125,9 @@
 <!-- Data for JS -->
 <script id="bk-barber" type="application/json">
   {{ {"barberId": barber.id, "name": barber.name}|tojson }}
+</script>
+<script id="bk-config" type="application/json">
+  {{ {"url": supabase_url, "key": supabase_key}|tojson }}
 </script>
 
 

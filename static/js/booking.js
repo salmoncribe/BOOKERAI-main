@@ -6,6 +6,20 @@
 (function () {
   const $ = (s) => document.querySelector(s);
 
+  // Quick toast helper
+  function showToast(msg) {
+    let t = $("#bk-toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "bk-toast";
+      t.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;z-index:9999;opacity:0;transition:opacity 0.3s;";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = "1";
+    setTimeout(() => { t.style.opacity = "0"; }, 3000);
+  }
+
   const safeJSON = (sel) => {
     try {
       return JSON.parse($(sel)?.textContent || "{}");
@@ -16,6 +30,8 @@
 
   // ================= DATA =================
   const BARBER = safeJSON("#bk-barber") || {};
+  const CONFIG = safeJSON("#bk-config") || {};
+  const sb = window.supabase ? window.supabase.createClient(CONFIG.url, CONFIG.key) : null;
 
   // ================= DOM =================
   const screenDate = $("#screen-date");
@@ -34,6 +50,9 @@
   const sumDate = $("#sumDate");
   const sumTime = $("#sumTime");
 
+  const chooseBtn = $("#chooseBtn");
+  const dateChooser = $("#dateChooser");
+
   let selected = { dateISO: null, timeHM: null };
 
   // ================= INIT =================
@@ -51,7 +70,43 @@
     buildDayChooser();
     screenTimes.classList.add("hidden");
     screenDate.classList.remove("hidden");
+
+    // Auto-open chooser on back so user can pick
+    if (dateChooser) dateChooser.classList.remove("hidden");
+
+    // If calendar was open, maybe keep it open or collapse? User said "collapse... when date selected".
+    // When going back, we usually want to see options. Let's leave calendar state as is or collapse.
+    // Let's collapse the calendar view to just the buttons to be clean, unless we want to persist state.
+    // For now, let's keep it simple: reset calendar container if it exists
+    const calContainer = $("#calendar-container");
+    if (calContainer) calContainer.classList.add("hidden");
+
+    // Reset state
+
+    // Reset state
+    selected.timeHM = null;
+    sumTime.textContent = "—";
   });
+
+  // ================= CHOOSE DATE BTN =================
+  if (chooseBtn) {
+    chooseBtn.addEventListener("click", () => {
+      // Toggle visibility
+      const isHidden = dateChooser.classList.contains("hidden");
+      if (isHidden) {
+        buildDayChooser();
+        dateChooser.classList.remove("hidden");
+        chooseBtn.setAttribute("aria-expanded", "true");
+      } else {
+        dateChooser.classList.add("hidden");
+        // Also hide calendar if open
+        const calContainer = $("#calendar-container");
+        if (calContainer) calContainer.classList.add("hidden");
+
+        chooseBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
 
   // ================= DAY CHOOSER =================
   function buildDayChooser() {
@@ -77,28 +132,142 @@
     const other = document.createElement("button");
     other.className = "day-pill outline";
     other.textContent = "Other";
-    other.onclick = openCalendar;
+    other.onclick = toggleCalendar;
     dayStrip.appendChild(other);
   }
 
-  // ================= CALENDAR =================
-  function openCalendar() {
-    const input = document.createElement("input");
-    input.type = "date";
-    input.onchange = (e) => {
-      selected.dateISO = e.target.value;
-      renderTimes(selected.dateISO);
-      screenDate.classList.add("hidden");
-      screenTimes.classList.remove("hidden");
-    };
-    input.click();
+  // ================= CALENDAR Logic =================
+  let calendarState = {
+    viewYear: new Date().getFullYear(),
+    viewMonth: new Date().getMonth(), // 0-indexed
+  };
+
+  function toggleCalendar() {
+    let container = $("#calendar-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "calendar-container";
+      container.className = "mt-3 hidden";
+      // Styles for grid
+      container.innerHTML = `
+        <style>
+          .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
+          .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+          .cal-cell { padding: 8px; border-radius: 8px; cursor: pointer; transition: background 0.2s; font-size: 0.9rem; }
+          .cal-cell:hover:not(.disabled) { background: #e0f2fe; color: #0ea5e9; }
+          .cal-cell.disabled { opacity: 0.3; cursor: not-allowed; }
+          .cal-cell.selected { background: #0ea5e9; color: #fff; }
+          .cal-cell.today { font-weight: bold; border: 1px solid #0ea5e9; }
+          .cal-weekday { font-size: 0.8rem; color: #64748b; font-weight: 600; padding-bottom: 5px; }
+          .cal-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #0ea5e9; padding: 0 10px; }
+        </style>
+        <div class="cal-header">
+          <button class="cal-btn" id="calPrev">←</button>
+          <span id="calTitle"></span>
+          <button class="cal-btn" id="calNext">→</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      `;
+      dayStrip.parentNode.appendChild(container);
+
+      $("#calPrev").onclick = () => changeMonth(-1);
+      $("#calNext").onclick = () => changeMonth(1);
+    }
+
+    if (container.classList.contains("hidden")) {
+      container.classList.remove("hidden");
+      renderCalendar(calendarState.viewYear, calendarState.viewMonth);
+    } else {
+      container.classList.add("hidden");
+    }
+  }
+
+  function changeMonth(delta) {
+    const d = new Date(calendarState.viewYear, calendarState.viewMonth + delta, 1);
+    calendarState.viewYear = d.getFullYear();
+    calendarState.viewMonth = d.getMonth();
+    renderCalendar(calendarState.viewYear, calendarState.viewMonth);
+  }
+
+  function renderCalendar(y, m) {
+    const grid = $("#calGrid");
+    const title = $("#calTitle");
+    grid.innerHTML = "";
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    title.textContent = `${monthNames[m]} ${y}`;
+
+    // Weekday headers
+    const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    weekDays.forEach(wd => {
+      const el = document.createElement("div");
+      el.className = "cal-weekday";
+      el.textContent = wd;
+      grid.appendChild(el);
+    });
+
+    // Days calculation
+    const firstDay = new Date(y, m, 1).getDay(); // 0-6
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+    // Empty slots before 1st
+    for (let i = 0; i < firstDay; i++) {
+      grid.appendChild(document.createElement("div"));
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+    const maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + 30); // 30-day rule
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div");
+      cell.className = "cal-cell";
+      cell.textContent = d;
+
+      const current = new Date(y, m, d);
+      const iso = toISODate(current);
+
+      if (iso === selected.dateISO) cell.classList.add("selected");
+      if (current.getTime() === todayMs) cell.classList.add("today");
+
+      // Validation
+      const diffTime = current.getTime() - todayMs;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // Disabled if past or > 30 days
+      if (diffDays < 0 || diffDays > 30) {
+        cell.classList.add("disabled");
+        cell.onclick = () => {
+          if (diffDays > 30) {
+            const name = BARBER.name || "This barber";
+            showToast(`Sorry, ${name} cannot be booked this far out.`);
+          }
+        };
+      } else {
+        cell.onclick = () => {
+          selected.dateISO = iso;
+
+          // Minimize calendar
+          const calContainer = $("#calendar-container");
+          if (calContainer) calContainer.classList.add("hidden");
+
+          renderTimes(iso);
+          screenDate.classList.add("hidden");
+          screenTimes.classList.remove("hidden");
+        };
+      }
+
+      grid.appendChild(cell);
+    }
   }
 
   // ================= RENDER TIMES =================
   async function renderTimes(iso) {
     slotGrid.innerHTML = "";
     hideEmpty();
-    showEmpty("Loading...", true); // Show loading state
+    showEmpty("Loading available times...", true); // Show loading state
 
     pickedDateLabel.textContent = prettyDate(ISOToDate(iso));
     sumDate.textContent = prettyDate(ISOToDate(iso));
@@ -107,27 +276,78 @@
     updateBookEnabled();
 
     try {
-      const res = await fetch(`/api/public/slots/${BARBER.barberId}?date=${iso}`);
-      if (!res.ok) throw new Error("Failed to load slots");
+      if (!sb) throw new Error("Supabase client not initialized");
 
-      const slots = await res.json();
+      // Verify parameters
+      const barberId = BARBER.barberId;
+      if (!barberId) console.warn("Barber ID missing from configuration");
+
+      console.log("RPC Call Params:", {
+        p_barber_id: barberId,
+        p_start_date: iso,
+        p_end_date: iso
+      });
+
+      // RPC Call: get_available_slots
+      const { data: rows, error } = await sb.rpc("get_available_slots", {
+        p_barber_id: barberId,
+        p_start_date: iso,
+        p_end_date: iso,
+      });
+
+      console.log("RPC Response:", { data: rows, error });
+
+      if (error) throw error;
+
       hideEmpty();
 
-      if (!slots || slots.length === 0) {
-        return showEmpty("No times available");
+      const name = BARBER.name || "This barber";
+
+      if (!rows || rows.length === 0) {
+        return showEmpty(`${name} is fully booked or closed on this day.`);
       }
 
-      slots.forEach((hm) => {
+      // Map distinct time slots
+      // The RPC returns { slot_time: "2025-12-24T10:00:00+00:00", ... }
+      const uniqueTimes = new Set();
+      const slots = [];
+
+      rows.forEach(r => {
+        // Convert UTC timestamp to local time object
+        const d = new Date(r.slot_time);
+
+        // Extract local HH:MM
+        const h = String(d.getHours()).padStart(2, "0");
+        const m = String(d.getMinutes()).padStart(2, "0");
+        const hm = `${h}:${m}`;
+
+        if (!uniqueTimes.has(hm)) {
+          uniqueTimes.add(hm);
+          slots.push({ hm, dateObj: d });
+        }
+      });
+
+      // Sort by time
+      slots.sort((a, b) => a.dateObj - b.dateObj);
+
+      if (slots.length === 0) {
+        return showEmpty(`${name} is fully booked or closed on this day.`);
+      }
+
+      slots.forEach((item) => {
         const btn = document.createElement("button");
         btn.className = "slot";
-        btn.textContent = to12h(hm);
-        btn.onclick = () => selectTime(hm, btn);
+        // User requested toLocaleString or similar. to12h works well, or we can use toLocaleString
+        // btn.textContent = item.dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        // Sticking to to12h for consistent formatting as per existing style, which basically does the same.
+        btn.textContent = to12h(item.hm);
+        btn.onclick = () => selectTime(item.hm, btn);
         slotGrid.appendChild(btn);
       });
 
     } catch (err) {
-      console.error(err);
-      showEmpty("Could not load times");
+      console.error("Error loading times:", err);
+      showEmpty("Could not load times. Please try again.");
     }
   }
 
@@ -212,7 +432,14 @@
 
   // ================= UTIL =================
   function todayISO() {
-    return new Date().toISOString().slice(0, 10);
+    return toLocalISO(new Date());
+  }
+
+  function toLocalISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
 
   function nextDays(n) {
@@ -220,7 +447,7 @@
     for (let i = 0; i < n; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
-      out.push(toISODate(d));
+      out.push(toLocalISO(d));
     }
     return out;
   }
@@ -251,7 +478,7 @@
   }
 
   function toISODate(d) {
-    return d.toISOString().slice(0, 10);
+    return toLocalISO(d);
   }
 
   function to12h(hm) {
@@ -270,10 +497,17 @@
   }
 
   function showEmpty(t, isLoading = false) {
-    slotEmpty.textContent = t;
     slotEmpty.classList.remove("hidden");
-    if (isLoading) slotEmpty.classList.add("pulse");
-    else slotEmpty.classList.remove("pulse");
+    if (isLoading) {
+      // Use inline styles for spinner since we verified @keyframes spin exists in theme.css
+      slotEmpty.innerHTML = `
+        <div style="display:inline-block; width:32px; height:32px; border:3px solid rgba(14,165,233,0.2); border-top-color:#0ea5e9; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:12px;"></div>
+        <div class="text-sm muted">Checking availability...</div>
+      `;
+    } else {
+      slotEmpty.textContent = t;
+      slotEmpty.classList.remove("pulse");
+    }
   }
 
   function hideEmpty() {

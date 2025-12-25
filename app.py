@@ -50,7 +50,9 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 @app.context_processor
 def inject_globals():
     return {
-        "asset_ver": os.environ.get("GIT_REV") or datetime.now().strftime("%Y%m%d%H")
+        "asset_ver": os.environ.get("GIT_REV") or datetime.now().strftime("%Y%m%d%H"),
+        "supabase_url": os.getenv("SUPABASE_URL"),
+        "supabase_key": os.getenv("SUPABASE_KEY")
     }
 
 def login_required(fn):
@@ -413,7 +415,7 @@ def update_weekly(barber_id):
             "location_id": row.get("location_id"),
         }).execute()
 
-    regenerate_month(barber_id)
+    return jsonify({"success": True})
     return jsonify({"success": True})
 
 
@@ -532,7 +534,6 @@ def stripe_webhook():
         barber_id = res.data[0]["id"]
 
         ensure_default_weekly_hours(barber_id)
-        regenerate_month(barber_id)
         add_premium_month(barber_id)
 
         used_code = metadata.get("used_promo_code")
@@ -592,93 +593,11 @@ def stripe_webhook():
 # 30-DAY SCHEDULE GENERATION (Manual + Auto)
 # ============================================================
 def regenerate_month(barber_id):
-    """Generate 30-day schedules based on weekly hours + overrides."""
-
-    # Slot duration
-    step = supabase.table("barbers") \
-        .select("slot_duration") \
-        .eq("id", barber_id) \
-        .execute().data[0]["slot_duration"]
-
-    # Weekly hours
-    weekly = supabase.table("barber_weekly_hours") \
-        .select("*") \
-        .eq("barber_id", barber_id) \
-        .execute().data
-
-    # SAFETY GUARD — never wipe schedules without weekly hours
-    if not weekly:
-        return
-
-    week_map = {w["weekday"]: w for w in weekly}
-
-    # Overrides
-    overrides = supabase.table("schedule_overrides") \
-        .select("*") \
-        .eq("barber_id", barber_id) \
-        .execute().data
-
-    ov_map = {o["date"]: o for o in overrides}
-
-    # Clear existing schedules
-    supabase.table("schedules") \
-        .delete() \
-        .eq("barber_id", barber_id) \
-        .execute()
-
-    today = date.today()
-    days = [today + timedelta(days=i) for i in range(30)]
-
-    for d in days:
-        dstr = d.isoformat()
-        weekday = d.strftime("%a").lower()[:3]
-
-        # Override takes priority
-        if dstr in ov_map:
-            ov = ov_map[dstr]
-            if ov["is_closed"]:
-                continue
-
-            slots = generate_slots(
-                ov["start_time"],
-                ov["end_time"],
-                step
-            )
-            loc = ov["location_id"]
-
-        else:
-            if weekday not in week_map:
-                continue
-
-            w = week_map[weekday]
-            if w["is_closed"]:
-                continue
-
-            slots = generate_slots(
-                w["start_time"],
-                w["end_time"],
-                step
-            )
-            loc = w["location_id"]
-
-        for s in slots:
-            end = (
-                datetime.strptime(s, "%H:%M")
-                + timedelta(minutes=step)
-            ).strftime("%H:%M")
-
-            supabase.table("schedules").insert({
-                "barber_id": barber_id,
-                "date": dstr,
-                "start_time": s,
-                "end_time": end,
-                "location_id": loc,
-                "is_available": True
-            }).execute()
+    pass
 
 @app.post("/api/barber/generate/<barber_id>")
 def manual_generate(barber_id):
-    regenerate_month(barber_id)
+    # No-op: RPC handles slots now
     return jsonify({"success": True})
 
 
@@ -697,7 +616,6 @@ def book_view(barber_id):
     barber = barber_res.data[0]
 
     ensure_default_weekly_hours(barber["id"])
-    regenerate_month(barber["id"])
 
     weekly = (
         supabase.table("barber_weekly_hours")
@@ -768,15 +686,23 @@ def create_appt():
     d = data["date"]
     start = data["start_time"]
 
-    # Check slot
-    slot = supabase.table("schedules").select("*")\
+    # Calculate end_time
+    barber_res = supabase.table("barbers").select("slot_duration").eq("id", barber_id).execute()
+    duration = 60
+    if barber_res.data:
+        duration = barber_res.data[0].get("slot_duration", 60)
+        
+    start_dt = datetime.strptime(start, "%H:%M")
+    end_dt = start_dt + timedelta(minutes=duration)
+    end_time = end_dt.strftime("%H:%M")
+
+    # Check overlap
+    overlap = supabase.table("appointments").select("id")\
         .eq("barber_id", barber_id).eq("date", d)\
-        .eq("start_time", start).eq("is_available", True).execute().data
+        .eq("start_time", start).neq("status", "cancelled").execute()
 
-    if not slot:
+    if overlap.data:
         return jsonify({"error": "Slot unavailable"}), 409
-
-    slot = slot[0]
 
     # Create appointment
     appt = supabase.table("appointments").insert({
@@ -786,13 +712,9 @@ def create_appt():
         "client_phone": data["client_phone"],
         "date": d,
         "start_time": start,
-        "end_time": slot["end_time"],
+        "end_time": end_time,
         "status": "booked"
     }).execute().data[0]
-
-    # Mark taken
-    supabase.table("schedules").update({"is_available": False})\
-        .eq("id", slot["id"]).execute()
 
     return jsonify({"success": True, "appointment": appt})
 

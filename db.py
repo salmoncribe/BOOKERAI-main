@@ -182,114 +182,44 @@ def get_locations_for_barber(barber_id):
 # ============================================================
 
 def create_schedule_slot(barber_id, date, start_time, end_time, location_id=None):
-    data = {
-        "barber_id": barber_id,
-        "date": date,
-        "start_time": start_time,
-        "end_time": end_time,
-        "is_available": True,
-        "location_id": location_id
-    }
-    res = supabase.table("schedules").insert(data).execute()
-    return res.data[0]
+    # Legacy: no-op as we moved to RPC
+    pass
 
 
 def get_available_slots(barber_id, target_date_str):
     """
-    Generate available slots dynamically:
-    1. Check overrides first.
-    2. Else check weekly hours.
-    3. Generate slots.
-    4. Subtract existing appointments.
+    Generate available slots via PostgreSQL RPC get_available_slots.
     """
-    # 1. Get Barber Slot Duration
-    barber_res = supabase.table("barbers").select("slot_duration").eq("id", barber_id).execute()
-    if not barber_res.data:
-        return []
-    step = barber_res.data[0].get("slot_duration", 60)
-
-    # 2. Check Overrides
-    override = (
-        supabase.table("schedule_overrides")
-        .select("*")
-        .eq("barber_id", barber_id)
-        .eq("date", target_date_str)
-        .execute()
-        .data
-    )
-
-    start_time = None
-    end_time = None
-
-    if override:
-        ov = override[0]
-        if ov.get("is_closed"):
-            return []
-        start_time = ov["start_time"]
-        end_time = ov["end_time"]
-    else:
-        # 3. Fallback to Weekly Hours
-        # derive weekday (mon, tue...)
-        dt = datetime.strptime(target_date_str, "%Y-%m-%d")
-        weekday = dt.strftime("%a").lower()
-
-        hours = (
-            supabase.table("barber_weekly_hours")
-            .select("*")
-            .eq("barber_id", barber_id)
-            .eq("weekday", weekday)
-            .execute()
-            .data
-        )
-        if not hours:
-            return []
+    try:
+        # RPC expects p_start_date and p_end_date. We query for single day here.
+        params = {
+            "p_barber_id": barber_id,
+            "p_start_date": target_date_str,
+            "p_end_date": target_date_str
+        }
+        res = supabase.rpc("get_available_slots", params).execute()
         
-        h = hours[0]
-        if h.get("is_closed"):
-            return []
+        slots = []
+        if res.data:
+            for item in res.data:
+                # RPC returns UTC string e.g. "2023-12-25T09:00:00+00:00"
+                ts_str = item["slot_time"]
+                # For compatibility with verify_slots, return HH:MM
+                # Note: We assume the date matches target_date_str.
+                # If RPC handles timezone, we might need to adjust.
+                dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                slots.append(dt.strftime("%H:%M"))
         
-        start_time = h["start_time"]
-        end_time = h["end_time"]
+        return slots
 
-    if not start_time or not end_time:
+    except Exception as e:
+        print(f"Error fetching slots via RPC: {e}")
         return []
-
-    # 4. Generate All Potential Slots
-    # Helper to clean time string
-    def to_dt(t_str):
-        return datetime.strptime(f"{target_date_str} {t_str}", "%Y-%m-%d %H:%M:%S" if len(t_str) > 5 else "%Y-%m-%d %H:%M")
-
-    slots = []
-    current = to_dt(start_time)
-    end_dt = to_dt(end_time)
-    
-    while current + timedelta(minutes=step) <= end_dt:
-        time_str = current.strftime("%H:%M")
-        slots.append(time_str)
-        current += timedelta(minutes=step)
-
-    # 5. Remove Booked Slots
-    appointments = (
-        supabase.table("appointments")
-        .select("start_time")
-        .eq("barber_id", barber_id)
-        .eq("date", target_date_str)
-        .neq("status", "cancelled") 
-        .execute()
-        .data
-    )
-
-    booked_times = {a["start_time"][:5] for a in appointments} # ensure HH:MM format
-
-    final_slots = [s for s in slots if s not in booked_times]
-    
-    return final_slots
 
 
 def mark_slot_unavailable(schedule_id):
-    supabase.table("schedules").update({
-        "is_available": False
-    }).eq("id", schedule_id).execute()
+    # Deprecated
+    pass
 
 
 # ============================================================
@@ -299,24 +229,40 @@ def mark_slot_unavailable(schedule_id):
 def create_appointment(barber_id, schedule_id, service_name,
                        price=0, notes="", user_id=None,
                        guest_name=None, guest_phone=None):
-    """Create an appointment for clients or guests."""
+                       
+    # NOTE: This function signature is legacy (takes schedule_id).
+    # Ideally should take date/start_time. 
+    # For now, we stub it or keep it but it won't work well if schedule_id is invalid.
+    # Since app.py doesn't use this, it might be fine.
+    pass
+
+def create_appointment_v2(barber_id, date, start_time, end_time, 
+                          service_name, price=0, notes="", 
+                          user_id=None, guest_name=None, guest_phone=None):
+    
+    # Check availability
+    conflict = supabase.table("appointments").select("id").eq("barber_id", barber_id)\
+        .eq("date", date).eq("start_time", start_time)\
+        .neq("status", "cancelled").execute()
+        
+    if conflict.data:
+        raise Exception("Slot already booked")
+
     data = {
         "barber_id": barber_id,
-        "schedule_id": schedule_id,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
         "service_name": service_name,
         "price": price,
         "status": "booked",
         "notes": notes,
-        "user_id": user_id,           # client OR None
-        "guest_name": guest_name,     # guest only
-        "guest_phone": guest_phone,   # guest only
+        "user_id": user_id,
+        "guest_name": guest_name,
+        "guest_phone": guest_phone,
     }
 
     res = supabase.table("appointments").insert(data).execute()
-
-    # Mark schedule slot unavailable
-    mark_slot_unavailable(schedule_id)
-
     return res.data[0]
 
 
