@@ -2,6 +2,8 @@ import os
 import re
 import uuid
 import mimetypes
+# Enforce CSS MIME type to prevent registry issues on some OS/environments
+mimetypes.add_type('text/css', '.css')
 from functools import wraps
 from datetime import datetime, timedelta, date
 
@@ -49,8 +51,12 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 # ----------------------------------------------
 @app.context_processor
 def inject_globals():
+    # Sanitize asset_ver (alphanumeric only) to prevent breaking HTML tags
+    raw_ver = os.environ.get("GIT_REV") or datetime.now().strftime("%Y%m%d%H")
+    safe_ver = re.sub(r'[^a-zA-Z0-9_\-\.]', '', raw_ver)
+    
     return {
-        "asset_ver": os.environ.get("GIT_REV") or datetime.now().strftime("%Y%m%d%H"),
+        "asset_ver": safe_ver,
         "supabase_url": os.getenv("SUPABASE_URL"),
         "supabase_key": os.getenv("SUPABASE_KEY")
     }
