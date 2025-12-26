@@ -1,0 +1,213 @@
+/* ==========================================================
+   3. LAYOUT STRUCTURES (layout.css)
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   HEADER / NAVBAR
+   ---------------------------------------------------------- */
+header.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    height: var(--header-height);
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+}
+
+.nav-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 2rem;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--white);
+    gap: 0.5rem;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-link {
+    color: var(--white);
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+/* ----------------------------------------------------------
+   HERO SECTION (Layout)
+   ---------------------------------------------------------- */
+.hero {
+    position: relative;
+    text-align: center;
+    padding: 7rem 2rem 6rem;
+    background: linear-gradient(145deg, #e0f7ff 0%, #f0fbff 100%);
+    overflow: hidden;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 40%, rgba(14, 165, 233, 0.15), transparent 60%),
+        radial-gradient(circle at 70% 60%, rgba(20, 184, 166, 0.15), transparent 60%);
+    animation: floatGlow 16s ease-in-out infinite alternate;
+    z-index: 0;
+}
+
+.hero h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.hero p {
+    max-width: 650px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 1.1rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* Find A Professional Hero */
+.find-hero {
+    text-align: center;
+    padding: 6rem 2rem 4rem;
+    background: linear-gradient(145deg, #e0f7ff 0%, #f0fbff 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.find-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 25% 35%, rgba(14, 165, 233, 0.15), transparent 70%),
+        radial-gradient(circle at 75% 65%, rgba(20, 184, 166, 0.15), transparent 70%);
+    z-index: 0;
+    animation: floatGlow 16s ease-in-out infinite alternate;
+}
+
+.find-hero .hero-inner {
+    position: relative;
+    z-index: 1;
+}
+
+.find-hero h1 {
+    font-size: 2.3rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+}
+
+.find-hero p {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ----------------------------------------------------------
+   AUTH CONTAINER LAYOUT
+   ---------------------------------------------------------- */
+.auth-container.vibrant-auth {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(20, 184, 166, 0.1));
+    overflow: hidden;
+}
+
+.auth-container.vibrant-auth.dashboard-mode {
+    /* Special override case if dashboard uses this class */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.auth-container .animated-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 25% 35%, rgba(14, 165, 233, 0.15), transparent 70%),
+        radial-gradient(circle at 75% 65%, rgba(20, 184, 166, 0.15), transparent 70%);
+    filter: blur(100px);
+    animation: floatGlowAuth 18s ease-in-out infinite alternate;
+    z-index: 0;
+}
+
+/* ----------------------------------------------------------
+   FOOTER
+   ---------------------------------------------------------- */
+footer.site-footer {
+    background: #f8fcff;
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+    border-top: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+/* ----------------------------------------------------------
+   RESPONSIVE LAYOUT
+   ---------------------------------------------------------- */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    .find-hero {
+        padding: 5rem 1.5rem 3rem;
+    }
+
+    .find-hero h1 {
+        font-size: 1.9rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .animated-bg {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: -1 !important;
+        pointer-events: none !important;
+    }
+
+    html,
+    body {
+        height: auto !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-behavior: smooth !important;
+    }
+}

@@ -1,0 +1,686 @@
+/* ==========================================================
+   5. DASHBOARD STYLES (dashboard.css)
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   DASHBOARD LAYOUT
+   ---------------------------------------------------------- */
+.dashboard {
+    padding: 4rem 2rem;
+    position: relative;
+    color: var(--text-dark);
+    background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
+    width: 100%;
+    margin: 0 auto;
+    overflow-x: hidden;
+}
+
+.dashboard .animated-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 40%, rgba(14, 165, 233, 0.08), transparent 60%),
+        radial-gradient(circle at 70% 60%, rgba(20, 184, 166, 0.08), transparent 60%);
+    z-index: 0;
+    animation: floatGlow 14s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 2fr 1fr;
+        align-items: start;
+    }
+}
+
+/* Header */
+.dash-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 1.8rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.1);
+    position: relative;
+    z-index: 1;
+    margin-bottom: 2.5rem;
+}
+
+.dash-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.4rem;
+}
+
+.dash-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.25rem;
+}
+
+.dash-actions button,
+.dash-actions a {
+    flex: 0 1 auto;
+}
+
+/* Sidebar */
+.sidebar-sticky {
+    position: sticky;
+    top: 100px;
+}
+
+.sidebar-sticky .card {
+    margin-bottom: 1.5rem;
+}
+
+
+/* ----------------------------------------------------------
+   INSIGHTS & APPOINTMENTS
+   ---------------------------------------------------------- */
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.insight-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem 1.8rem;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.08);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.15);
+}
+
+.insight-card h4 {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+}
+
+.insight-card p {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--sky-blue);
+}
+
+/* Appointments Table */
+.appointments-card {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
+    margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    max-height: 420px;
+    overflow: hidden;
+    position: relative;
+}
+
+.appointments-card h3 {
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.table-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(14, 165, 233, 0.08);
+    background: #fcfeff;
+}
+
+.table-scroll::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    border-radius: 1rem;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+    background: rgba(240, 250, 255, 0.7);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(14, 165, 233, 0.08);
+    white-space: nowrap;
+}
+
+.table th {
+    color: var(--muted);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    background: #f9feff;
+    z-index: 2;
+}
+
+.table td a {
+    color: var(--sky-blue);
+    text-decoration: none;
+}
+
+.table td a:hover {
+    text-decoration: underline;
+}
+
+.cancel-btn {
+    background: #fff;
+    color: var(--teal);
+    border: 1.5px solid var(--teal);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+}
+
+.cancel-btn:hover {
+    background: var(--teal);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(20, 184, 166, 0.3);
+}
+
+/* ----------------------------------------------------------
+   HOURS EDITOR
+   ---------------------------------------------------------- */
+.hours-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f0fbff 100%);
+    padding: 2rem 1.5rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 35px rgba(14, 165, 233, 0.08);
+    margin: 1.5rem auto;
+    position: relative;
+    overflow: visible !important;
+    max-width: 640px;
+}
+
+.hours-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(14, 165, 233, 0.08), transparent 60%),
+        radial-gradient(circle at 80% 70%, rgba(20, 184, 166, 0.08), transparent 60%);
+    animation: subtleFloat 12s ease-in-out infinite alternate;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.hours-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.hours-header h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.copy-all {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.6rem;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.25);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.copy-all:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(20, 184, 166, 0.35);
+}
+
+.hours-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.day-editor {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1.5px solid rgba(14, 165, 233, 0.15);
+    border-radius: 1rem;
+    padding: 1.2rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    text-align: center;
+    position: relative;
+}
+
+.day-editor:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(14, 165, 233, 0.15);
+}
+
+.day-editor h4 {
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.toggle-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.day-toggle {
+    width: 40px;
+    height: 22px;
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.2);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.25s ease;
+}
+
+.day-toggle::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.25s ease;
+}
+
+.day-toggle.active {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+}
+
+.day-toggle.active::after {
+    transform: translateX(18px);
+}
+
+.time-inputs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.time-inputs input[type="time"] {
+    border: 1.5px solid rgba(14, 165, 233, 0.15);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    font-family: "Poppins", system-ui, sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.time-inputs input[type="time"]:focus {
+    border-color: var(--sky-blue);
+    box-shadow: 0 0 6px rgba(14, 165, 233, 0.25);
+}
+
+.hours-collapse {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: all 0.4s ease;
+    visibility: hidden;
+}
+
+.hours-collapse.active {
+    opacity: 1;
+    visibility: visible;
+    max-height: 800px;
+}
+
+.edit-hours-btn {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.6rem;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.25);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    z-index: 5;
+}
+
+.edit-hours-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(20, 184, 166, 0.35);
+}
+
+.save-check {
+    font-size: 1.1rem;
+    margin-top: 0.6rem;
+    color: var(--teal);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.day-editor.saved .save-check {
+    opacity: 1;
+}
+
+/* ----------------------------------------------------------
+   PROMO CARD & PREMIUM UI
+   ---------------------------------------------------------- */
+.promo-card {
+    position: relative;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(240, 250, 255, 0.9));
+    border-radius: 1.25rem;
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: 0 10px 35px rgba(14, 165, 233, 0.15),
+        0 0 60px rgba(20, 184, 166, 0.1);
+    overflow: hidden;
+    border: 1.5px solid rgba(14, 165, 233, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    backdrop-filter: blur(10px);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.promo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(14, 165, 233, 0.25),
+        0 0 70px rgba(20, 184, 166, 0.15);
+}
+
+.promo-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(14, 165, 233, 0.15), transparent 60%),
+        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.1), transparent 60%);
+    animation: gradientMove 12s ease-in-out infinite alternate;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.promo-header {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1.25rem;
+    text-align: center;
+}
+
+.promo-header h3 {
+    color: var(--text-dark);
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.promo-header p {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-top: 0.4rem;
+}
+
+.promo-body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.promo-body input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.9rem 1.2rem;
+    border-radius: 0.75rem;
+    border: 1.5px solid rgba(14, 165, 233, 0.2);
+    background: #fff;
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.promo-body input::placeholder {
+    color: #94a3b8;
+}
+
+.promo-body input:focus {
+    border-color: var(--sky-blue);
+    box-shadow: 0 0 8px rgba(14, 165, 233, 0.25);
+}
+
+.promo-body button {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    border: none;
+    border-radius: 0.75rem;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 0.9rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.25);
+}
+
+.promo-body button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 35px rgba(14, 165, 233, 0.35);
+}
+
+.promo-msg {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    text-align: center;
+    color: var(--teal);
+    font-weight: 500;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--sky-blue);
+    color: #fff;
+    padding: 0.9rem 1.5rem;
+    border-radius: 0.65rem;
+    font-weight: 500;
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    z-index: 1000;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Upgrade Banner */
+.upgrade-banner {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-weight: 500;
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.25);
+    animation: slideDown 0.5s ease-out;
+}
+
+.upgrade-banner a {
+    color: #fff;
+    text-decoration: underline;
+    margin-left: 0.5rem;
+    font-weight: 700;
+}
+
+.upgrade-banner a:hover {
+    text-decoration: none;
+    opacity: 0.9;
+}
+
+/* Premium Drop */
+#premiumDrop {
+    overflow: hidden;
+    transform: translateY(-10px);
+    opacity: 0;
+    max-height: 0;
+    transition: all 0.5s ease;
+}
+
+#premiumDrop:not(.hidden) {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 800px;
+}
+
+.premium-drop {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    animation: fadeIn 0.4s ease;
+}
+
+.plan-summary {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+/* Video Thumb */
+video.media-thumb {
+    width: 33%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.15);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.3s ease;
+    background: #000;
+    opacity: 0.95;
+    will-change: transform;
+    display: block;
+}
+
+video.media-thumb:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.3);
+    opacity: 1;
+}
+
+/* Responsive Dashboard Specifics */
+@media (max-width: 768px) {
+    .table-scroll {
+        max-height: 55vh;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .dash-actions button,
+    .dash-actions a {
+        flex: 1 1 100%;
+        text-align: center;
+    }
+
+    .hours-grid {
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .hours-card,
+    .promo-card {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .promo-body {
+        flex-direction: column;
+    }
+
+    .promo-body button {
+        width: 100%;
+    }
+}
+
+/* Fullscreen mobile fix overrides */
+@media (max-width: 900px) {
+
+    .dashboard,
+    section.dashboard,
+    section.dashboard.vibrant-auth {
+        display: block !important;
+        position: relative !important;
+        height: auto !important;
+        min-height: 100vh !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding-bottom: 3rem !important;
+    }
+
+    .hours-card,
+    .promo-card {
+        margin-bottom: 2.5rem !important;
+    }
+
+    .hours-card {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+}

@@ -1,0 +1,497 @@
+/* ==========================================================
+   4. COMPONENTS (components.css)
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   BUTTONS
+   ---------------------------------------------------------- */
+.btn {
+    display: inline-block;
+    padding: 1rem 2.2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.25);
+    border: none;
+}
+
+.gradient-btn {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 1rem 2rem;
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.35);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.gradient-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.5);
+}
+
+/* Shimmer Effect */
+.gradient-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.4), transparent);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.gradient-btn:hover::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* Button Variants */
+.gradient-btn.full-width {
+    display: block;
+    width: 100%;
+}
+
+.gradient-btn.large {
+    display: block;
+    width: 100%;
+    margin-top: 2rem;
+    font-size: 1.05rem;
+}
+
+.btn-primary.gradient-btn {
+    /* Used in dashboard actions */
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.65rem;
+    box-shadow: 0 6px 18px rgba(14, 165, 233, 0.25);
+}
+
+.btn-secondary {
+    background: #fff;
+    color: var(--sky-blue);
+    border: 1.5px solid var(--sky-blue);
+    border-radius: 0.65rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background: var(--sky-blue);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+}
+
+.btn-premium {
+    background: transparent;
+    border: 2px solid var(--teal);
+    color: var(--teal);
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-premium:hover {
+    background: linear-gradient(to right, var(--sky-blue), var(--teal));
+    color: #fff;
+}
+
+.floating-demo-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: linear-gradient(to right, var(--sky-blue), var(--teal));
+    color: #fff;
+    font-weight: 600;
+    padding: 0.9rem 1.6rem;
+    border-radius: 50px;
+    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    z-index: 999;
+    animation: pulseGlow 3s infinite;
+}
+
+.floating-demo-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 12px 35px rgba(14, 165, 233, 0.35);
+}
+
+/* Hero Button Group */
+.hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-buttons .btn.large:first-child {
+    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+    color: #fff;
+    border: none;
+}
+
+.hero-buttons .btn.large:first-child:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.45);
+}
+
+.hero-buttons .btn.large:last-child {
+    background: #fff;
+    color: var(--sky-blue);
+    border: 2px solid var(--sky-blue);
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.15);
+}
+
+.hero-buttons .btn.large:last-child:hover {
+    background: var(--sky-blue);
+    color: #fff !important;
+    /* Force override */
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.45);
+}
+
+/* ----------------------------------------------------------
+   CARDS
+   ---------------------------------------------------------- */
+.card {
+    /* Generic Dashboard Card */
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
+    border: 1px solid rgba(14, 165, 233, 0.08);
+    margin-bottom: 2rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(14, 165, 233, 0.12);
+}
+
+.card h3 {
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    font-weight: 700;
+}
+
+/* Feature Card (Landing) */
+.feature-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.08);
+    border: 1.5px solid rgba(14, 165, 233, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(14, 165, 233, 0.15);
+}
+
+.feature-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.08), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 0;
+}
+
+.feature-card:hover::before {
+    opacity: 1;
+}
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    color: var(--text-dark);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-card p {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+}
+
+/* Auth Card */
+.auth-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px);
+    border-radius: 1.5rem;
+    padding: 3rem 2.5rem;
+    box-shadow: 0 12px 40px rgba(14, 165, 233, 0.15);
+    border: 1px solid rgba(14, 165, 233, 0.12);
+    width: 100%;
+    max-width: 650px;
+    position: relative;
+    z-index: 2;
+    animation: fadeSlideUp 1.2s ease forwards;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+/* Login specific max-width override via CSS specificity or separate rule */
+
+
+/* ----------------------------------------------------------
+   BUBBLES
+   ---------------------------------------------------------- */
+.bubble {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    background: linear-gradient(145deg, var(--sky-blue), var(--teal));
+    box-shadow: 0 12px 25px rgba(14, 165, 233, 0.3);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.bubble:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 18px 40px rgba(14, 165, 233, 0.45);
+}
+
+.bubble img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+    transition: opacity 0.35s ease;
+}
+
+.bubble::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 50%;
+    transition: background 0.35s ease;
+}
+
+.bubble:hover img {
+    opacity: 0.65;
+}
+
+.bubble:hover::after {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.bubble span {
+    position: relative;
+    z-index: 2;
+    font-size: 1.05rem;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.bubble-small {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: linear-gradient(145deg, rgba(14, 165, 233, 0.15), rgba(20, 184, 166, 0.15));
+    color: var(--text-dark);
+    box-shadow: 0 5px 15px rgba(14, 165, 233, 0.15);
+    margin: 0.5rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.bubble-small:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+}
+
+.logo-dot {
+    width: 12px;
+    height: 12px;
+    background: var(--white);
+    border-radius: 50%;
+    animation: pulse 2.5s infinite ease-in-out;
+}
+
+/* ----------------------------------------------------------
+   FORMS
+   ---------------------------------------------------------- */
+.input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem 2rem;
+}
+
+.input-group.full {
+    grid-column: 1 / -1;
+}
+
+.input-group label,
+.find-form label,
+.form-field span {
+    font-weight: 600;
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea,
+.find-form input,
+.find-form select,
+.form-field input {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    font-size: 1rem;
+    font-family: "Poppins", system-ui, sans-serif;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1.5px solid rgba(14, 165, 233, 0.15);
+    border-radius: 0.65rem;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    outline: none;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus,
+.find-form input:focus,
+.find-form select:focus,
+.form-field input:focus {
+    border-color: var(--sky-blue);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder,
+.find-form input::placeholder {
+    color: #94a3b8;
+}
+
+/* Custom Select Arrow */
+.input-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%230ea5e9' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 12px 8px;
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Search Form (Find a Pro) */
+.find-form form {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    padding: 2rem 2.5rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 25px rgba(14, 165, 233, 0.15);
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+/* ----------------------------------------------------------
+   LINKS & MISC
+   ---------------------------------------------------------- */
+.signup-link {
+    background: var(--white);
+    color: var(--sky-blue);
+    border-radius: 0.6rem;
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.signup-link:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+.signup-link-text {
+    color: var(--sky-blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.signup-link-text:hover {
+    text-decoration: underline;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(14, 165, 233, 0.2);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+
+/* Alerts */
+.alert {
+    padding: 0.75rem 1rem;
+    background: #e0f7ff;
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .bubble {
+        width: 140px;
+        height: 140px;
+        font-size: 0.9rem;
+    }
+
+    .card,
+    .feature-card {
+        padding: 1.5rem;
+    }
+}

@@ -9,7 +9,12 @@
   <title>{% block title %}BookerAI{% endblock %}</title>
 
   <!-- Global Styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}" />
+  <!-- Global Styles (Modularized) -->
+  <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v={{ asset_ver }}" /> -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v={{ asset_ver }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}?v={{ asset_ver }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}?v={{ asset_ver }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ asset_ver }}" />
 
   <!-- Optional font + basic layout guard -->
   <style>
@@ -76,7 +81,7 @@
       <nav class="nav-links" role="navigation" aria-label="Main navigation">
         {% if session.get('barberId') %}
         <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-        <a href="{{ url_for('barber_logout') }}" class="nav-link">Logout</a>
+        <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
         {% else %}
         <a href="{{ url_for('login') }}" class="nav-link">Login</a>
         <a href="{{ url_for('signup') }}" class="nav-link signup-link">Sign Up</a>

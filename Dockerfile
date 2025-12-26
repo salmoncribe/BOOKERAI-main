@@ -3,9 +3,6 @@ FROM python:3.11-slim
 # Prevents Python from writing pyc files and ensures logs show up immediately
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
-# Supabase Credentials (default values, can be overridden at runtime)
-ENV SUPABASE_URL="https://ctwjbibinzhhiftqlbow.supabase.co"
-ENV SUPABASE_KEY="sb_publishable_YppD7iwVYp29xtnZFPCK4w_ykGB5lUd"
 
 # Set working directory
 WORKDIR /app
