@@ -18,17 +18,50 @@
     /* Lock padding inside width */
 }
 
-/* Central Card Utility - Enforced on all main cards */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+/* 1. Grid Reflow: Desktop only affects larger screens */
+@media (min-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 2fr 1fr;
+        align-items: start;
+    }
+}
+
+/* 2. Central Card Utility - Safe Widths & Glassmorphism */
+/* Elite Bento Glassmorphism */
 .central-card,
 .appointments-card,
 .hours-card,
 .promo-card,
 .card {
-    width: min(95%, 640px);
-    margin-left: auto;
-    margin-right: auto;
-    margin: 0 auto !important;
-    box-sizing: border-box;
+    /* Safe Mobile Widths */
+    width: calc(100% - 24px);
+    margin: 0 auto 1.5rem auto !important;
+    box-sizing: border-box !important;
+
+    /* Bento Glassmorphism */
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.7);
+    /* High-end glass look */
+    border: 1px solid rgba(255, 255, 255, 0.4);
+
+    @supports (backdrop-filter: blur(12px)) {
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Premium Shadows */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+    transition: transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 @media (max-width: 768px) {
@@ -38,8 +71,8 @@
     .hours-card,
     .promo-card,
     .card {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
     }
 }
 
@@ -60,17 +93,11 @@
     pointer-events: none;
 }
 
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-}
-
-@media (min-width: 992px) {
-    .dashboard-grid {
-        grid-template-columns: 2fr 1fr;
-        align-items: start;
-    }
+/* Common Button Active State */
+button:active,
+.btn:active,
+.btn-primary:active {
+    transform: scale(0.98);
 }
 
 /* Header */
@@ -79,37 +106,20 @@
     flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    background: #fff;
+    /* Glassmorphism for header too */
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
     padding: 1.8rem 2rem;
-    border-radius: 1rem;
+    border-radius: 20px;
     box-shadow: 0 10px 25px rgba(14, 165, 233, 0.1);
     position: relative;
     z-index: 1;
     margin-bottom: 2.5rem;
-    /* Ensure content doesn't overflow */
     max-width: 100%;
     overflow-wrap: break-word;
-}
-
-@media (max-width: 768px) {
-    .dash-head {
-        padding: 1.5rem;
-    }
-}
-
-.dash-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 0.4rem;
-}
-
-.dash-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .dash-actions button,
@@ -1341,4 +1351,5 @@
             width: 100%;
             justify-content: space-between;
         }
-    }}
+    }
+}

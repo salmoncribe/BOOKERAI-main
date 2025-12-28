@@ -31,42 +31,73 @@
   <div class="dashboard-grid">
     <!-- Main Content -->
     <div class="main-content">
-      <!-- Appointments -->
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-          <h3>Upcoming Appointments</h3>
-          <button class="btn btn-secondary small" onclick="openCalendar()">View Calendar</button>
-        </div>
-        {% if appointments %}
-        <div class="table-scroll">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Client</th>
-                <th>Phone</th>
-                <th>When</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for a in appointments %}
-              <tr>
-                <td>{{ a.client_name or "Unknown" }}</td>
-                <td>{{ a.client_phone or "—" }}</td>
-                <td>{{ a.date }} {{ a.start_time }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <div class="mobile-view-calendar-btn">
-          <button class="btn btn-secondary full-width" onclick="openCalendar()">View Full Calendar</button>
-        </div>
-        {% else %}
-        <p class="muted small">No upcoming appointments yet.</p>
-        {% endif %}
+      <!-- Upcoming Appointments -->
+      <h3 style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+        <span>Upcoming Appointments</span>
+        <a href="#" style="font-size:0.9rem;color:var(--sky-blue);">View All</a>
+      </h3>
+
+      {% if upcoming_appts %}
+
+      <!-- Desktop Table View -->
+      <div class="table-responsive desktop-appt-view">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Client</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appt in upcoming_appts %}
+            <tr>
+              <td>
+                <span style="font-weight:600;color:var(--text-dark);">{{ appt.start_time.strftime('%H:%M') }}</span>
+                <div style="font-size:0.8rem;color:var(--muted);">{{ appt.date }}</div>
+              </td>
+              <td>{{ appt.client_name }}</td>
+              <td>Haircut (Standard)</td>
+              <td><span class="status-badge confirmed">Confirmed</span></td>
+              <td>
+                <button class="icon-btn" title="Edit Appt">✏️</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
 
-      <!-- Business Hours -->
+      <!-- Mobile Card View -->
+      <div class="mobile-appt-view" style="display: none;">
+        {% for appt in upcoming_appts %}
+        <div class="mobile-appt-card"
+          style="background: rgba(255,255,255,0.6); border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem; border: 1px solid rgba(14,165,233,0.1);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: 700; color: var(--text-dark); font-size: 1.1rem;">{{
+              appt.start_time.strftime('%H:%M') }}</span>
+            <span class="status-badge confirmed" style="font-size: 0.8rem;">Confirmed</span>
+          </div>
+          <div style="font-size: 0.95rem; color: var(--text-dark); margin-bottom: 0.25rem;">{{ appt.client_name }}</div>
+          <div
+            style="font-size: 0.85rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ appt.date }} • Standard Cut</span>
+            <button class="icon-btn" title="Edit Appt"
+              style="background: none; border: none; cursor: pointer;">✏️</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="empty-state">
+        <span class="icon">📅</span>
+        <p>No upcoming appointments.</p>
+        <button class="btn-sm">Add Appointment</button>
+      </div>
+      {% endif %} <!-- Business Hours -->
       <div class="card hours-card">
         <div class="hours-header" style="flex-direction:column; gap:0.5rem; margin-bottom:1rem;">
           <h3>Business Hours</h3>
