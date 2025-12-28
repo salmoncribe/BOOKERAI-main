@@ -68,13 +68,14 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     position: relative;
     align-items: center;
-    /* Center horizontally */
+    padding-bottom: env(safe-area-inset-bottom);
+    /* Fix for iOS home bar */
 }
 
 /* 🔄 Transitions */

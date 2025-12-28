@@ -15,6 +15,13 @@
     overflow-x: hidden;
 }
 
+/* Helper for mobile button */
+.mobile-view-calendar-btn {
+    display: none;
+    margin-top: 1rem;
+    text-align: center;
+}
+
 .dashboard .animated-bg {
     position: absolute;
     inset: 0;
@@ -623,8 +630,28 @@ video.media-thumb:hover {
 
 /* Responsive Dashboard Specifics */
 @media (max-width: 768px) {
+    .dashboard {
+        padding: 2rem 1rem;
+    }
+
     .table-scroll {
         max-height: 55vh;
+    }
+
+    /* Stack grids vertically */
+    .insights-grid,
+    .hours-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Limit appointments to 4 items on mobile */
+    .appointments-card tbody tr:nth-child(n+5) {
+        display: none;
+    }
+
+    /* Show mobile CTA */
+    .mobile-view-calendar-btn {
+        display: block;
     }
 }
 
