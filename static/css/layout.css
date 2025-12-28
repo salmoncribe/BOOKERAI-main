@@ -82,10 +82,7 @@ header.site-header {
     /* Hide icons on desktop */
 }
 
-.user-greeting-label,
-.user-name {
-    /* Just in case nav-identity shows up */
-}
+
 
 .nav-link {
     color: var(--white);
