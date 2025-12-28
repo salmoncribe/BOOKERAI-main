@@ -144,23 +144,7 @@
     <!-- Sidebar -->
     <div class="sidebar-sticky">
       <!-- Core Actions -->
-      <div class="card">
-        <h3>Quick Actions</h3>
-        <div class="dash-actions" style="flex-direction:column;align-items:stretch;">
-          <button id="copyLinkBtn" type="button" class="btn-primary gradient-btn small" data-copy="{{ public_link }}">
-            Copy booking link
-          </button>
-          <a class="btn btn-secondary small" href="{{ public_link }}" target="_blank" rel="noopener"
-            style="text-align:center;">
-            Open public page
-          </a>
-          {% if features.find_pro %}
-          <a class="btn btn-secondary small" href="{{ url_for('find_pro_route') }}" style="text-align:center;">
-            Find a Pro
-          </a>
-          {% endif %}
-        </div>
-      </div>
+
 
       <!-- Profile Media (Locked) -->
       <div class="card">

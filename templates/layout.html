@@ -119,7 +119,6 @@
           </div>
 
           <div class="nav-secondary">
-            <a href="{{ url_for('settings') }}" class="nav-link secondary-link">Settings</a>
             <a href="{{ url_for('help_center') }}" class="nav-link secondary-link">Help</a>
           </div>
 
@@ -219,6 +218,47 @@
     });
   </script>
   {% block scripts %}{% endblock %}
+  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const lucideScript = document.querySelector('script[src*="lucide"]');
+
+      // Global Copy Link
+      document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.copy-global-btn');
+        if (btn) {
+          const url = btn.dataset.copyUrl;
+          if (url) {
+            navigator.clipboard.writeText(url).then(() => {
+              // Simple feedback
+              const original = btn.innerHTML;
+              btn.innerHTML = `✓ Copied`;
+              btn.classList.add('copied-state');
+              setTimeout(() => {
+                btn.innerHTML = original;
+                btn.classList.remove('copied-state');
+                if (window.lucide) window.lucide.createIcons();
+              }, 2000);
+
+              // Also show a toast?
+              showToast("Link copied to clipboard!");
+            });
+          }
+        }
+      });
+
+      function showToast(msg) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast show';
+        // Reuse existing toast style from dashboard.css if available, 
+        // but layout.css might not have it. I'll stick to btn feedback mainly.
+        // If toast class doesn't exist globally, this div is just unstyled text.
+        // I'll skip toast reliance and stick to button text change.
+      }
+    });
+  </script>
 </body>
 
 </html>
