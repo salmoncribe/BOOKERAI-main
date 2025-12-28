@@ -47,7 +47,9 @@
 
     /* Bento Glassmorphism */
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.7);
+    /* Update Glassmorphism */
+    background: rgba(255, 255, 255, 0.8);
+
     /* High-end glass look */
 
     /* Visual Polish: Inner Borders & Softer Shadows */
@@ -1418,16 +1420,34 @@ button:active,
 
 .desktop-dash-btn {
     display: flex;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-dark) !important;
     font-weight: 500;
-    transition: all 0.2s ease;
+    position: relative;
+    border-radius: 0;
 }
 
 .desktop-dash-btn:hover {
-    background: rgba(14, 165, 233, 0.1) !important;
-    border-color: rgba(14, 165, 233, 0.3) !important;
-    color: var(--teal) !important;
+    color: var(--sky-blue) !important;
+}
+
+.desktop-dash-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--sky-blue);
+    transition: width 0.3s ease;
+}
+
+.desktop-dash-btn:hover::after {
+    width: 100%;
 }
 
 @media (max-width: 1024px) {
@@ -1468,6 +1488,28 @@ button:active,
 }
 
 /* Hours Grid Highlight */
+.hours-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .hours-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+}
+
+.hours-row {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.5);
+}
+
 .hours-row.current-day {
     background: rgba(14, 165, 233, 0.05);
     /* Subtle Highlight */
