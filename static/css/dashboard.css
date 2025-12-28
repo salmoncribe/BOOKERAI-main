@@ -12,7 +12,9 @@
     background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
     width: 100%;
     margin: 0 auto;
+    margin: 0 auto;
     overflow-x: hidden;
+    max-width: 100%;
 }
 
 /* Central Card Utility - Enforced on all main cards */
@@ -679,6 +681,16 @@ video.media-thumb:hover {
         width: 100%;
     }
 
+    /* Insight Cards - Mobile Centered */
+    .insight-card {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
     /* -----------------------------------------------------
        SMART SCHEDULE COMPONENT (Mobile)
        ----------------------------------------------------- */
@@ -704,7 +716,8 @@ video.media-thumb:hover {
     }
 
     .appointments-card tr {
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        /* Increased spacing */
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 0.75rem;
@@ -757,7 +770,9 @@ video.media-thumb:hover {
     .appointments-card td button {
         width: 100%;
         /* Full width action button */
-        padding: 0.6rem;
+        padding: 0.8rem;
+        /* Larger touch target */
+        display: block;
     }
 
     /* -----------------------------------------------------
