@@ -10,8 +10,10 @@
     position: relative;
     color: var(--text-dark);
     background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
-    width: min(100%, 1200px);
-    margin-inline: auto;
+    background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
     overflow-x: hidden;
 }
 
@@ -21,9 +23,10 @@
 .hours-card,
 .promo-card,
 .card {
-    width: min(94%, 640px);
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
+    box-sizing: border-box;
 }
 
 /* Helper for mobile button */
@@ -134,7 +137,7 @@
     /* Fluid Width */
     flex-basis: 0;
     /* Align perfectly */
-    min-width: 220px;
+    /* Removed min-width for full fluidity */
 }
 
 .insight-card:hover {
@@ -154,6 +157,8 @@
     font-size: 1.75rem;
     font-weight: 700;
     color: var(--sky-blue);
+    text-align: center;
+    /* Enforce center alignment */
 }
 
 /* Appointments Table */
@@ -221,7 +226,7 @@
 .table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 600px;
+    /* Removed fixed min-width */
 }
 
 .table th,
