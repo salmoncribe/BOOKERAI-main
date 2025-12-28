@@ -58,6 +58,15 @@
     position: relative;
     z-index: 1;
     margin-bottom: 2.5rem;
+    /* Ensure content doesn't overflow */
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+    .dash-head {
+        padding: 1.5rem;
+    }
 }
 
 .dash-title {
@@ -158,6 +167,14 @@
     border-radius: 0.6rem;
     border: 1px solid rgba(14, 165, 233, 0.08);
     background: #fcfeff;
+    /* Visual Hint for horizontal scroll */
+    background: linear-gradient(to right, #fcfeff 30%, rgba(255, 255, 255, 0)),
+        linear-gradient(to right, rgba(255, 255, 255, 0), #fcfeff 70%) 0 100%,
+        radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0)),
+        radial-gradient(farthest-side at 100% 50%, rgba(14, 165, 233, 0.15), rgba(0, 0, 0, 0)) 100%;
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
 }
 
 .table-scroll::-webkit-scrollbar {
@@ -172,6 +189,11 @@
 
 .table-scroll::-webkit-scrollbar-track {
     background: rgba(240, 250, 255, 0.7);
+}
+
+/* Ensure horizontal scroll */
+.table-scroll {
+    overflow-x: auto;
 }
 
 .table {
@@ -290,7 +312,8 @@
 
 .day-editor {
     background: rgba(255, 255, 255, 0.9);
-    border: 1.5px solid rgba(14, 165, 233, 0.15);
+    border: 1px solid #eef;
+    /* Requested contrast fix */
     border-radius: 1rem;
     padding: 1.2rem;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
@@ -425,7 +448,8 @@
     box-shadow: 0 10px 35px rgba(14, 165, 233, 0.15),
         0 0 60px rgba(20, 184, 166, 0.1);
     overflow: hidden;
-    border: 1.5px solid rgba(14, 165, 233, 0.15);
+    border: 1px solid rgba(14, 165, 233, 0.08);
+    /* Light border for contrast */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     backdrop-filter: blur(10px);
     max-width: 640px;
@@ -632,10 +656,37 @@ video.media-thumb:hover {
 @media (max-width: 768px) {
     .dashboard {
         padding: 2rem 1rem;
+        /* 16px side padding */
     }
 
     .table-scroll {
         max-height: 55vh;
+    }
+
+    /* Tighten table rows on mobile */
+    .table th,
+    .table td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* 2-Column Grid for Operating Hours Time Inputs */
+    .time-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .time-inputs span {
+        display: none;
+        /* Hide 'to' text/dash if needed, or make it grid item */
+    }
+
+    /* Adjust inputs for compact mode */
+    .time-inputs input[type="time"] {
+        width: 100%;
+        padding: 0.4rem;
+        font-size: 0.85rem;
     }
 
     /* Stack grids vertically */
@@ -759,6 +810,7 @@ video.media-thumb:hover {
 .dashboard.premium-theme .insight-card p {
     background: var(--gradient-gold);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 

@@ -17,7 +17,14 @@ header.site-header {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
-    padding: 0 var(--container-padding);
+    padding: 0.5rem var(--container-padding);
+}
+
+@media (max-width: 768px) {
+    header.site-header {
+        padding: 0.5rem 1.5rem;
+        /* Increased side padding for breathing room */
+    }
 }
 
 .nav-wrap {
