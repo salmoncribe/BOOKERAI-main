@@ -133,11 +133,18 @@
     text-align: center;
     box-shadow: 0 8px 25px rgba(14, 165, 233, 0.08);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
+    flex-grow: 1;
+    /* Fluid Width */
+    flex-basis: 0;
+    /* Align perfectly */
+    min-width: 220px;
 }
 
 .insight-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 30px rgba(14, 165, 233, 0.15);
+    z-index: 2;
+    /* Bring to front on hover */
 }
 
 .insight-card h4 {
