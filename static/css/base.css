@@ -36,6 +36,9 @@
 /* ----------------------------------------------------------
    RESETS & TYPOGRAPHY
    ---------------------------------------------------------- */
+/* ----------------------------------------------------------
+   RESETS & TYPOGRAPHY
+   ---------------------------------------------------------- */
 *,
 *::before,
 *::after {
@@ -51,6 +54,7 @@ body {
     background: var(--bg-light);
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* Critical for mobile to prevent sway */
     /* Prevent font inflation on mobile */
     -webkit-text-size-adjust: 100%;
 }

@@ -15,6 +15,18 @@
     overflow-x: hidden;
 }
 
+/* Central Card Utility - Enforced on all main cards */
+.central-card,
+.appointments-card,
+.hours-card,
+.promo-card,
+.card {
+    width: 100%;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* Helper for mobile button */
 .mobile-view-calendar-btn {
     display: none;
@@ -161,7 +173,8 @@
 
 .table-scroll {
     flex: 1;
-    overflow-y: auto;
+    width: 100%;
+    overflow-y: hidden;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: 0.6rem;
@@ -178,8 +191,9 @@
 }
 
 .table-scroll::-webkit-scrollbar {
-    height: 10px;
-    width: 10px;
+    height: 6px;
+    /* Sleeker scrollbar */
+    width: 6px;
 }
 
 .table-scroll::-webkit-scrollbar-thumb {
@@ -722,9 +736,10 @@ video.media-thumb:hover {
     .hours-card,
     .promo-card {
         width: 100%;
-        max-width: 100%;
-        margin-left: 0;
-        margin-right: 0;
+        max-width: 640px;
+        /* Keep strict max-width even on mobile to prevent blowout */
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .promo-body {
