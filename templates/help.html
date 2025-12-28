@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Help Center — BookerAI{% endblock %}
+
+{% block content %}
+<section class="help-page" style="padding: 2rem; max-width: 800px; margin: 0 auto; text-align: center;">
+    <div class="card p-5"
+        style="border-radius: 1.5rem; background: #fff; box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">👋</div>
+        <h1 style="color: var(--text-dark); margin-bottom: 0.5rem;">Help Center</h1>
+        <p class="muted mb-4">Need assistance? Our support team and documentation are coming soon.</p>
+
+        <div class="alert alert-info"
+            style="display: inline-block; background: #e0f7ff; color: #0ea5e9; padding: 0.5rem 1rem; border-radius: 99px; font-weight: 600; margin-bottom: 2rem;">
+            🚧 Coming Soon
+        </div>
+
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn gradient-btn">Return to Dashboard</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

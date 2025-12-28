@@ -86,9 +86,24 @@
 
       <!-- Navigation -->
       <nav class="nav-links" role="navigation" aria-label="Main navigation">
+        <div class="nav-identity">
+          {% if session.get('barberId') %}
+          <div class="user-info">
+            <span class="user-avatar">👤</span>
+            <span class="user-greeting">Welcome Back!</span>
+          </div>
+          {% endif %}
+        </div>
+
         {% if session.get('barberId') %}
         <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-        <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        <a href="{{ url_for('results', service='Barber') }}" class="nav-link">Find a Pro</a>
+        <a href="#" class="nav-link">Public Profile</a>
+        <a href="{{ url_for('settings') }}" class="nav-link">Settings</a>
+        <a href="#" class="nav-link pulse-gold text-gold">Upgrade to Premium 💎</a>
+        <a href="{{ url_for('help_center') }}" class="nav-link">Help</a>
+        <div class="nav-divider"></div>
+        <a href="{{ url_for('logout') }}" class="nav-link text-red">Logout</a>
         {% else %}
         <a href="{{ url_for('login') }}" class="nav-link">Login</a>
         <a href="{{ url_for('signup') }}"

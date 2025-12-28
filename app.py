@@ -362,6 +362,18 @@ def login():
     return redirect(url_for("dashboard"))
 
 
+@app.route('/settings')
+def settings():
+    if 'barberId' not in session:
+        return redirect(url_for('login'))
+    return render_template('settings.html')
+
+@app.route('/help')
+def help_center():
+    if 'barberId' not in session:
+        return redirect(url_for('login'))
+    return render_template('help.html')
+
 @app.route("/logout")
 def logout():
     session.clear()
