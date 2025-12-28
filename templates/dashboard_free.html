@@ -33,7 +33,10 @@
     <div class="main-content">
       <!-- Appointments -->
       <div class="card">
-        <h3>Upcoming Appointments</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3>Upcoming Appointments</h3>
+          <button class="btn btn-secondary small" onclick="openCalendar()">View Calendar</button>
+        </div>
         {% if appointments %}
         <div class="table-scroll">
           <table class="table">
@@ -81,19 +84,22 @@
             <button id="copyMonday" class="copy-all">Copy Monday → All Days</button>
           </div>
 
-          <div class="hours-grid">
+          <div class="hours-list">
             {% for d in ["mon","tue","wed","thu","fri","sat","sun"] %}
-            <div class="day-editor" data-day="{{ d }}">
-              <h4>{{ d|capitalize }}</h4>
-              <div class="toggle-wrap">
-                <div class="day-toggle active" data-day="{{ d }}"></div>
+            <div class="hours-row" data-day="{{ d }}">
+              <div class="day-label">{{ d|capitalize }}</div>
+              <div class="day-actions">
+                <label class="toggle-switch">
+                  <input type="checkbox" class="day-toggle-input" checked>
+                  <span class="slider"></span>
+                </label>
+                <div class="time-range">
+                  <input type="time" class="open-time" value="09:00">
+                  <span>to</span>
+                  <input type="time" class="close-time" value="17:00">
+                </div>
+                <div class="save-check"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
               </div>
-              <div class="time-inputs">
-                <input type="time" class="open-time" value="09:00">
-                <span>–</span>
-                <input type="time" class="close-time" value="17:00">
-              </div>
-              <div class="save-check"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
             </div>
             {% endfor %}
           </div>
@@ -142,9 +148,9 @@
         <div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem;">
           <input type="text" value="{{ barber.promo_code }}" readonly onclick="this.select()"
             style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc;">
-          <button type="button" class="btn-primary small"
-            onclick="window.copyToClipboard('{{ barber.promo_code }}').then(ok => ok ? alert('Copied!') : alert('Failed'))">
-            Copy
+          <button type="button" class="copy-btn-modern" data-code="{{ barber.promo_code }}" onclick="copyPromo(this)">
+            <span>Copy</span>
+            <div class="success-icon" style="display:none;">✓ Copied!</div>
           </button>
         </div>
       </div>
@@ -167,12 +173,25 @@
           </li>
         </ul>
         <a href="{{ url_for('subscribe') }}" class="gradient-btn small" style="display:block;text-align:center;">
-          Upgrade Now - $29/mo
+          Upgrade Now - $20/mo
         </a>
         <div
           style="margin-top: 1rem; text-align: center; color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
           <i data-lucide="lock" style="width:12px;height:12px;"></i> Secure Payment by Stripe
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Modal -->
+  <div id="calendarModal" class="calendar-modal">
+    <div class="calendar-content">
+      <div class="calendar-header">
+        <h2>Schedule</h2>
+        <button class="close-modal-btn" onclick="closeCalendar()">×</button>
+      </div>
+      <div id="calendarGrid" class="cal-grid">
+        <!-- JS will populate -->
       </div>
     </div>
   </div>

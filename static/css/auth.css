@@ -479,4 +479,12 @@ label input:focus {
     .auth-glass-card {
         padding: 1.5rem;
     }
+
+    /* Prevent Zoom on Focus */
+    .input-group input,
+    .input-group select,
+    .input-group textarea,
+    label input {
+        font-size: 16px !important;
+    }
 }

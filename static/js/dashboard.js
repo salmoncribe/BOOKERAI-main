@@ -10,294 +10,254 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => toastEl.classList.remove("show"), 2500);
   }
 
-  // Helper: Copy to Clipboard with HTTP fallback
+  // Helper: Copy to Clipboard
   window.copyToClipboard = async function (text) {
     if (!text) return false;
-
-    // Try modern API first (if secure)
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
         await navigator.clipboard.writeText(text);
         return true;
       } catch (err) {
-        console.warn("navigator.clipboard failed, trying fallback:", err);
+        console.warn("clipboard failed", err);
       }
     }
-
-    // Fallback: TextArea hack
+    // Fallback
     try {
       const ta = document.createElement("textarea");
       ta.value = text;
       ta.style.position = "fixed";
       ta.style.left = "-9999px";
-      ta.style.top = "0";
       document.body.appendChild(ta);
-      ta.focus();
       ta.select();
       const success = document.execCommand("copy");
       document.body.removeChild(ta);
-      if (success) return true;
-      throw new Error("execCommand returned false");
-    } catch (err) {
-      console.error("All copy methods failed:", err);
-      return false;
+      return success;
+    } catch (err) { return false; }
+  };
+
+  // Modern Promo Copy
+  window.copyPromo = async function (btn) {
+    const code = btn.dataset.code;
+    if (!code) return;
+
+    const success = await window.copyToClipboard(code);
+    if (success) {
+      btn.classList.add("copied");
+      const icon = btn.querySelector(".success-icon");
+      const text = btn.querySelector("span");
+      if (icon) {
+        icon.style.display = "block";
+        if (text) text.style.display = "none";
+      }
+
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        if (icon) {
+          icon.style.display = "none";
+          if (text) text.style.display = "block";
+        }
+      }, 2000);
+    } else {
+      alert("Failed to copy");
     }
   };
 
-  // Helper: Debounce
-  function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
+  // Calendar Modal Logic
+  const calendarModal = document.getElementById("calendarModal");
+  window.openCalendar = function () {
+    if (calendarModal) {
+      calendarModal.classList.add("active");
+      renderCalendar();
+    }
+  };
+  window.closeCalendar = function () {
+    if (calendarModal) calendarModal.classList.remove("active");
+  };
+
+  function renderCalendar() {
+    const grid = document.getElementById("calendarGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    // Simple current month view
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay(); // 0-6
+
+    // Headers
+    const days = ["S", "M", "T", "W", "T", "F", "S"];
+    days.forEach(d => {
+      const el = document.createElement("div");
+      el.className = "cal-day-name";
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    // Blanks
+    for (let i = 0; i < firstDay; i++) {
+      const el = document.createElement("div");
+      el.className = "cal-day empty";
+      grid.appendChild(el);
+    }
+
+    // Days
+    const today = now.getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+      const el = document.createElement("div");
+      el.className = "cal-day";
+      if (i === today) el.classList.add("today");
+      if (Math.random() > 0.7) el.classList.add("has-event"); // Fake events for visual
+      el.textContent = i;
+      el.onclick = () => {
+        document.querySelectorAll(".cal-day").forEach(c => c.style.background = "");
+        if (!el.classList.contains("today")) el.style.background = "#e2e8f0";
+      };
+      grid.appendChild(el);
+    }
   }
 
   // ===============================
-  // COLLAPSIBLE HOURS CARD (Moved to top for resilience)
+  // HOURS EDITOR LOGIC (Refactored)
   // ===============================
   const toggleBtn = document.getElementById("toggleHoursBtn");
   const hoursCollapse = document.getElementById("hoursCollapse");
-
   if (toggleBtn && hoursCollapse) {
     toggleBtn.addEventListener("click", () => {
-      // Check if currently active
-      const isOpening = !hoursCollapse.classList.contains("active");
-
-      if (isOpening) {
+      const isActive = hoursCollapse.classList.contains("active");
+      if (isActive) {
+        hoursCollapse.classList.remove("active");
+        hoursCollapse.style.maxHeight = "0";
+        toggleBtn.textContent = "Edit Hours";
+      } else {
         hoursCollapse.classList.add("active");
-        // Calculate height dynamically
-        // hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
-        // Or simply set to a large enough value implies animation 
-        // But for perfect animation:
         hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
         toggleBtn.textContent = "Hide Hours";
-      } else {
-        hoursCollapse.style.maxHeight = "0px";
-        hoursCollapse.classList.remove("active");
-        toggleBtn.textContent = "Edit Hours";
       }
     });
   }
 
-  // ===============================
-  // Barber ID from dashboard root
-  // ===============================
-  const root = document.getElementById("dashboardRoot");
-  const barberId = root?.dataset.barberId;
+  const barberId = document.getElementById("dashboardRoot")?.dataset.barberId;
+  const hoursRows = document.querySelectorAll(".hours-row");
 
-  if (!barberId) {
-    console.warn("⚠️ No barberId on #dashboardRoot – hours API will not work.");
-  }
-
-  // ===============================
-  // Copy Booking Link Button
-  // ===============================
-  const copyLinkBtn = document.getElementById("copyLinkBtn");
-  if (copyLinkBtn) {
-    copyLinkBtn.addEventListener("click", async () => {
-      const link = copyLinkBtn.dataset.copy;
-      if (!link) return showToast("No link found ❌");
-
-      const success = await window.copyToClipboard(link);
-      if (success) {
-        showToast("Booking link copied ✅");
-      } else {
-        showToast("Failed to copy link ❌");
-      }
-    });
-  }
-
-  // ===============================
-  // HOURS EDITOR
-  // ===============================
-  const dayEditors = document.querySelectorAll(".day-editor");
-
-  // Map backend weekday -> your data-day value, adjust if needed
-  const weekdayMap = {
-    mon: "mon",
-    tue: "tue",
-    wed: "wed",
-    thu: "thu",
-    fri: "fri",
-    sat: "sat",
-    sun: "sun",
-  };
-
-  function applyHoursToUI(rows) {
-    rows.forEach(row => {
-      const dayKey = weekdayMap[row.weekday] || row.weekday;
-      const card = document.querySelector(`.day-editor[data-day="${dayKey}"]`);
-      if (!card) return;
-
-      const toggle = card.querySelector(".day-toggle");
-      const openInput = card.querySelector(".open-time");
-      const closeInput = card.querySelector(".close-time");
-
-      if (!toggle || !openInput || !closeInput) return;
-
-      openInput.value = row.start_time || "09:00";
-      closeInput.value = row.end_time || "17:00";
-
-      if (row.is_closed) {
-        toggle.classList.remove("active");
-        openInput.disabled = true;
-        closeInput.disabled = true;
-      } else {
-        toggle.classList.add("active");
-        openInput.disabled = false;
-        closeInput.disabled = false;
-      }
-
-      // store location for round-trip
-      if (row.location_id != null) {
-        card.dataset.locationId = row.location_id;
-      }
-    });
-  }
-
-  function collectHoursData() {
-    const rows = [];
-    dayEditors.forEach(card => {
-      const weekday = card.dataset.day; // e.g. "mon"
-      const toggle = card.querySelector(".day-toggle");
-
-      // Safety check
-      if (!toggle) return;
-
-      const isClosed = !toggle.classList.contains("active");
-      const openInput = card.querySelector(".open-time");
-      const closeInput = card.querySelector(".close-time");
-
-      // Defaults if inputs missing (robustness)
-      const open = openInput ? openInput.value : "09:00";
-      const close = closeInput ? closeInput.value : "17:00";
-
-      const locId = card.dataset.locationId
-        ? Number(card.dataset.locationId)
-        : null;
-
-      rows.push({
-        weekday,
-        start_time: open,
-        end_time: close,
-        is_closed: isClosed,
-        location_id: locId,
-        barber_id: barberId,
-      });
-    });
-    return rows;
-  }
-
-  function saveHours(card) {
+  function saveHours(row) {
     if (!barberId) return;
 
-    const hours = collectHoursData();
+    const day = row.dataset.day;
+    const toggle = row.querySelector(".day-toggle-input");
+    const open = row.querySelector(".open-time");
+    const close = row.querySelector(".close-time");
+
+    if (!toggle || !open || !close) return;
+
+    const data = [{
+      weekday: day,
+      start_time: open.value,
+      end_time: close.value,
+      is_closed: !toggle.checked,
+      barber_id: barberId
+    }];
 
     fetch(`/api/barber/weekly-hours/${barberId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(hours),
-    })
-      .then(res => res.json())
-      .then(result => {
-        if (result.success || result.ok || result === true) {
-          card.classList.add("saved");
-          showToast("Hours saved successfully ✅");
-          setTimeout(() => card.classList.remove("saved"), 1000);
-        } else {
-          console.warn("Save result:", result);
-          showToast("Error saving hours ❌");
+      body: JSON.stringify(data)
+    }).then(r => r.json()).then(res => {
+      if (res.success || res.ok) {
+        const check = row.querySelector(".save-check");
+        if (check) {
+          check.style.opacity = "1";
+          setTimeout(() => check.style.opacity = "0", 1500);
         }
-      })
-      .catch(err => {
-        console.error("❌ Save failed:", err);
-        showToast("Error saving hours ❌");
-      });
-  }
-
-  // Load initial hours from backend
-  if (barberId) {
-    fetch(`/api/barber/weekly-hours/${barberId}`)
-      .then(res => res.json())
-      .then(rows => {
-        if (Array.isArray(rows)) {
-          applyHoursToUI(rows);
-        }
-      })
-      .catch(err => console.error("Failed to load weekly hours:", err));
-  }
-
-  // Attach listeners
-  dayEditors.forEach(card => {
-    const toggle = card.querySelector(".day-toggle");
-    const openInput = card.querySelector(".open-time");
-    const closeInput = card.querySelector(".close-time");
-
-    if (!toggle || !openInput || !closeInput) return;
-
-    const updateDisabled = () => {
-      const disabled = !toggle.classList.contains("active");
-      openInput.disabled = disabled;
-      closeInput.disabled = disabled;
-    };
-
-    toggle.addEventListener("click", () => {
-      toggle.classList.toggle("active");
-      updateDisabled();
-      saveHours(card);
+      }
     });
+  }
 
-    // Debounced save for text inputs
-    const debouncedSave = debounce(() => saveHours(card), 500);
+  hoursRows.forEach(row => {
+    const toggle = row.querySelector(".day-toggle-input");
+    const timeRange = row.querySelector(".time-range");
+    const inputs = row.querySelectorAll("input");
 
-    openInput.addEventListener("change", debouncedSave);
-    closeInput.addEventListener("change", debouncedSave);
+    if (toggle) {
+      toggle.addEventListener("change", () => {
+        if (toggle.checked) {
+          row.classList.remove("closed");
+        } else {
+          row.classList.add("closed");
+        }
+        saveHours(row);
+      });
+    }
 
-    // Also trigger on 'input' for smoother feeling if desired, 
-    // but 'change' is usually enough. keeping 'change' per requirements.
-
-    updateDisabled();
+    inputs.forEach(inp => {
+      if (inp.type === "time") {
+        inp.addEventListener("change", () => saveHours(row));
+      }
+    });
   });
 
-  // Copy Monday hours
-  const copyMondayBtn = document.getElementById("copyMonday");
-  if (copyMondayBtn) {
-    copyMondayBtn.addEventListener("click", () => {
-      const monday = [...dayEditors].find(c =>
-        c.dataset.day && c.dataset.day.toLowerCase().includes("mon")
-      );
-      if (!monday) return showToast("No Monday found");
+  // Load initial state if needed (or rely on server render if populated)
+  // But we need to set checkbox state based on value if it's dynamic? 
+  // currently HTML defaults to checked="checked" for all. 
+  // We should fetch real hours.
+  if (barberId) {
+    fetch(`/api/barber/weekly-hours/${barberId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          data.forEach(h => {
+            const row = document.querySelector(`.hours-row[data-day="${h.weekday}"]`);
+            if (row) {
+              const toggle = row.querySelector(".day-toggle-input");
+              const open = row.querySelector(".open-time");
+              const close = row.querySelector(".close-time");
 
-      const monToggle = monday.querySelector(".day-toggle");
-      const monOpenInput = monday.querySelector(".open-time");
-      const monCloseInput = monday.querySelector(".close-time");
+              if (toggle && open && close) {
+                toggle.checked = !h.is_closed;
+                open.value = h.start_time;
+                close.value = h.end_time;
 
-      if (!monToggle || !monOpenInput || !monCloseInput) return;
+                if (h.is_closed) row.classList.add("closed");
+                else row.classList.remove("closed");
+              }
+            }
+          });
+        }
+      });
+  }
 
-      const monOpen = monOpenInput.value;
-      const monClose = monCloseInput.value;
-      const monActive = monToggle.classList.contains("active");
+  // Copy Monday
+  const copyBtn = document.getElementById("copyMonday");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => {
+      const monRow = document.querySelector(`.hours-row[data-day="mon"]`);
+      if (!monRow) return;
 
-      dayEditors.forEach(card => {
-        const toggle = card.querySelector(".day-toggle");
-        const open = card.querySelector(".open-time");
-        const close = card.querySelector(".close-time");
+      const monToggle = monRow.querySelector(".day-toggle-input");
+      const monOpen = monRow.querySelector(".open-time").value;
+      const monClose = monRow.querySelector(".close-time").value;
+      const monChecked = monToggle.checked;
 
-        if (!toggle || !open || !close) return;
+      hoursRows.forEach(row => {
+        if (row.dataset.day === "mon") return;
+        const toggle = row.querySelector(".day-toggle-input");
+        const open = row.querySelector(".open-time");
+        const close = row.querySelector(".close-time");
 
+        toggle.checked = monChecked;
         open.value = monOpen;
         close.value = monClose;
-        toggle.classList.toggle("active", monActive);
-        open.disabled = close.disabled = !monActive;
-      });
 
-      saveHours(monday);
-      showToast("Copied Monday’s hours to all days ✅");
+        if (!monChecked) row.classList.add("closed");
+        else row.classList.remove("closed");
+
+        saveHours(row);
+      });
+      showToast("Copied Monday to all days");
     });
   }
-  // Initialize Lucide icons if available
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
+
+  // Icons
+  if (window.lucide) window.lucide.createIcons();
 });

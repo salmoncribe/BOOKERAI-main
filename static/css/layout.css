@@ -37,6 +37,9 @@ header.site-header {
     font-size: 1.4rem;
     color: var(--white);
     gap: 0.5rem;
+    min-height: 44px;
+    /* Touch target fix */
+    min-width: 44px;
 }
 
 .nav-links {
@@ -48,11 +51,35 @@ header.site-header {
 .nav-link {
     color: var(--white);
     font-weight: 500;
+    padding: 10px;
+    /* Increase hit area */
 }
 
 .nav-link:hover {
     opacity: 0.85;
     transform: translateY(-1px);
+}
+
+/* 🍔 Hamburger Button */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.hamburger span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    margin: 5px 0;
+    background-color: var(--white);
+    transition: all 0.3s ease;
+    border-radius: 3px;
 }
 
 /* ----------------------------------------------------------
@@ -200,6 +227,55 @@ footer.site-footer {
    RESPONSIVE LAYOUT
    ---------------------------------------------------------- */
 @media (max-width: 768px) {
+
+    /* Show Hamburger */
+    .hamburger {
+        display: block;
+    }
+
+    /* Active Hamburger State */
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 6px);
+    }
+
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -6px);
+    }
+
+    /* Mobile Nav Overlay */
+    .nav-links {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        width: 100%;
+        height: calc(100vh - var(--header-height));
+        background: linear-gradient(135deg, var(--sky-blue), var(--teal));
+        flex-direction: column;
+        justify-content: center;
+        gap: 2rem;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 2rem;
+        z-index: 998;
+    }
+
+    .nav-links.active {
+        transform: translateX(0);
+    }
+
+    .nav-link {
+        font-size: 1.5rem;
+        font-weight: 700;
+        width: 100%;
+        text-align: center;
+        padding: 1rem;
+        /* Big touch targets */
+    }
+
     .hero h1 {
         font-size: 2rem;
     }

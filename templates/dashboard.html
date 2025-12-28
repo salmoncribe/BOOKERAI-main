@@ -58,7 +58,10 @@
     <div class="main-content">
       <!-- Upcoming Appointments -->
       <div class="card appointments-card">
-        <h3>Upcoming Appointments</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3>Upcoming Appointments</h3>
+          <button class="btn btn-secondary small" onclick="openCalendar()">View Calendar</button>
+        </div>
         {% if appointments %}
         <div class="table-scroll">
           <table class="table">
@@ -108,19 +111,22 @@
             <button id="copyMonday" class="copy-all">Copy Monday → All Days</button>
           </div>
 
-          <div class="hours-grid">
+          <div class="hours-list">
             {% for d in ["mon","tue","wed","thu","fri","sat","sun"] %}
-            <div class="day-editor" data-day="{{ d }}">
-              <h4>{{ d|capitalize }}</h4>
-              <div class="toggle-wrap">
-                <div class="day-toggle active" data-day="{{ d }}"></div>
+            <div class="hours-row" data-day="{{ d }}">
+              <div class="day-label">{{ d|capitalize }}</div>
+              <div class="day-actions">
+                <label class="toggle-switch">
+                  <input type="checkbox" class="day-toggle-input" checked>
+                  <span class="slider"></span>
+                </label>
+                <div class="time-range">
+                  <input type="time" class="open-time" value="09:00">
+                  <span>to</span>
+                  <input type="time" class="close-time" value="17:00">
+                </div>
+                <div class="save-check">✅</div>
               </div>
-              <div class="time-inputs">
-                <input type="time" class="open-time" value="09:00">
-                <span>–</span>
-                <input type="time" class="close-time" value="17:00">
-              </div>
-              <div class="save-check">✅</div>
             </div>
             {% endfor %}
           </div>
@@ -160,6 +166,21 @@
         <div id="mediaStatus" class="muted small" style="margin-top:0.5rem;"></div>
         <div id="mediaGallery" class="media-gallery" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;">
         </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- Calendar Modal -->
+  <div id="calendarModal" class="calendar-modal">
+    <div class="calendar-content">
+      <div class="calendar-header">
+        <h2>Schedule</h2>
+        <button class="close-modal-btn" onclick="closeCalendar()">×</button>
+      </div>
+      <div id="calendarGrid" class="cal-grid">
+        <!-- JS will populate -->
       </div>
     </div>
   </div>

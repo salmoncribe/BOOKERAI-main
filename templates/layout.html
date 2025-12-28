@@ -77,6 +77,13 @@
         <span>BookerAI</span>
       </a>
 
+      <!-- Hamburger Button -->
+      <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
       <!-- Navigation -->
       <nav class="nav-links" role="navigation" aria-label="Main navigation">
         {% if session.get('barberId') %}
@@ -126,6 +133,41 @@
     ======================== -->
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Global Mobile Nav Logic
+    document.addEventListener('DOMContentLoaded', () => {
+      const ham = document.querySelector('.hamburger');
+      const nav = document.querySelector('.nav-links');
+
+      if (ham && nav) {
+        ham.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const expanded = ham.getAttribute('aria-expanded') === 'true';
+          ham.setAttribute('aria-expanded', !expanded);
+          ham.classList.toggle('active');
+          nav.classList.toggle('active');
+        });
+
+        // Close on link click
+        nav.querySelectorAll('a').forEach(link => {
+          link.addEventListener('click', () => {
+            ham.setAttribute('aria-expanded', 'false');
+            ham.classList.remove('active');
+            nav.classList.remove('active');
+          });
+        });
+
+        // Close on click outside
+        document.addEventListener('click', (e) => {
+          if (nav.classList.contains('active') && !nav.contains(e.target) && !ham.contains(e.target)) {
+            ham.setAttribute('aria-expanded', 'false');
+            ham.classList.remove('active');
+            nav.classList.remove('active');
+          }
+        });
+      }
+    });
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 
