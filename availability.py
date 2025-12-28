@@ -76,8 +76,17 @@ class AvailabilityService:
             return []
 
         # --- B. Generate Candidate Slots ---
-        # Helper to convert "HH:MM(:SS)" to minutes from midnight
-        def to_minutes(t_str):
+        # Helper to convert "HH:MM(:SS)" or time object to minutes from midnight
+        def to_minutes(t_val):
+            if isinstance(t_val, datetime.time):
+                return t_val.hour * 60 + t_val.minute
+            
+            # Assume string
+            t_str = str(t_val)
+            # Remove seconds if present
+            if len(t_str) > 5 and ":" in t_str[5:]: 
+                t_str = t_str[:5]
+                
             parts = t_str.split(":")
             return int(parts[0]) * 60 + int(parts[1])
 
@@ -87,25 +96,37 @@ class AvailabilityService:
         candidate_slots = []
         current_mins = open_mins
         
-        # Determine slot step. Usually equal to duration, or could be 30m if desired. 
-        # Requirement says "based on service duration". Let's assume step = duration for basic logic, 
-        # OR we could stick to a fixed step (like 30m) and check if 'duration' fits.
-        # User prompt check: "Generate all possible time slots based on provider working hours"
-        # "Services have a fixed duration"
-        # Standard booking app logic: slots usually every 15, 30, or 60 mins.
-        # Let's assume a 30 min step for flexibility, or use the service duration as the step.
-        # For simplicity and classic barber style: Step = Duration (back-to-back).  
-        # BUT, if I want to be safe, I should look at `app.py` generate_slots which used `step`.
-        # `db.py` didn't show `slot_duration` usage.
-        # `app.py` has `generate_slots` taking a step.
-        # Let's check `barber` settings for `step` later? 
-        # For this pass: Step = Duration.
-        
         step = duration_minutes 
 
         while current_mins + duration_minutes <= close_mins:
             candidate_slots.append(current_mins)
             current_mins += step
+
+        if not candidate_slots:
+            return []
+
+        logger.info(f"Availability Calc: Target={target_date} | Open={start_time_str} Close={end_time_str} | Generated {len(candidate_slots)} raw slots")
+
+        # --- Filter Past Slots (Timezone Drift Fix) ---
+        # Using UTC for consistency. We treat the 'date_str' as being in the same timezone context as 'now' for simplicity,
+        # or we assume the barber works in the server's timezone if not specified.
+        # Ideally, we'd use barber.timezone, but for this fix we stick to UTC consistency.
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        
+        # Check if target_date is "today" (in UTC terms for consistency, or just date comparison)
+        # If target_date (Date obj) == now_utc.date()
+        if target_date == now_utc.date():
+            current_time_mins = now_utc.hour * 60 + now_utc.minute
+            buffer_mins = 15
+            
+            # Filter out slots starting too soon
+            # Note: This compares "slot time mins" (0-1440) vs "now UTC mins" (0-1440)
+            candidate_slots = [
+                s for s in candidate_slots 
+                if s > (current_time_mins + buffer_mins)
+            ]
+            
+            logger.info(f"Filtered past slots. Now UTC time={current_time_mins} mins. Remaining: {len(candidate_slots)}")
 
         if not candidate_slots:
             return []
@@ -118,27 +139,21 @@ class AvailabilityService:
                 continue
             
             # Normalize appt times. Appt might be "YYYY-MM-DDTHH:MM..." or "HH:MM:SS"
-            # DB returns "start_time" as Time or String? Supabase/Postgres Time col usually "HH:MM:SS".
-            # Check `db.py`: `get_appointments_raw` selects `start_time`.
+            a_start = appt["start_time"]
             
-            a_start = str(appt["start_time"]) # Force string safely
-            # If it comes as "2023-..." extract time.
-            if "T" in a_start:
+            # Handle string or time object
+            if isinstance(a_start, str) and "T" in a_start:
                  a_start = a_start.split("T")[1]
             
-            # End time might not be in DB or might be calculated. 
-            # `get_appointments_raw` selects `start_time, end_time`.
-            # If end_time is null, assume default duration? 
-            # Ideally we have end_time. If not, ignore or assume 60.
-            a_end = str(appt.get("end_time") or "")
+            a_s_mins = to_minutes(a_start)
+            
+            # End time
+            a_end = appt.get("end_time")
             if not a_end:
-                 # fallback if data missing
-                 a_s_mins = to_minutes(a_start)
                  a_e_mins = a_s_mins + 60 
             else:
-                if "T" in a_end:
+                if isinstance(a_end, str) and "T" in a_end:
                     a_end = a_end.split("T")[1]
-                a_s_mins = to_minutes(a_start)
                 a_e_mins = to_minutes(a_end)
             
             busy_intervals.append((a_s_mins, a_e_mins))

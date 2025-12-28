@@ -833,7 +833,8 @@ def get_availability_v2():
             duration = barber_res.data[0].get("slot_duration", 60)
 
     result = availability_service.get_availability(barber_id, date_str, duration)
-    return jsonify(result)
+    # Return just the list of slots as requested
+    return jsonify(result["slots"])
 
 @app.post("/api/appointments/create")
 def create_appt():
