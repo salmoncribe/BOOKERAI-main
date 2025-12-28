@@ -1,5 +1,17 @@
 import os
+# Mock env before imports
+os.environ["SUPABASE_URL"] = "https://example.supabase.co"
+os.environ["SUPABASE_KEY"] = "fake-key"
+os.environ["SECRET_KEY"] = "test-secret"
+
 import unittest
+from unittest.mock import MagicMock, patch
+import sys
+
+# Mock modules that depend on Supabase if needed, or rely on env mock
+# App import will trigger db import which triggers supabase client creation.
+# Env vars above should satisfy the client creation check.
+
 from app import app
 
 class RouteTestCase(unittest.TestCase):

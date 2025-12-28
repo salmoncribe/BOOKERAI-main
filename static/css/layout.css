@@ -17,6 +17,7 @@ header.site-header {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+    padding: 0 var(--container-padding);
 }
 
 .nav-wrap {
@@ -25,7 +26,8 @@ header.site-header {
     align-items: center;
     width: 100%;
     max-width: 1200px;
-    padding: 0 2rem;
+    height: 100%;
+    /* Ensure full height for vertical centering */
 }
 
 .logo {
@@ -56,12 +58,18 @@ header.site-header {
 /* ----------------------------------------------------------
    HERO SECTION (Layout)
    ---------------------------------------------------------- */
-.hero {
+.hero,
+.vibrant-hero {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 7rem 2rem 6rem;
+    padding: calc(var(--header-height) + 4rem) var(--container-padding) 6rem;
     background: linear-gradient(145deg, #e0f7ff 0%, #f0fbff 100%);
     overflow: hidden;
+    width: 100%;
 }
 
 .hero::before {
@@ -74,20 +82,32 @@ header.site-header {
     z-index: 0;
 }
 
-.hero h1 {
-    font-size: 2.6rem;
-    font-weight: 700;
+.hero-content {
+    max-width: 800px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hero h1,
+.hero-title {
     color: var(--text-dark);
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     position: relative;
     z-index: 1;
 }
 
-.hero p {
+.hero p,
+.hero-subtext {
     max-width: 650px;
-    margin: 0 auto;
+    margin: 0 auto 2rem;
     color: var(--muted);
-    font-size: 1.1rem;
+    font-size: 1.15rem;
+    /* Slightly larger for readability */
+    line-height: 1.7;
     position: relative;
     z-index: 1;
 }
@@ -95,10 +115,13 @@ header.site-header {
 /* Find A Professional Hero */
 .find-hero {
     text-align: center;
-    padding: 6rem 2rem 4rem;
+    padding: 6rem var(--container-padding) 4rem;
     background: linear-gradient(145deg, #e0f7ff 0%, #f0fbff 100%);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .find-hero::before {
@@ -114,10 +137,11 @@ header.site-header {
 .find-hero .hero-inner {
     position: relative;
     z-index: 1;
+    max-width: 800px;
 }
 
 .find-hero h1 {
-    font-size: 2.3rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: var(--text-dark);
     margin-bottom: 1rem;

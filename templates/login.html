@@ -1,58 +1,68 @@
 {% extends "layout.html" %}
 {% block title %}Log In — BookerAI{% endblock %}
 
-
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}?v={{ asset_ver }}">
+{% endblock %}
 
 {% block content %}
-<section class="auth-container vibrant-auth">
-  <div class="animated-bg"></div>
+<div class="auth-page-body">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
 
-  <div class="auth-card wow-card">
-    <h2 class="auth-title">Welcome Back 👋</h2>
-    <p class="auth-subtitle">
-      Log in to manage your appointments, update your schedule, and grow your business with BookerAI.
-    </p>
+  <div class="auth-container-wrapper">
+    <div class="auth-section-card">
+      <div class="auth-glass-card">
+        <div class="form-header">
+          <h2>Welcome Back 👋</h2>
+          <p>Log in to manage your empire.</p>
+        </div>
 
-    {# flash messages from app.py (e.g. "Invalid login") #}
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    <div class="flash-list">
-      {% for msg in messages %}
-      <div class="flash flash-error">{{ msg }}</div>
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
+        {# flash messages from app.py #}
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-list" style="margin-bottom:1.5rem;">
+          {% for msg in messages %}
+          <div class="flash flash-error"
+            style="padding:0.75rem;background:#fee2e2;color:#b91c1c;border-radius:8px;font-size:0.9rem;margin-bottom:0.5rem;">
+            {{ msg }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
 
-    <form method="post" class="form grid--2" novalidate>
-      <label class="form-field form-field--full">
-        <span>Email</span>
-        <input name="email" type="email" placeholder="you@example.com" autocomplete="email" required />
-      </label>
+        <form method="post" class="form" novalidate>
+          <div class="input-group">
+            <label for="email">Email Address</label>
+            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+          </div>
 
-      <label class="form-field form-field--full">
-        <span>Password</span>
-        <input name="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
-      </label>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="••••••••" autocomplete="current-password"
+              required />
+          </div>
 
-      <div class="form-actions form-field--full">
-        <button type="submit" class="gradient-btn full-width">Log In</button>
-        <p class="muted" style="margin-top:1rem;">
-          New to BookerAI?
-          <a href="{{ url_for('signup') }}" class="signup-link-text">Create an account</a>
-        </p>
+          <button type="submit" class="submit-btn">Log In</button>
+
+          <div class="alt-link">
+            New to BookerAI?
+            <a href="{{ url_for('signup') }}">Create an account</a>
+          </div>
+        </form>
+
+        <!-- TRUST SECTION -->
+        <div class="auth-trust">
+          <h3>Why Professionals Choose BookerAI</h3>
+          <ul>
+            <li>🔒 Secure data handling</li>
+            <li>📅 Seamless scheduling</li>
+            <li>💎 Premium tools</li>
+          </ul>
+        </div>
       </div>
-    </form>
-
-    <!-- TRUST SECTION -->
-    <div class="auth-trust">
-      <h3>Why Professionals Choose BookerAI</h3>
-      <ul>
-        <li>🔒 Secure data handling</li>
-        <li>📅 Manage appointments anywhere</li>
-        <li>💬 Stay connected with your clients</li>
-      </ul>
     </div>
   </div>
-</section>
+</div>
 {% endblock %}

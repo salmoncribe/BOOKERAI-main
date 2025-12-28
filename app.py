@@ -1009,23 +1009,22 @@ def subscribe():
         customer_email=email,
         mode="subscription",
         line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-        success_url=url_for("dashboard", _external=True),
+        success_url=url_for("premium_success", _external=True),
         cancel_url=url_for("dashboard", _external=True),
     )
 
     return redirect(session_obj.url, 303)
 
 
-
 @app.get("/subscribe/success")
 @login_required
-def sub_success():
+def premium_success():
     # ⚠️ IMPORTANT:
     # Do NOT update plan or promo rewards here.
     # Stripe webhook handles everything.
-
-    flash("Payment successful! Premium will activate shortly.")
-    return redirect(url_for("dashboard"))
+    
+    # Render the success page instead of redirecting
+    return render_template("premium_success.html")
 
 # ============================================================
 # BASIC PAGES / MARKETING

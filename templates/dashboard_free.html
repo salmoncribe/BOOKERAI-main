@@ -152,13 +152,27 @@
       <!-- Upgrade CTA -->
       <div class="card" style="background:linear-gradient(135deg,#f0faff,#e0f7ff);border:2px solid var(--sky-blue);">
         <h3>Upgrade to Premium <i data-lucide="gem" style="width:18px;height:18px;vertical-align:text-bottom;"></i></h3>
-        <p style="margin-bottom:1rem;">
-          Get boosted in search, upload media, track earnings,
-          and automate your bookings.
-        </p>
+        <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem; text-align: left;">
+          <li
+            style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-dark);">
+            <i data-lucide="check-circle" style="width:16px;height:16px;color:var(--teal);"></i> Unlimited Bookings
+          </li>
+          <li
+            style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-dark);">
+            <i data-lucide="check-circle" style="width:16px;height:16px;color:var(--teal);"></i> Advanced Analytics
+          </li>
+          <li
+            style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--text-dark);">
+            <i data-lucide="check-circle" style="width:16px;height:16px;color:var(--teal);"></i> Priority Support
+          </li>
+        </ul>
         <a href="{{ url_for('subscribe') }}" class="gradient-btn small" style="display:block;text-align:center;">
-          Upgrade Now
+          Upgrade Now - $29/mo
         </a>
+        <div
+          style="margin-top: 1rem; text-align: center; color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+          <i data-lucide="lock" style="width:12px;height:12px;"></i> Secure Payment by Stripe
+        </div>
       </div>
     </div>
   </div>

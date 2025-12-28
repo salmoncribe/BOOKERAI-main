@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block title %}Welcome to Premium! — BookerAI{% endblock %}
+{% block content %}
+<div class="auth-container vibrant-auth">
+    <div class="animated-bg"></div>
+
+    <div class="auth-card" style="text-align: center; max-width: 600px;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+        <h1 class="auth-title gradient-text">Welcome to Premium!</h1>
+        <p class="subtitle" style="margin-bottom: 2rem;">
+            Your account has been successfully upgraded. You now have access to unlimited bookings, advanced analytics,
+            and all premium features.
+        </p>
+
+        <div
+            style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(14, 165, 233, 0.05); border-radius: 1rem; border: 1px solid rgba(14, 165, 233, 0.1);">
+            <h3 style="margin-bottom: 0.5rem; color: var(--text-dark);">What's Next?</h3>
+            <p style="margin: 0; color: var(--muted);">
+                Head over to your dashboard to set up your profile media and explore your new tools.
+            </p>
+        </div>
+
+        <a href="{{ url_for('dashboard') }}" class="gradient-btn large full-width">
+            Go to Dashboard
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Launch confetti
+        const duration = 3000;
+        const end = Date.now() + duration;
+
+        (function frame() {
+            confetti({
+                particleCount: 5,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#0ea5e9', '#14b8a6', '#ffffff']
+            });
+            confetti({
+                particleCount: 5,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#0ea5e9', '#14b8a6', '#ffffff']
+            });
+
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    });
+</script>
+{% endblock %}

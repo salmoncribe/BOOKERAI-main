@@ -684,3 +684,133 @@ video.media-thumb:hover {
         max-height: none !important;
     }
 }
+
+/* ----------------------------------------------------------
+   ELITE PREMIUM THEME
+   ---------------------------------------------------------- */
+.dashboard.premium-theme {
+    background: linear-gradient(135deg, var(--bg-premium), #1e293b);
+    color: var(--text-premium);
+}
+
+.dashboard.premium-theme .dash-head {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard.premium-theme .dash-title {
+    color: var(--text-premium);
+}
+
+.dashboard.premium-theme .muted {
+    color: #94a3b8;
+}
+
+/* Card Overrides for Premium */
+.dashboard.premium-theme .card,
+.dashboard.premium-theme .insight-card,
+.dashboard.premium-theme .appointments-card,
+.dashboard.premium-theme .promo-card,
+.dashboard.premium-theme .hours-card {
+    background: var(--card-premium);
+    color: var(--text-premium);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard.premium-theme .insight-card:hover {
+    background: #253347;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard.premium-theme .insight-card h4 {
+    color: #94a3b8;
+}
+
+.dashboard.premium-theme .insight-card p {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.dashboard.premium-theme .table {
+    color: var(--text-premium);
+}
+
+.dashboard.premium-theme .table th {
+    background: var(--card-premium);
+    color: #94a3b8;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard.premium-theme .table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dashboard.premium-theme .table-scroll {
+    background: var(--card-premium);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.dashboard.premium-theme .hours-card::before {
+    /* Different ambient effect for dark mode */
+    background: radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.05), transparent 60%),
+        radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.05), transparent 60%);
+}
+
+.dashboard.premium-theme .day-editor {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dashboard.premium-theme .day-editor h4 {
+    color: var(--text-premium);
+}
+
+.dashboard.premium-theme .time-inputs input[type="time"] {
+    background: rgba(15, 23, 42, 0.5);
+    color: var(--text-premium);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Pulsing Premium Bubble */
+.premium-bubble {
+    position: absolute;
+    top: 1.8rem;
+    right: 2rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fbbf24, #d97706);
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0.4);
+    animation: pulseGold 2s infinite;
+    z-index: 10;
+}
+
+.premium-bubble::after {
+    content: "PREMIUM";
+    position: absolute;
+    right: 20px;
+    top: -4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fbbf24;
+    letter-spacing: 0.1em;
+    opacity: 0.8;
+}
+
+@keyframes pulseGold {
+    0% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+    }
+}

@@ -8,8 +8,29 @@
     --bg-light: #f0faff;
     --text-dark: #0f172a;
     --muted: #64748b;
+    --text-light-muted: #94a3b8;
+    /* New lighter muted color */
     --white: #ffffff;
     --header-height: 80px;
+    --container-padding: 24px;
+    --border-radius-btn: 12px;
+
+    /* Elite/Premium Theme Variables */
+    --bg-premium: #0f172a;
+    /* Deep Slate */
+    --text-premium: #f8fafc;
+    /* Off-white */
+    --card-premium: #1e293b;
+    /* Lighter Slate */
+    --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    --glass-premium: rgba(30, 41, 59, 0.7);
+}
+
+@media (max-width: 768px) {
+    :root {
+        --header-height: 70px;
+        --container-padding: 16px;
+    }
 }
 
 /* ----------------------------------------------------------
@@ -30,14 +51,48 @@ body {
     background: var(--bg-light);
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* Prevent font inflation on mobile */
+    -webkit-text-size-adjust: 100%;
 }
 
 html {
-    scroll-padding-bottom: 80px;
+    scroll-padding-top: var(--header-height);
 }
 
 body {
     padding-top: var(--header-height);
+    line-height: 1.6;
+}
+
+/* Headings Upgrade */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-top: 0;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    /* Dynamic scaling */
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+}
+
+h3 {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
 }
 
 /* Base Link Styles */
@@ -165,5 +220,5 @@ a:hover {
 
 /* Utility: Hidden */
 .hidden {
-    display: none;
+    display: none !important;
 }
