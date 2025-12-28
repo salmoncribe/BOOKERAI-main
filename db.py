@@ -16,10 +16,7 @@ def create_user(full_name, email, phone, password, role="client"):
         "email": email.lower(),
         "phone": phone,
         "password_hash": hashed,
-        "role": role,
-        "plan": "free",
-        "free_months": 0,
-        "expires_at": None,
+    "expires_at": None,
     }
 
     result = supabase.table("users").insert(data).execute()
@@ -27,6 +24,31 @@ def create_user(full_name, email, phone, password, role="client"):
     if not result.data:
         return None
     return result.data[0]
+
+# ============================================================
+# AVAILABILITY RAW FETCHERS
+# ============================================================
+
+def get_weekly_hours_raw(barber_id):
+    """Fetch all weekly recurring hours for a barber (no logic)."""
+    return supabase.table("barber_weekly_hours")\
+        .select("*").eq("barber_id", barber_id).execute().data
+
+
+def get_date_override_raw(barber_id, date_str):
+    """Fetch schedule overrides for a specific date."""
+    res = supabase.table("schedule_overrides")\
+        .select("*").eq("barber_id", barber_id).eq("date", date_str).execute()
+    return res.data
+
+
+def get_appointments_raw(barber_id, date_str):
+    """Fetch all appointments (booked/cancelled) for a specific date."""
+    # We fetch EVERYTHING for that day to let Python filter
+    res = supabase.table("appointments")\
+        .select("start_time, end_time, status")\
+        .eq("barber_id", barber_id).eq("date", date_str).execute()
+    return res.data
 
 
 def get_user_by_email(email):

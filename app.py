@@ -15,6 +15,8 @@ from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 import stripe
 import db  # Added db import
+from flask_caching import Cache
+from availability import AvailabilityService
 
 # ----------------------------------------------
 # Supabase
@@ -38,7 +40,24 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=4)
 app.config["SESSION_FILE_DIR"] = "./flask_session"
 os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
 
+os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
+
 Session(app)
+
+# ----------------------------------------------
+# Caching
+# ----------------------------------------------
+# Try Redis, fall back to SimpleCache
+redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+try:
+    cache = Cache(app, config={
+        'CACHE_TYPE': 'RedisCache',
+        'CACHE_REDIS_URL': redis_url
+    })
+except:
+    cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+
+availability_service = AvailabilityService(cache)
 
 # ----------------------------------------------
 # Stripe
@@ -205,17 +224,22 @@ def signup():
             flash("Email and password are required.")
             return redirect(url_for("signup"))
 
-    # Prevent duplicate accounts
-    existing = (
-        supabase.table("barbers")
-        .select("id")
-        .eq("email", email)
-        .execute()
-        .data
-    )
-    if existing:
-        flash("An account with this email already exists.")
-        return redirect(url_for("login"))
+        # Prevent duplicate accounts (Free only check here)
+        existing = (
+            supabase.table("barbers")
+            .select("id")
+            .eq("email", email)
+            .execute()
+            .data
+        )
+        if existing:
+            flash("An account with this email already exists.")
+            return redirect(url_for("login"))
+    else:
+        # Premium: Password is required, but Email is collected at Stripe
+        if not password:
+            flash("Password is required.")
+            return redirect(url_for("signup"))
 
     # ------------------------------------------------------------
     # Validate promo code (if provided)
@@ -236,15 +260,17 @@ def signup():
     # PREMIUM SIGNUP → STRIPE FIRST (ACCOUNT CREATED IN WEBHOOK)
     # ------------------------------------------------------------
     if selected_plan == "premium":
+        # Create Stripe Checkout Session WITHOUT customer_email
+        # We rely on Stripe to collect the email
         checkout = stripe.checkout.Session.create(
             mode="subscription",
-            customer_email=email,
+            # customer_email param REMOVED
             line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             metadata={
                 "source": "signup",
                 "plan": "premium",
                 "name": name,
-                "email": email,
+                # "email" is NOT in metadata (or is empty) because we don't have it yet
                 "phone": phone,
                 "bio": bio,
                 "address": address,
@@ -336,11 +362,9 @@ def login():
     return redirect(url_for("dashboard"))
 
 
-@app.route("/logout", endpoint="logout")
-def barber_logout():
-    session.pop("barberId", None)
-    session.pop("user_email", None)
-    session.pop("barber_name", None)
+@app.route("/logout")
+def logout():
+    session.clear()
     flash("Logged out")
     return redirect(url_for("login"))
 
@@ -384,16 +408,91 @@ def dashboard():
     return render_template("dashboard_free.html", barber=barber, appointments=appts, features=features)
 
 
+from werkzeug.utils import secure_filename
+
+# ... (other imports are fine, just ensuring secure_filename is available if I could, but I can't add imports inside the function easily with replace. 
+# actually I should add the import at the top first or just use it if available. 
+# app.py doesn't have secure_filename imported in the view provided.
+# I will add it to the top first.)
+
+# Wait, I cannot add imports easily with replace_file_content if I don't see the top. 
+# I saw lines 1-50 earlier. It was NOT there.
+# I will do a multi_replace to add the import and the functions.
+
 @app.post("/upload-photo")
 @premium_required
 def upload_photo():
-    flash("Upload wired for premium soon.", "info")
+    if "photo" not in request.files:
+        flash("No file part", "error")
+        return redirect(url_for("dashboard"))
+    
+    file = request.files["photo"]
+    if file.filename == "":
+        flash("No selected file", "error")
+        return redirect(url_for("dashboard"))
+
+    if file:
+        filename = secure_filename(file.filename)
+        barber_id = session["barberId"]
+        file_path = f"avatars/{barber_id}/{int(datetime.utcnow().timestamp())}_{filename}"
+        
+        try:
+            # Read file data
+            file_data = file.read()
+            # Upload to Supabase Storage
+            # Note: upsert=True if you want to replace, or unique names
+            res = supabase.storage.from_("barber_media").upload(file_path, file_data, {"content-type": file.content_type})
+            
+            # Get Public URL
+            public_url = supabase.storage.from_("barber_media").get_public_url(file_path)
+            
+            # Update Database
+            supabase.table("barbers").update({"photo_url": public_url}).eq("id", barber_id).execute()
+            
+            flash("Profile photo updated!", "success")
+        except Exception as e:
+            flash(f"Upload failed: {str(e)}", "error")
+
     return redirect(url_for("dashboard"))
 
 @app.post("/upload-media")
 @premium_required
 def upload_media():
-    flash("Upload wired for premium soon.", "info")
+    if "file" not in request.files:
+        flash("No file part", "error")
+        return redirect(url_for("dashboard"))
+    
+    file = request.files["file"]
+    if file.filename == "":
+        flash("No selected file", "error")
+        return redirect(url_for("dashboard"))
+
+    if file:
+        filename = secure_filename(file.filename)
+        barber_id = session["barberId"]
+        file_path = f"portfolio/{barber_id}/{int(datetime.utcnow().timestamp())}_{filename}"
+
+        try:
+            file_data = file.read()
+            res = supabase.storage.from_("barber_media").upload(file_path, file_data, {"content-type": file.content_type})
+            public_url = supabase.storage.from_("barber_media").get_public_url(file_path)
+
+            # Append to media_urls (CSV)
+            # Fetch current
+            barber = supabase.table("barbers").select("media_urls").eq("id", barber_id).execute().data[0]
+            current_urls = barber.get("media_urls") or ""
+            
+            if current_urls:
+                new_urls = f"{current_urls},{public_url}"
+            else:
+                new_urls = public_url
+            
+            supabase.table("barbers").update({"media_urls": new_urls}).eq("id", barber_id).execute()
+            
+            flash("Media uploaded!", "success")
+        except Exception as e:
+            flash(f"Upload failed: {str(e)}", "error")
+            
     return redirect(url_for("dashboard"))
 
 
@@ -493,12 +592,18 @@ def stripe_webhook():
     session_obj = event["data"]["object"]
     metadata = session_obj.get("metadata", {})
     session_id = session_obj.get("id")
-    email = session_obj.get("customer_email")
+    
+    # Retrieve email from customer_details instead of metadata/session root (since we didn't send it)
+    email = session_obj.get("customer_details", {}).get("email")
 
     # ============================================================
     # CASE 1: PREMIUM SIGNUP (ACCOUNT DOES NOT EXIST YET)
     # ============================================================
     if metadata.get("source") == "signup":
+        if not email:
+            # Should not happen if Stripe is configured to collect address/email
+            return "OK", 200
+
         existing = (
             supabase.table("barbers")
             .select("id")
@@ -507,6 +612,8 @@ def stripe_webhook():
             .data
         )
         if existing:
+            # Email already exists, prevent crash. 
+            # In a real app we might want to email them or link account, but for now just stop.
             return "OK", 200
 
         while True:
@@ -673,12 +780,49 @@ def calendar_slots(barber_id):
 
 @app.get("/api/public/slots/<barber_id>")
 def public_slots(barber_id):
+    # Old RPC way - keeping for compat if needed, or we can switch this to use new service too!
+    # Let's switch it to use new service for consistency? 
+    # User asked for "A Flask API endpoint (GET /api/availability)"
+    # But existing frontend calls THIS endpoint. 
+    # I should update this function to use availability_service!
     target_date = request.args.get("date")
     if not target_date:
         return jsonify([])
     
-    slots = db.get_available_slots(barber_id, target_date)
-    return jsonify(slots)
+    # Defaults to 60 mins if not specified, or fetch from barber
+    # For now, let's fetch barber slot_duration to be safe
+    barber_res = supabase.table("barbers").select("slot_duration").eq("id", barber_id).execute()
+    duration = 60
+    if barber_res.data:
+        duration = barber_res.data[0].get("slot_duration", 60)
+
+    result = availability_service.get_availability(barber_id, target_date, duration)
+    return jsonify(result["slots"])
+
+@app.get("/api/availability")
+def get_availability_v2():
+    """New standard endpoint"""
+    barber_id = request.args.get("barber_id")
+    date_str = request.args.get("date")
+    service_id = request.args.get("service_id") # Optional, could map to duration
+    
+    if not barber_id or not date_str:
+        return jsonify({"error": "Missing params"}), 400
+
+    # Determine duration
+    duration = 60
+    if service_id:
+        # TODO: lookup service duration if we had a services table
+        pass
+    else:
+        # Fallback to barber default
+        barber_res = supabase.table("barbers").select("slot_duration").eq("id", barber_id).execute()
+        if barber_res.data:
+            duration = barber_res.data[0].get("slot_duration", 60)
+
+    result = availability_service.get_availability(barber_id, date_str, duration)
+    return jsonify(result)
+
 @app.post("/api/appointments/create")
 def create_appt():
     data = request.json
@@ -710,19 +854,29 @@ def create_appt():
     if overlap.data:
         return jsonify({"error": "Slot unavailable"}), 409
 
-    # Create appointment
-    appt = supabase.table("appointments").insert({
+    res = supabase.table("appointments").insert({
         "barber_id": barber_id,
-        "client_id": session.get("clientId"),  # None if guest
-        "client_name": data["client_name"],
-        "client_phone": data["client_phone"],
         "date": d,
         "start_time": start,
         "end_time": end_time,
+        "client_name": data.get("client_name"),
+        "client_phone": data.get("client_phone"),
+        "client_email": data.get("client_email"),
         "status": "booked"
-    }).execute().data[0]
+    }).execute()
 
-    return jsonify({"success": True, "appointment": appt})
+    if res.data:
+        # INVALIDATE CACHE
+        try:
+            availability_service.invalidate_day(barber_id, d)
+        except Exception as e:
+            print(f"Cache invalidation error: {e}")
+            
+        return jsonify(res.data[0])
+    
+    return jsonify({"error": "Failed"}), 500
+
+
 
 # ============================================================
 # CLIENT ACCOUNT

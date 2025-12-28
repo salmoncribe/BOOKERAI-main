@@ -126,16 +126,12 @@
       <div class="card">
         <h3>Profile Photos & Videos</h3>
         <p class="muted small">
-          Premium profiles get more bookings and higher visibility.
+          Attract more clients by showcasing your best work and a professional profile photo.
         </p>
-        {% if features.profile_media %}
-        <button class="btn-primary small">Upload Media</button>
-        {% else %}
         <a href="{{ url_for('subscribe') }}" class="btn btn-secondary small"
-          style="display:block;text-align:center;margin-top:1rem;">
-          Unlock Media Uploads 🔒
+          style="display:block;text-align:center;margin-top:1rem; border:1px solid var(--primary); color:var(--primary);">
+          Unlock Portfolio & Profile Photo 🔒
         </a>
-        {% endif %}
       </div>
 
       <div class="card promo-card">

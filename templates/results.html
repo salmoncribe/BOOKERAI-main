@@ -28,9 +28,11 @@
   {% if barbers %}
   <div class="results-grid">
     {% for b in barbers %}
-    <div class="pro-card">
+    <div class="pro-card" style="position:relative;">
       {# 🖼️ Media Gallery Preview #}
-      {% set media_list = (b.media_url or '').split(',') if b.media_url else [] %}
+      {% set media_str = b.media_urls or b.media_url or '' %}
+      {% set media_list = media_str.split(',') if media_str else [] %}
+
       {% if media_list %}
       <div class="pro-media">
         {% for m in media_list[:3] %}
@@ -50,12 +52,34 @@
       {% endif %}
 
       {# 👤 Info Section #}
-      <div class="pro-info">
-        <h3 class="pro-name">{{ b.name }}</h3>
-        <p class="muted small">{{ b.profession or "Independent Professional" }}</p>
-        <p class="pro-location">
-          📍 {{ b.location or b.address or "Location not set" }}
-        </p>
+      <div class="pro-info" style="display:flex; gap:1rem; align-items:start; margin-top:1rem;">
+
+        <!-- Profile Photo -->
+        <div class="pro-avatar" style="flex-shrink:0;">
+          {% if b.photo_url %}
+          <img src="{{ b.photo_url }}" alt="{{ b.name }}"
+            style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);">
+          {% else %}
+          <div style="width:50px; height:50px; border-radius:50%; background:linear-gradient(135deg, #cbd5e1, #94a3b8);
+             display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold;">
+            {{ (b.name or 'B')[:1] | upper }}
+          </div>
+          {% endif %}
+        </div>
+
+        <div>
+          <h3 class="pro-name" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
+            {{ b.name }}
+            {% if b.plan == 'premium' %}
+            <span title="Premium Professional"
+              style="font-size:0.8rem; background:linear-gradient(135deg,#facc15,#eab308); color:#fff; padding:2px 6px; border-radius:99px;">★</span>
+            {% endif %}
+          </h3>
+          <p class="muted small" style="margin:0.25rem 0;">{{ b.profession or "Independent Professional" }}</p>
+          <p class="pro-location" style="font-size:0.85rem; color:var(--text-light);">
+            📍 {{ b.location or b.address or "Location not set" }}
+          </p>
+        </div>
       </div>
 
       {# 🔗 CTA → public booking page /b/<id> #}

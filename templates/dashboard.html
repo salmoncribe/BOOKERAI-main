@@ -143,8 +143,10 @@
       <div class="card media-card">
         <h3>Upload Media</h3>
         <p class="muted small">Show off your work — upload photos or videos directly to your profile gallery.</p>
-        <form id="mediaForm" enctype="multipart/form-data" style="margin-top:1rem;">
-          <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;">
+        <form id="mediaForm" action="{{ url_for('upload_media') }}" method="POST" enctype="multipart/form-data"
+          style="margin-top:1rem;">
+          <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;"
+            onchange="document.getElementById('mediaForm').submit();">
           <button type="button" class="gradient-btn small" style="width:100%;"
             onclick="document.getElementById('mediaInput').click();">
             📤 Upload File

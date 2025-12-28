@@ -4,297 +4,532 @@
 {% block head %}
 <style>
   /* ============================
-   BookerAI — Plan Selector WOW
+   BookerAI — Antigravity Signup
    ============================ */
 
-  body {
-    background: linear-gradient(135deg, #e0f7ff, #f9feff);
-    font-family: "Poppins", system-ui, sans-serif;
-    margin: 0;
-    padding: 0;
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+    --premium-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    --text-main: #1e293b;
+    --text-muted: #64748b;
   }
 
-  /* ✨ Main section */
-  .plan-choice {
+  body {
+    background: radial-gradient(circle at top left, #e0f2fe, #f0f9ff, #ffffff);
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-main);
+    overflow-x: hidden;
+  }
+
+  /* ✨ Floating Background Blobs */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out;
+  }
+
+  .blob-1 {
+    top: -10%;
+    left: -10%;
+    width: 500px;
+    height: 500px;
+    background: #bae6fd;
+    animation-delay: 0s;
+  }
+
+  .blob-2 {
+    bottom: -10%;
+    right: -10%;
+    width: 400px;
+    height: 400px;
+    background: #e9d5ff;
+    animation-delay: 2s;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+
+    50% {
+      transform: translateY(20px) scale(1.05);
+    }
+  }
+
+  /* 🏗️ Main Container */
+  .signup-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    text-align: center;
-    gap: 2rem;
-    padding: 3rem 1rem;
-    animation: fadeIn 0.6s ease;
+    position: relative;
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(15px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* 🧩 Two-card layout */
-  .plan-grid {
-    display: flex;
-    justify-content: center;
-    align-items: stretch;
-    flex-wrap: wrap;
-    gap: 2rem;
-    max-width: 760px;
-    margin: 0 auto;
+  /* 🔄 Transitions */
+  .fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+    position: absolute;
     width: 100%;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* 💎 Card design */
-  .plan-card {
-    flex: 1 1 320px;
-    max-width: 340px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(15px);
-    border-radius: 1.25rem;
-    padding: 2rem 1.5rem;
+  .fade-in {
+    opacity: 1;
+    transform: scale(1);
+    position: relative;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  /* 🃏 Plan Selection Cards */
+  .plan-selection {
     text-align: center;
-    box-shadow: 0 6px 25px rgba(14, 165, 233, 0.12);
-    border: 1.5px solid rgba(14, 165, 233, 0.1);
-    transition: all 0.35s ease;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .plan-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: var(--text-main);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-image: linear-gradient(to right, #1e293b, #334155);
+  }
+
+  .plan-header p {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+  }
+
+  .cards-grid {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .plan-card {
+    flex: 1;
+    min-width: 300px;
+    max-width: 380px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    padding: 2.5rem;
+    text-align: left;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
     cursor: pointer;
   }
 
   .plan-card:hover {
-    transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 10px 35px rgba(14, 165, 233, 0.25);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.8);
   }
 
-  /* Free Plan */
-  .plan-card.free {
-    background: linear-gradient(135deg, #ffffff, #f0faff);
-    border-color: rgba(14, 165, 233, 0.25);
-  }
-
-  /* Premium Plan */
+  /* Premium Specifics */
   .plan-card.premium {
-    background: linear-gradient(135deg, var(--sky-blue), var(--teal));
-    color: white;
+    border: 1px solid rgba(168, 85, 247, 0.2);
   }
 
-  /* Text */
-  .plan-card h2 {
-    font-size: 1.7rem;
+  .plan-card.premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: var(--premium-gradient);
+  }
+
+  .plan-card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .plan-name {
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .plan-card ul {
+  .plan-price {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    color: var(--text-main);
+  }
+
+  .plan-price span {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .features-list {
     list-style: none;
     padding: 0;
-    margin: 0 0 1.25rem 0;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    margin: 0 0 2rem 0;
   }
 
-  .plan-card li {
+  .features-list li {
+    margin-bottom: 0.8rem;
+    padding-left: 1.8rem;
+    position: relative;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .features-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #10b981;
+    font-weight: bold;
+  }
+
+  .plan-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .plan-btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-free {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: var(--text-main);
+  }
+
+  .btn-free:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+  }
+
+  .btn-premium {
+    background: var(--premium-gradient);
+    color: white;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+  }
+
+  .btn-premium:hover {
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+    filter: brightness(1.05);
+  }
+
+  /* 📝 Signup Form Section */
+  .auth-section {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    opacity: 0;
+    /* Starts hidden */
+    display: none;
+    /* Initially removed from flow */
+  }
+
+  .auth-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 1);
+    border-radius: 24px;
+    padding: 3rem;
+    box-shadow: var(--glass-shadow);
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0;
+    transition: color 0.2s;
+  }
+
+  .back-btn:hover {
+    color: var(--text-main);
+  }
+
+  .form-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
   }
 
-  .price {
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-top: 0.75rem;
+  .form-header p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
   }
 
-  /* CTA Button */
-  .choose-btn {
-    background: linear-gradient(to right, var(--sky-blue), var(--teal));
-    color: #fff;
-    padding: 0.7rem 1.6rem;
-    border-radius: 999px;
-    font-weight: 600;
-    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-block;
-    margin-top: 1rem;
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
   }
 
-  .choose-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.35);
+  .full-width {
+    grid-column: 1 / -1;
   }
 
-  /* Hidden signup */
-  .auth-container {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.6s ease;
-  }
-
-  .auth-container.active {
-    display: flex;
-    opacity: 1;
-  }
-
-  /* Premium-only fields */
-  .premium-section {
-    display: none;
-  }
-
-  body.premium-selected .premium-section {
+  .input-group label {
     display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
   }
 
-  /* Mobile */
-  @media (max-width: 720px) {
-    .plan-grid {
-      flex-direction: column;
-      align-items: center;
-      gap: 1.25rem;
+  .input-group input,
+  .input-group select,
+  .input-group textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.8);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+
+  .input-group input:focus,
+  .input-group select:focus,
+  .input-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: white;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 1rem;
+    margin-top: 2rem;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary-gradient);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+
+  .alt-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .alt-link a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    .input-grid {
+      grid-template-columns: 1fr;
     }
 
-    .plan-card {
-      width: 90%;
-      max-width: 360px;
+    .signup-container {
+      padding: 1rem;
+    }
+
+    .auth-card {
+      padding: 1.5rem;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- 🌈 Plan Selection -->
-<section id="planChoice" class="plan-choice">
-  <h1 style="font-size:2rem;font-weight:700;color:var(--text-dark);">Choose Your Plan</h1>
-  <p style="max-width:500px;color:var(--muted);font-size:1rem;">
-    Start free, or go premium for advanced tools, more exposure, and full AI-powered features.
-  </p>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
 
-  <div class="plan-grid">
-    <div class="plan-card free" id="chooseFree">
-      <h2>Free Plan</h2>
-      <ul>
-        <li>✅ Appointment Scheduling</li>
-        <li>✅ Client Management</li>
-        <li>✅ Booking Link</li>
-        <li>✅ Mobile Access</li>
-      </ul>
-      <div class="price">Free Forever</div>
-      <button class="choose-btn" type="button">Continue Free</button>
+<div class="signup-container">
+
+  <!-- 🏁 PHASE 1: Plan Selection -->
+  <div id="planSelection" class="plan-selection fade-in">
+    <div class="plan-header">
+      <h1>Choose Your Path</h1>
+      <p>Select the plan that fits your business needs.</p>
     </div>
 
-    <div class="plan-card premium" id="choosePremium">
-      <h2>Premium 💎</h2>
-      <ul>
-        <li>🌍 Location-Based Appointments</li>
-        <li>🎥 Post Photos &amp; Videos</li>
-        <li>🔎 Appear in “Find a Pro”</li>
-        <li>🖼️ Custom Profile Picture</li>
-      </ul>
-      <div class="price">$20 / month</div>
+    <div class="cards-grid">
+      <!-- Free Plan -->
+      <div class="plan-card" onclick="selectPlan('free')">
+        <div class="icon">🚀</div>
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">Free <span>/ forever</span></div>
+        <ul class="features-list">
+          <li>Basic Appointment Scheduling</li>
+          <li>Client Management</li>
+          <li>Personal Booking Link</li>
+          <li>Mobile Dashboard App</li>
+        </ul>
+        <button class="plan-btn btn-free">Start Free</button>
+      </div>
 
-      <!-- IMPORTANT: no href, handled by JS -->
-      <button class="choose-btn" type="button" id="goPremiumBtn">
-        Go Premium
+      <!-- Premium Plan -->
+      <div class="plan-card premium" onclick="selectPlan('premium')">
+        <div class="icon">💎</div>
+        <div class="plan-name">Premium <span
+            style="font-size:0.8rem; background:#f3e8ff; color:#7e22ce; padding:2px 8px; border-radius:10px;">POPULAR</span>
+        </div>
+        <div class="plan-price">$20 <span>/ month</span></div>
+        <ul class="features-list">
+          <li><strong>Everything in Free, plus:</strong></li>
+          <li>Automated Waitlists</li>
+          <li>SMS Reminders & Marketing</li>
+          <li>"Find a Pro" Directory Listing</li>
+          <li>Portfolio Video & Photo Gallery</li>
+        </ul>
+        <button class="plan-btn btn-premium">Go Premium</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🏁 PHASE 2: Signup Form -->
+  <div id="authSection" class="auth-section">
+    <div class="auth-card">
+      <button class="back-btn" onclick="showPlans()">
+        ← Back to Plans
       </button>
+
+      <div class="form-header">
+        <h2 id="formTitle">Create Account</h2>
+        <p id="formSubtitle">Set up your free account in seconds.</p>
+      </div>
+
+      <form method="post" action="{{ url_for('signup') }}" class="signup-form">
+        <input type="hidden" name="selected_plan" id="selectedPlanInput" value="free">
+
+        <div class="input-grid">
+          <div class="full-width">
+            <label for="name">Full Name</label>
+            <input id="name" name="name" placeholder="e.g. Jordan Miller" required />
+          </div>
+
+          <!-- Email Group: Hidden for Premium -->
+          <div class="full-width" id="emailGroup">
+            <label for="email">Email Address</label>
+            <input id="email" type="email" name="email" placeholder="e.g. jordan@example.com" />
+          </div>
+
+          <div class="full-width">
+            <label for="password">Password</label>
+            <input id="password" type="password" name="password" placeholder="Min. 8 characters" required />
+          </div>
+
+          <div class="full-width">
+            <label for="phone">Phone Number</label>
+            <input id="phone" name="phone" placeholder="(555) 123-4567" required />
+          </div>
+
+          <div class="full-width">
+            <label for="address">Work Address / Location</label>
+            <input id="address" name="address" placeholder="e.g. 123 Main St, Suite 4" required />
+          </div>
+
+          <div class="full-width">
+            <label for="profession">Profession</label>
+            <select id="profession" name="profession">
+              <option value="barber">Barber</option>
+              <option value="hairstylist">Hair Stylist</option>
+              <option value="nail tech">Nail Tech</option>
+              <option value="lash tech">Lash Tech</option>
+              <option value="makeup artist">Makeup Artist</option>
+              <option value="estor">Esthetician</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="full-width hidden" id="otherProfessionGroup">
+            <label for="other_profession">Specific Profession</label>
+            <input id="other_profession" type="text" placeholder="e.g. Tattoo Artist">
+          </div>
+
+          <div class="full-width">
+            <label for="bio">Short Bio</label>
+            <textarea id="bio" name="bio" rows="2" placeholder="Tell clients about your style..."></textarea>
+          </div>
+
+          <!-- Promo Code (Optional) -->
+          <div class="full-width">
+            <label for="promo_code">Promo Code (Optional)</label>
+            <input id="promo_code" name="promo_code" placeholder="e.g. SAVE20" style="text-transform:uppercase;">
+          </div>
+
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Create Account</button>
+
+        <p class="alt-link">
+          Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+        </p>
+      </form>
     </div>
-
   </div>
-</section>
 
-<!-- 📝 Signup Form -->
-<section class="auth-container vibrant-auth">
-  <div class="animated-bg"></div>
-  <div class="auth-card glass-card">
-    <h1 class="auth-title">Create Your Account</h1>
-    <p class="subtitle">
-      You selected the <strong id="planName">Free</strong> Plan.
-    </p>
-
-    {# No explicit action -> posts back to /signup, which matches app.py #}
-    <form method="post" novalidate class="signup-form">
-      <input type="hidden" name="selected_plan" id="selected_plan" value="free">
-
-      <div class="input-grid">
-        <div class="input-group">
-          <label for="name">Full Name</label>
-          <input id="name" name="name" placeholder="e.g., Jordan Martinez" required />
-        </div>
-
-        <div class="input-group">
-          <label for="email">Email</label>
-          <input id="email" type="email" name="email" placeholder="e.g., jordan@bookerpro.com" required />
-        </div>
-
-        <div class="input-group">
-          <label for="password">Password</label>
-          <input id="password" type="password" name="password" placeholder="Minimum 8 characters" required />
-        </div>
-
-        <div class="input-group">
-          <label for="phone">Phone</label>
-          <input id="phone" name="phone" placeholder="e.g., (555) 987-6543" required />
-        </div>
-
-        <div class="input-group full">
-          <label for="address" style="display:flex;align-items:center;gap:6px;">
-            Work Address
-            <span class="hint-text" style="color:var(--muted);font-size:0.85rem;">
-              (make sure your city is included)
-            </span>
-          </label>
-          <input id="address" name="address" placeholder="e.g., 214 Main St, Lubbock, TX 79401" required />
-        </div>
-
-        <div class="input-group full">
-          <label for="bio">Bio</label>
-          <textarea id="bio" name="bio" rows="3"
-            placeholder="e.g., Fade specialist with 5+ years of experience."></textarea>
-        </div>
-
-        {# Profession selector — matches signup.js + app.py #}
-        <div class="input-group full">
-          <label for="profession">Profession</label>
-          <select id="profession" name="profession">
-            <option value="barber">Barber</option>
-            <option value="hairstylist">Hair Stylist</option>
-            <option value="nail tech">Nail Tech</option>
-            <option value="lash tech">Lash Tech</option>
-            <option value="makeup artist">Makeup Artist</option>
-            <option value="massage therapist">Massage Therapist</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div class="input-group full" id="otherProfessionGroup" style="display:none;">
-          <label for="other_profession">What do you do?</label>
-          <input id="other_profession" type="text" placeholder="e.g., Brow artist">
-        </div>
-      </div>
-
-      <!-- 💎 Premium Section (shown only when premium selected) -->
-      <div class="premium-section">
-        <div class="input-group" style="margin-top:1.25rem;">
-          <label for="promo_code">Promo Code</label>
-          <input id="promo_code" name="promo_code" placeholder="e.g., SAVE20 or BARBERAI10"
-            style="text-transform:uppercase;" />
-          <p class="muted" style="font-size:0.85rem;margin-top:0.3rem;">
-            (Optional) Enter a valid promo code for discounts or free months.
-          </p>
-        </div>
-        <p style="margin-top:1.25rem;font-weight:600;">$20/month — Cancel Anytime</p>
-      </div>
-
-      <button class="gradient-btn large glow-hover" type="submit">Sign Up</button>
-      <p class="alt-link">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
-    </form>
-  </div>
-</section>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/signup.js') }}"></script>
-
 {% endblock %}

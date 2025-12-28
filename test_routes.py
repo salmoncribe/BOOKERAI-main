@@ -28,5 +28,11 @@ class RouteTestCase(unittest.TestCase):
         rv = self.app.get('/dashboard')
         self.assertEqual(rv.status_code, 302)
 
+    def test_logout(self):
+        rv = self.app.get('/logout')
+        self.assertEqual(rv.status_code, 302)
+        # Verify it redirects to login
+        self.assertIn('/login', rv.headers['Location'])
+
 if __name__ == '__main__':
     unittest.main()
