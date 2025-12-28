@@ -86,30 +86,63 @@
 
       <!-- Navigation -->
       <nav class="nav-links" role="navigation" aria-label="Main navigation">
-        <div class="nav-identity">
+        <div class="nav-content-wrap" style="width: 100%; display: flex; flex-direction: column; flex: 1;">
+          <div class="nav-identity">
+            {% if session.get('barberId') %}
+            <div class="user-info">
+              <div class="avatar-circle">
+                {% if session.get('user_email') %}
+                {{ session.get('user_email')[0]|upper }}
+                {% else %}
+                B
+                {% endif %}
+              </div>
+              <div class="user-text">
+                <span class="user-greeting-label">Hello,</span>
+                <span class="user-name">{{ session.get('barber_name', 'Barber') }}</span>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
           {% if session.get('barberId') %}
-          <div class="user-info">
-            <span class="user-avatar">👤</span>
-            <span class="user-greeting">Welcome Back!</span>
+          <div class="nav-primary">
+            <a href="{{ url_for('dashboard') }}" class="nav-link primary-link">
+              <span class="icon">📊</span> Dashboard
+            </a>
+            <a href="#" class="nav-link primary-link">
+              <span class="icon">🌎</span> Public Profile
+            </a>
+            <a href="{{ url_for('results', service='Barber') }}" class="nav-link primary-link">
+              <span class="icon">🔍</span> Find a Pro
+            </a>
+          </div>
+
+          <div class="nav-secondary">
+            <a href="{{ url_for('settings') }}" class="nav-link secondary-link">Settings</a>
+            <a href="{{ url_for('help_center') }}" class="nav-link secondary-link">Help</a>
+          </div>
+
+          <div class="nav-special">
+            <a href="#" class="nav-link pulse-gold premium-btn">
+              Upgrade to Premium <span class="gem">💎</span>
+            </a>
+          </div>
+
+          <div class="nav-bottom">
+            <div class="nav-divider"></div>
+            <a href="{{ url_for('logout') }}" class="nav-link logout-link">Log Out</a>
+          </div>
+          {% else %}
+          <!-- Guest Nav -->
+          <div class="nav-guest">
+            <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+            <a href="{{ url_for('signup') }}"
+              class="btn-primary gradient-btn text-white text-sm py-2 px-4 rounded-lg hover:shadow-lg transition-all"
+              style="margin-top: 1rem; display: inline-block;">Sign Up</a>
           </div>
           {% endif %}
         </div>
-
-        {% if session.get('barberId') %}
-        <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-        <a href="{{ url_for('results', service='Barber') }}" class="nav-link">Find a Pro</a>
-        <a href="#" class="nav-link">Public Profile</a>
-        <a href="{{ url_for('settings') }}" class="nav-link">Settings</a>
-        <a href="#" class="nav-link pulse-gold text-gold">Upgrade to Premium 💎</a>
-        <a href="{{ url_for('help_center') }}" class="nav-link">Help</a>
-        <div class="nav-divider"></div>
-        <a href="{{ url_for('logout') }}" class="nav-link text-red">Logout</a>
-        {% else %}
-        <a href="{{ url_for('login') }}" class="nav-link">Login</a>
-        <a href="{{ url_for('signup') }}"
-          class="btn-primary gradient-btn text-white text-sm py-2 px-4 rounded-lg hover:shadow-lg transition-all">Sign
-          Up</a>
-        {% endif %}
       </nav>
     </div>
   </header>
