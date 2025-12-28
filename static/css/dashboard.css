@@ -6,7 +6,7 @@
    DASHBOARD LAYOUT
    ---------------------------------------------------------- */
 .dashboard {
-    padding: 4rem 2rem;
+    padding: 2rem clamp(1rem, 5vw, 2rem);
     position: relative;
     color: var(--text-dark);
     background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
@@ -21,7 +21,7 @@
 .hours-card,
 .promo-card,
 .card {
-    width: min(100%, 640px);
+    width: min(94%, 640px);
     margin-left: auto;
     margin-right: auto;
 }
@@ -116,7 +116,7 @@
    ---------------------------------------------------------- */
 .insights-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: 1.5rem;
     margin-bottom: 2.5rem;
     position: relative;
@@ -213,6 +213,8 @@
 
 /* Ensure horizontal scroll */
 .table-scroll {
+    display: block;
+    width: 100%;
     overflow-x: auto;
 }
 
