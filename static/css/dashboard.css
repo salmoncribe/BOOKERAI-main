@@ -667,17 +667,110 @@ video.media-thumb:hover {
 }
 
 /* Responsive Dashboard Specifics */
+/* Responsive Dashboard Specifics */
 @media (max-width: 768px) {
     .dashboard {
-        padding: 2rem 1rem;
-        /* 16px side padding */
+        padding: 2rem 1rem !important;
+        /* 16px side padding - Enforced */
     }
 
     .table-scroll {
         max-height: 55vh;
+        width: 100%;
     }
 
-    /* Tighten table rows on mobile */
+    /* -----------------------------------------------------
+       SMART SCHEDULE COMPONENT (Mobile)
+       ----------------------------------------------------- */
+
+    /* 1. Dynamic Row Limit: Show only first 4 appointments */
+    .appointments-card tbody tr:nth-child(n+5) {
+        display: none;
+    }
+
+    /* 2. Table-to-Card Conversion */
+    .appointments-card table,
+    .appointments-card thead,
+    .appointments-card tbody,
+    .appointments-card th,
+    .appointments-card td,
+    .appointments-card tr {
+        display: block;
+    }
+
+    .appointments-card thead {
+        display: none;
+        /* Hide headers */
+    }
+
+    .appointments-card tr {
+        margin-bottom: 1rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .appointments-card tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .appointments-card td {
+        display: block;
+        text-align: left;
+        padding: 0.25rem 0;
+        border: none;
+        white-space: normal;
+        /* Allow text wrap */
+        position: relative;
+    }
+
+    /* Stack styling tweaks */
+    /* Time (1st column) */
+    .appointments-card td:nth-of-type(1) {
+        font-weight: 700;
+        color: var(--sky-blue);
+        font-size: 1.1rem;
+        margin-bottom: 0.2rem;
+    }
+
+    /* Client (2nd column) */
+    .appointments-card td:nth-of-type(2) {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    /* Service/Other (subsequent) */
+    .appointments-card td:nth-of-type(3),
+    .appointments-card td:nth-of-type(4) {
+        color: var(--muted);
+        font-size: 0.95rem;
+    }
+
+    /* Button inside card */
+    .appointments-card td:last-child {
+        margin-top: 0.5rem;
+    }
+
+    .appointments-card td button {
+        width: 100%;
+        /* Full width action button */
+        padding: 0.6rem;
+    }
+
+    /* -----------------------------------------------------
+       DASHBOARD GRID OPTIMIZATION
+       ----------------------------------------------------- */
+
+    /* Stat Cards: Full Width & Box Sizing */
+    .insight-card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Tighten table rows on generic tables (if any remain) */
     .table th,
     .table td {
         padding: 0.5rem 0.75rem;
@@ -700,7 +793,8 @@ video.media-thumb:hover {
     .time-inputs input[type="time"] {
         width: 100%;
         padding: 0.4rem;
-        font-size: 0.85rem;
+        font-size: 16px !important;
+        /* redundant but safe */
     }
 
     /* Stack grids vertically */
@@ -709,14 +803,16 @@ video.media-thumb:hover {
         grid-template-columns: 1fr;
     }
 
-    /* Limit appointments to 4 items on mobile */
-    .appointments-card tbody tr:nth-child(n+5) {
-        display: none;
-    }
-
     /* Show mobile CTA */
     .mobile-view-calendar-btn {
         display: block;
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+
+    .mobile-view-calendar-btn button {
+        padding: 1rem 2rem;
+        font-size: 1rem;
     }
 }
 

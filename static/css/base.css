@@ -59,6 +59,16 @@ body {
     -webkit-text-size-adjust: 100%;
 }
 
+@media (max-width: 768px) {
+
+    /* Prevent iOS Zoom on focus */
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
 html {
     scroll-padding-top: var(--header-height);
 }
