@@ -1353,3 +1353,33 @@ button:active,
         }
     }
 }
+
+/* Mobile Appointments & Quick Actions */
+@media (max-width: 600px) {
+    .desktop-appt-view {
+        display: none !important;
+    }
+
+    .mobile-appt-view {
+        display: block !important;
+    }
+
+    .quick-actions-mobile {
+        display: flex;
+        /* Stack for mobile */
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .quick-actions-mobile .qa-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 1rem;
+    }
+}
+
+@media (min-width: 601px) {
+    .mobile-appt-view {
+        display: none !important;
+    }
+}
