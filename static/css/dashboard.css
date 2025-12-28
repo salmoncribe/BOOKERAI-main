@@ -6,22 +6,30 @@
    DASHBOARD LAYOUT
    ---------------------------------------------------------- */
 .dashboard {
-    padding: 2rem clamp(1rem, 5vw, 2rem);
+    padding: 1.5rem 12px;
+    /* Mobile safe padding */
     position: relative;
     color: var(--text-dark);
     background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 100vw;
+    /* Prevent bleed */
     overflow-x: hidden;
-    box-sizing: border-box;
-    /* Lock padding inside width */
+    margin: 0 auto;
 }
 
+@media (min-width: 1024px) {
+    .dashboard {
+        max-width: 1200px;
+        /* Cap width on desktop */
+        padding: 2rem;
+    }
+}
 
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
+    /* Mobile default */
     gap: 2rem;
 }
 
@@ -41,31 +49,31 @@
 .promo-card,
 .card {
     /* Safe Mobile Widths */
-    width: calc(100% - 24px);
-    margin: 0 auto 1.5rem auto !important;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 1.5rem 0 !important;
     box-sizing: border-box !important;
 
     /* Bento Glassmorphism */
-    border-radius: 20px;
-    /* Update Glassmorphism */
-    background: rgba(255, 255, 255, 0.8);
-
-    /* High-end glass look */
+    border-radius: 24px;
+    /* Updated radius */
+    background: rgba(255, 255, 255, 0.75);
+    /* Updated opacity */
 
     /* Visual Polish: Inner Borders & Softer Shadows */
-    border: 1px solid rgba(14, 165, 233, 0.1);
+    border: 1px solid rgba(14, 165, 233, 0.15);
 
     @supports (backdrop-filter: blur(12px)) {
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
     }
 
-    /* Shadow Refinement */
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05),
-    0 10px 10px -5px rgba(0, 0, 0, 0.02);
+    /* Elite Shadows */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04),
+    0 4px 6px -2px rgba(0, 0, 0, 0.01);
 
-    transition: transform 0.2s ease,
-    box-shadow 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (max-width: 768px) {
@@ -1462,36 +1470,38 @@ button:active,
 .empty-state button,
 .btn-elite-primary {
     background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(14, 165, 233, 0.25);
-    /* Soft Blue Glow */
+    border-radius: 14px;
+    /* Updated radius */
+    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
     border: none;
     color: white;
     padding: 0.8rem 1.6rem;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .empty-state button:hover,
 .btn-elite-primary:hover {
-    box-shadow: 0 0 25px rgba(14, 165, 233, 0.4);
-    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+    transform: translateY(-2px);
 }
 
 .empty-state button:active,
-.btn-elite-primary:active {
+.btn-elite-primary:active,
+button:active {
     transform: scale(0.96);
-    /* Tactile Effect */
-    box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+    /* Tactile Response */
 }
 
 /* Hours Grid Highlight */
 .hours-list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    width: 100%;
+    gap: 0.75rem;
 }
 
 @media (min-width: 768px) {
@@ -1508,6 +1518,10 @@ button:active,
     border: 1px solid transparent;
     transition: all 0.2s ease;
     background: rgba(255, 255, 255, 0.5);
+    /* Ensure content doesn't push wide on mobile */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .hours-row.current-day {
