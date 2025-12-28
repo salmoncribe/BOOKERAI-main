@@ -258,6 +258,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Highlight Current Day
+  const daysMap = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const todayKey = daysMap[new Date().getDay()];
+  const currentDayRow = document.querySelector(`.hours-row[data-day="${todayKey}"]`);
+  if (currentDayRow) {
+    currentDayRow.classList.add("current-day");
+  }
+
   // Icons
   if (window.lucide) window.lucide.createIcons();
 });

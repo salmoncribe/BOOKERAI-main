@@ -26,6 +26,24 @@
         <p class="muted small">Free BookerAI Dashboard</p>
       </div>
     </div>
+
+    <!-- Desktop Header Actions -->
+    <div class="dash-head-actions desktop-only" style="display:flex; gap:1rem; align-items:center;">
+      <button class="nav-action-btn desktop-dash-btn copy-global-btn" data-copy-url="{{ public_link }}"
+        style="color:var(--text-dark); background:rgba(255,255,255,0.5); border:1px solid rgba(0,0,0,0.1);">
+        <i data-lucide="copy" style="width:16px;height:16px;"></i> Copy Link
+      </button>
+      <a href="{{ public_link }}" target="_blank" class="nav-action-btn desktop-dash-btn"
+        style="color:var(--text-dark); background:rgba(255,255,255,0.5); border:1px solid rgba(0,0,0,0.1); text-decoration:none;">
+        <i data-lucide="external-link" style="width:16px;height:16px;"></i> Public Page
+      </a>
+      {% if features.find_pro %}
+      <a href="{{ url_for('find_pro_route') }}" class="nav-action-btn desktop-dash-btn"
+        style="color:var(--text-dark); background:rgba(255,255,255,0.5); border:1px solid rgba(0,0,0,0.1); text-decoration:none;">
+        Find a Pro
+      </a>
+      {% endif %}
+    </div>
   </div>
 
   <div class="dashboard-grid">

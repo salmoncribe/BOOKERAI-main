@@ -121,33 +121,10 @@ header.site-header {
     border-radius: 3px;
 }
 
-/* Nav Actions (Quick Actions) */
-.nav-action-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
-    padding: 0.4rem 1rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-    color: var(--white);
-    font-family: inherit;
-    font-weight: 500;
-}
-
-.nav-action-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: var(--white);
-    transform: translateY(-1px);
-}
-
+/* Nav Actions (Mobile Only in Global Nav) */
+.nav-action-btn,
 .nav-action-link {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+    display: none;
 }
 
 .icon-sm {
@@ -155,25 +132,30 @@ header.site-header {
     height: 16px;
 }
 
-/* Mobile Overrides for Actions */
-@media (max-width: 768px) {
+/* Mobile Overrides for Actions (Show in Hamburger) */
+@media (max-width: 900px) {
     .nav-action-btn {
-        width: 100%;
+        display: flex;
+        background: transparent !important;
         border: none;
         padding: 12px 0;
-        border-radius: 0;
+        width: 100%;
         justify-content: flex-start;
         font-size: 1.1rem;
-        background: transparent !important;
         color: var(--muted);
-        /* Match secondary items */
+        align-items: center;
+        gap: 0.5rem;
         padding-left: 5px;
     }
 
     .nav-action-link {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
         color: var(--muted);
         font-size: 1.1rem;
         padding-left: 5px;
+        padding: 12px 0 12px 5px;
     }
 }
 
