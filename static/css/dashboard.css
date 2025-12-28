@@ -10,11 +10,9 @@
     position: relative;
     color: var(--text-dark);
     background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
-    width: 100%;
-    margin: 0 auto;
-    margin: 0 auto;
+    width: min(100%, 1200px);
+    margin-inline: auto;
     overflow-x: hidden;
-    max-width: 100%;
 }
 
 /* Central Card Utility - Enforced on all main cards */
@@ -23,8 +21,7 @@
 .hours-card,
 .promo-card,
 .card {
-    width: 100%;
-    max-width: 640px;
+    width: min(100%, 640px);
     margin-left: auto;
     margin-right: auto;
 }
