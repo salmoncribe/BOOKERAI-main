@@ -12,14 +12,28 @@
   <div class="wow-card results-header">
     <h2 class="auth-title">Professionals Near You 💈</h2>
 
+    <!-- Filter Bar -->
+    <form method="get" action="{{ url_for('results') if 'results' in url_for.__globals__ else '#' }}"
+      class="filter-bar mt-3">
+      <input type="text" name="city" placeholder="City" value="{{ city or '' }}" aria-label="City">
+      <select name="service" aria-label="Service">
+        <option value="">All Services</option>
+        <option value="Barber" {% if service=='Barber' %}selected{% endif %}>Barber</option>
+        <option value="Hair Stylist" {% if service=='Hair Stylist' %}selected{% endif %}>Hair Stylist</option>
+        <option value="Makeup Artist" {% if service=='Makeup Artist' %}selected{% endif %}>Makeup Artist</option>
+        <option value="Other" {% if service=='Other' %}selected{% endif %}>Other</option>
+      </select>
+      <button type="submit">Filter</button>
+    </form>
+
     {% if barbers %}
-    <p class="muted">
+    <p class="muted mt-3">
       Showing <strong>{{ barbers|length }}</strong> professionals
       {% if city %} in <strong>{{ city|title }}</strong>{% endif %}
       {% if service %} specializing in <strong>{{ service|title }}</strong>{% endif %}.
     </p>
     {% else %}
-    <p class="muted">
+    <p class="muted mt-3">
       No professionals found matching your search. Try another service or nearby city.
     </p>
     {% endif %}

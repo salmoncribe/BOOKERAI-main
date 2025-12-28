@@ -799,6 +799,15 @@ video.media-thumb:hover {
         margin-top: 0.5rem;
     }
 
+    .appointments-card td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--muted);
+        display: block;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+
     .appointments-card td button {
         width: 100%;
         /* Full width action button */

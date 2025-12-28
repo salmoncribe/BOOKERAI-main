@@ -76,11 +76,11 @@
             <tbody>
               {% for a in appointments %}
               <tr>
-                <td>{{ a.client_name or "Unknown" }}</td>
-                <td>
+                <td data-label="Client">{{ a.client_name or "Unknown" }}</td>
+                <td data-label="Phone">
                   <a href="tel:{{ a.client_phone }}">{{ a.client_phone }}</a>
                 </td>
-                <td>{{ a.date }} {{ a.start_time }}</td>
+                <td data-label="When">{{ a.date }} {{ a.start_time }}</td>
               </tr>
               {% endfor %}
             </tbody>
