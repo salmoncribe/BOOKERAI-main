@@ -10,11 +10,12 @@
     position: relative;
     color: var(--text-dark);
     background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
-    background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     overflow-x: hidden;
+    box-sizing: border-box;
+    /* Lock padding inside width */
 }
 
 /* Central Card Utility - Enforced on all main cards */
@@ -23,10 +24,22 @@
 .hours-card,
 .promo-card,
 .card {
-    width: 100%;
+    width: min(100%, 640px);
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+
+    .central-card,
+    .appointments-card,
+    .hours-card,
+    .promo-card,
+    .card {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 /* Helper for mobile button */
@@ -138,6 +151,8 @@
     flex-basis: 0;
     /* Align perfectly */
     /* Removed min-width for full fluidity */
+    margin: 0 auto;
+    /* Centering Logic */
 }
 
 .insight-card:hover {
@@ -176,10 +191,16 @@
 }
 
 .appointments-card h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    /* Let container handle gap */
     color: var(--text-dark);
     font-weight: 700;
     flex-shrink: 0;
+}
+
+.appt-header {
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .table-scroll {
@@ -995,7 +1016,7 @@ video.media-thumb:hover {
 .premium-bubble {
     position: absolute;
     top: 1.8rem;
-    right: 2rem;
+    right: clamp(10px, 5%, 20px);
     width: 12px;
     height: 12px;
     border-radius: 50%;
