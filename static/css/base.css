@@ -57,6 +57,12 @@ body {
     /* Critical for mobile to prevent sway */
     /* Prevent font inflation on mobile */
     -webkit-text-size-adjust: 100%;
+
+    /* Global Alignment Lockdown */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100vw;
 }
 
 @media (max-width: 768px) {
