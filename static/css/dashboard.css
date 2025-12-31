@@ -138,19 +138,43 @@ button:active,
     border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 1024px) {
     .dash-head {
         flex-direction: column;
+        align-items: stretch;
+        /* Full width children */
         text-align: center;
         gap: 1.5rem;
         padding: 1.5rem 1rem;
     }
 
-    .dash-title {
-        font-size: 1.25rem;
-        /* Text Hierarchy Fix */
+    .dash-head-actions {
+        justify-content: center;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    /* Ensure buttons inside actions take full width or share space nicely */
+    .dash-head-actions .nav-action-btn {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+        /* Don't get too small */
+        white-space: nowrap;
     }
 }
+
+@media (max-width: 480px) {
+    .dash-head-actions {
+        flex-direction: column;
+    }
+
+    .dash-head-actions .nav-action-btn {
+        width: 100%;
+    }
+}
+
+
 
 .dash-actions {
     display: grid;
