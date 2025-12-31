@@ -57,5 +57,26 @@ class TestAvailabilityLogic(unittest.TestCase):
         self.assertEqual(res["slots"], ["09:00"])
         self.assertTrue(res["cached"])
 
+    def test_text_parsing_formats(self):
+        hours = [{"weekday": "mon", "start_time": "09:00", "end_time": "12:00", "is_closed": False}]
+        overrides = []
+        # Test distinct formats for "10:00-11:00"
+        appts = [
+            {"start_time": "10:00", "end_time": "11:00", "status": "booked"},   # HH:MM
+            {"start_time": "11:00:00", "end_time": "12:00:00", "status": "booked"}, # HH:MM:SS
+        ]
+
+        with patch('db.get_weekly_hours_raw', return_value=hours), \
+             patch('db.get_date_override_raw', return_value=overrides), \
+             patch('db.get_appointments_raw', return_value=appts):
+            
+            res = self.service.get_availability("barber1", "2023-12-25", 60)
+            slots = res["slots"]
+            
+            # 09:00 is free. 
+            # 10:00 is booked (format 1). 
+            # 11:00 is booked (format 2).
+            self.assertEqual(slots, ["09:00"], f"Expected 09:00 only. Got {slots}")
+
 if __name__ == '__main__':
     unittest.main()

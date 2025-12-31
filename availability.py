@@ -36,12 +36,12 @@ class AvailabilityService:
         
         return {"slots": slots, "cached": False}
 
-    def _calculate_slots(self, date_str, hours_data, overrides_data, appointments_data, duration_minutes):
+    def _calculate_slots(self, date_str, hours_raw, overrides_raw, appointments_raw, duration_minutes):
         """
         Pure logic: 
         - Determine working hours (Weekly + Overrides)
         - Generate all possible slots
-        - Subtract booked slots
+        - Subtract booked slots using OVERLAP logic
         """
         target_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
         weekday_str = target_date.strftime("%a").lower()  # mon, tue, ...
@@ -52,10 +52,9 @@ class AvailabilityService:
         is_closed = False
 
         # 1. Check Overrides first
-        if overrides_data:
-            # Assuming only one override per day usually, but let's take the first relevant one
+        if overrides_raw:
             # Logic: If override exists, it REPLACES weekly hours entirely.
-            ov = overrides_data[0]
+            ov = overrides_raw[0]
             if ov.get("is_closed"):
                 is_closed = True
             else:
@@ -65,7 +64,7 @@ class AvailabilityService:
         # 2. If no override, check weekly
         else:
             # Filter for this weekday
-            day_hours = next((h for h in hours_data if h["weekday"] == weekday_str), None)
+            day_hours = next((h for h in hours_raw if h["weekday"] == weekday_str), None)
             if not day_hours or day_hours.get("is_closed"):
                 is_closed = True
             else:
@@ -76,96 +75,95 @@ class AvailabilityService:
             return []
 
         # --- B. Generate Candidate Slots ---
-        # Helper to convert "HH:MM(:SS)" or time object to minutes from midnight
+        
         def to_minutes(t_val):
-            if isinstance(t_val, datetime.time):
+            """Robustly convert HH:MM or HH:MM:SS string or object to minutes."""
+            if isinstance(t_val, (datetime.time, datetime.datetime)):
                 return t_val.hour * 60 + t_val.minute
             
-            # Assume string
-            t_str = str(t_val)
-            # Remove seconds if present
-            if len(t_str) > 5 and ":" in t_str[5:]: 
-                t_str = t_str[:5]
-                
+            if not t_val:
+                return 0
+            
+            t_str = str(t_val).strip()
+            # Handle "2023-01-01T09:00:00"
+            if "T" in t_str:
+                t_str = t_str.split("T")[1]
+            
+            # Allow "9:00" or "09:00:00"
             parts = t_str.split(":")
-            return int(parts[0]) * 60 + int(parts[1])
+            if len(parts) >= 2:
+                try:
+                    h = int(parts[0])
+                    m = int(parts[1])
+                    return h * 60 + m
+                except ValueError:
+                    pass
+            return 0
 
         open_mins = to_minutes(start_time_str)
         close_mins = to_minutes(end_time_str)
         
+        # Generator loop
         candidate_slots = []
         current_mins = open_mins
-        
-        step = duration_minutes 
+        step = int(duration_minutes) # ensure int
 
-        while current_mins + duration_minutes <= close_mins:
+        # Strict: Slot must finish by closing time
+        while current_mins + step <= close_mins:
             candidate_slots.append(current_mins)
             current_mins += step
 
         if not candidate_slots:
             return []
 
-        logger.info(f"Availability Calc: Target={target_date} | Open={start_time_str} Close={end_time_str} | Generated {len(candidate_slots)} raw slots")
-
-        # --- Filter Past Slots (Timezone Drift Fix) ---
-        # Using UTC for consistency. We treat the 'date_str' as being in the same timezone context as 'now' for simplicity,
-        # or we assume the barber works in the server's timezone if not specified.
-        # Ideally, we'd use barber.timezone, but for this fix we stick to UTC consistency.
+        # --- Filter Past Slots (Timezone Safely) ---
+        # We assume the user is booking in the barber's timezone or roughly "now".
+        # For safety, if booking "today", filter out past times.
         now_utc = datetime.datetime.now(datetime.timezone.utc)
         
-        # Check if target_date is "today" (in UTC terms for consistency, or just date comparison)
-        # If target_date (Date obj) == now_utc.date()
+        # Basic check: if date string matches today's date
+        # Note: Ideally we'd use barber timezone. For now, we use a 15m buffer if date matches UTC date.
         if target_date == now_utc.date():
-            current_time_mins = now_utc.hour * 60 + now_utc.minute
+            # Convert now UTC to minutes
+            now_mins = now_utc.hour * 60 + now_utc.minute
             buffer_mins = 15
             
-            # Filter out slots starting too soon
-            # Note: This compares "slot time mins" (0-1440) vs "now UTC mins" (0-1440)
             candidate_slots = [
                 s for s in candidate_slots 
-                if s > (current_time_mins + buffer_mins)
+                if s > (now_mins + buffer_mins)
             ]
-            
-            logger.info(f"Filtered past slots. Now UTC time={current_time_mins} mins. Remaining: {len(candidate_slots)}")
 
         if not candidate_slots:
             return []
 
         # --- C. Remove Overlaps ---
-        # Parse appointments into (start_mins, end_mins)
         busy_intervals = []
-        for appt in appointments_data:
+        for appt in appointments_raw:
             if appt.get("status") == "cancelled":
                 continue
             
-            # Normalize appt times. Appt might be "YYYY-MM-DDTHH:MM..." or "HH:MM:SS"
-            a_start = appt["start_time"]
+            # Start
+            a_start_val = appt.get("start_time")
+            a_s_mins = to_minutes(a_start_val)
             
-            # Handle string or time object
-            if isinstance(a_start, str) and "T" in a_start:
-                 a_start = a_start.split("T")[1]
-            
-            a_s_mins = to_minutes(a_start)
-            
-            # End time
-            a_end = appt.get("end_time")
-            if not a_end:
-                 a_e_mins = a_s_mins + 60 
+            # End
+            a_end_val = appt.get("end_time")
+            if a_end_val:
+                a_e_mins = to_minutes(a_end_val)
             else:
-                if isinstance(a_end, str) and "T" in a_end:
-                    a_end = a_end.split("T")[1]
-                a_e_mins = to_minutes(a_end)
+                # Fallback if specific appt has no end time (should be rare/legacy)
+                a_e_mins = a_s_mins + step
             
             busy_intervals.append((a_s_mins, a_e_mins))
 
         available_slots = []
         for slot_start in candidate_slots:
-            slot_end = slot_start + duration_minutes
+            slot_end = slot_start + step
             
-            # Check collision
+            # Collision Logic
             is_clashed = False
             for (b_start, b_end) in busy_intervals:
-                # Overlap logic: (StartA < EndB) and (EndA > StartB)
+                # Overlap: (StartA < EndB) and (EndA > StartB)
                 if slot_start < b_end and slot_end > b_start:
                     is_clashed = True
                     break
@@ -182,14 +180,7 @@ class AvailabilityService:
         return f"availability:{barber_id}:{service_duration}:{date}"
 
     def invalidate_day(self, barber_id, date):
-        # Invalidate for common durations. 
-        # Hard to know exact key if duration varies.
-        # Wildcard deletion is tricky with SimpleCache/Redis w/o pattern scan.
-        # Best effort: invalidate standard durations (30, 45, 60)
-        # OR: user said "Invalidate cache when a new booking is created"
-        # We can try to rely on short TTL (30-120s) if perfect invalidation is hard, 
-        # but for Redis we can delete keys.
-        # Let's iterate popular durations.
+        # Clear multiple possible durations
         for d in [15, 30, 45, 60, 90]:
              self.cache.delete(self._get_cache_key(barber_id, date, d))
 

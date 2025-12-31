@@ -288,38 +288,34 @@
         p_end_date: iso
       });
 
-      // RPC Call: get_available_slots
-      const { data: rows, error } = await sb.rpc("get_available_slots", {
-        p_barber_id: barberId,
-        p_start_date: iso,
-        p_end_date: iso,
-      });
+      // Flask API Call: /api/public/slots/<barber_id>?date=YYYY-MM-DD
+      const res = await fetch(`/api/public/slots/${barberId}?date=${iso}`);
+      if (!res.ok) throw new Error("Failed to fetch slots");
 
-      console.log("RPC Response:", { data: rows, error });
-
-      if (error) throw error;
-
-      hideEmpty();
-
-      const name = BARBER.name || "This barber";
+      const rows = await res.json();
+      console.log("API Response:", rows);
 
       if (!rows || rows.length === 0) {
         return showEmpty(`${name} is fully booked or closed on this day.`);
       }
 
       // Map distinct time slots
-      // The RPC returns { slot_time: "2025-12-24T10:00:00+00:00", ... }
+      // API returns simple strings: ["09:00", "10:00"]
       const uniqueTimes = new Set();
       const slots = [];
 
-      rows.forEach(r => {
-        // Convert UTC timestamp to local time object
-        const d = new Date(r.slot_time);
+      rows.forEach(timeStr => {
+        // Construct local date object from the basic time string
+        // We assume the timeStr is correct for the requested day
+        const [h, m] = timeStr.split(':').map(Number);
 
-        // Extract local HH:MM
-        const h = String(d.getHours()).padStart(2, "0");
-        const m = String(d.getMinutes()).padStart(2, "0");
-        const hm = `${h}:${m}`;
+        // Safety check
+        if (isNaN(h) || isNaN(m)) return;
+
+        const d = ISOToDate(iso);
+        d.setHours(h, m, 0, 0);
+
+        const hm = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
         if (!uniqueTimes.has(hm)) {
           uniqueTimes.add(hm);
