@@ -47,14 +47,19 @@ Session(app)
 # ----------------------------------------------
 # Caching
 # ----------------------------------------------
-# Try Redis, fall back to SimpleCache
-redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-try:
-    cache = Cache(app, config={
-        'CACHE_TYPE': 'RedisCache',
-        'CACHE_REDIS_URL': redis_url
-    })
-except:
+# Try Redis if URL provided, else SimpleCache
+redis_url = os.environ.get("REDIS_URL")
+if redis_url:
+    try:
+        cache = Cache(app, config={
+            'CACHE_TYPE': 'RedisCache',
+            'CACHE_REDIS_URL': redis_url
+        })
+        # Test connection? (Optional, but RedisCache usually lazy connects)
+    except:
+         cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+else:
+    # No Redis URL -> SimpleCache (Cloud Run safe)
     cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
 availability_service = AvailabilityService(cache)
