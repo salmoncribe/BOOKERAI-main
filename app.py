@@ -844,55 +844,135 @@ def get_availability_v2():
 @app.post("/api/appointments/create")
 def create_appt():
     data = request.json
-    required = ["barber_id", "date", "start_time", "client_name", "client_phone"]
+    # 1. Strict Validation
+    if not data:
+        return jsonify({"error": "Missing JSON body"}), 400
 
+    required = ["barber_id", "date", "start_time", "client_name", "client_phone"]
     for r in required:
         if not data.get(r):
             return jsonify({"error": f"Missing {r}"}), 400
 
     barber_id = data["barber_id"]
-    d = data["date"]
-    start = data["start_time"]
+    d_str = data["date"]
+    start_str = data["start_time"]
 
-    # Calculate end_time
+    # Validate Date Format (YYYY-MM-DD)
+    try:
+        datetime.strptime(d_str, "%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
+
+    # Validate Time Format & Normalize (HH:MM or HH:MM:SS -> HH:MM)
+    try:
+        # Allow HH:MM or HH:MM:SS, but strictly enforce HH:MM for storage
+        parsed_start = datetime.strptime(start_str.split("T")[-1], "%H:%M" if len(start_str.split(":")) == 2 else "%H:%M:%S")
+        start_norm = parsed_start.strftime("%H:%M")
+    except ValueError:
+        return jsonify({"error": "Invalid time format. Use HH:MM."}), 400
+
+    # 2. Calculate Durations & End Time
     barber_res = supabase.table("barbers").select("slot_duration").eq("id", barber_id).execute()
     duration = 60
     if barber_res.data:
         duration = barber_res.data[0].get("slot_duration", 60)
         
-    start_dt = datetime.strptime(start, "%H:%M")
+    start_dt = datetime.strptime(start_norm, "%H:%M")
     end_dt = start_dt + timedelta(minutes=duration)
-    end_time = end_dt.strftime("%H:%M")
+    end_norm = end_dt.strftime("%H:%M")
 
-    # Check overlap
-    overlap = supabase.table("appointments").select("id")\
-        .eq("barber_id", barber_id).eq("date", d)\
-        .eq("start_time", start).neq("status", "cancelled").execute()
+    # Helper to convert to minutes for overlap check
+    def to_mins(t_str):
+        h, m = map(int, t_str.split(':')[:2])
+        return h * 60 + m
 
-    if overlap.data:
-        return jsonify({"error": "Slot unavailable"}), 409
+    new_start_m = to_mins(start_norm)
+    new_end_m = to_mins(end_norm)
 
-    res = supabase.table("appointments").insert({
-        "barber_id": barber_id,
-        "date": d,
-        "start_time": start,
-        "end_time": end_time,
-        "client_name": data.get("client_name"),
-        "client_phone": data.get("client_phone"),
-        "client_email": data.get("client_email"),
-        "status": "booked"
-    }).execute()
+    # 3. True Overlap Check
+    # Fetch existing appointments for this barber & date
+    # Only fetch active ones (not cancelled)
+    existing_appts = supabase.table("appointments").select("start_time, end_time")\
+        .eq("barber_id", barber_id)\
+        .eq("date", d_str)\
+        .neq("status", "cancelled")\
+        .execute().data
 
-    if res.data:
-        # INVALIDATE CACHE
+    for appt in existing_appts:
+        # Robustly handle existing times
         try:
-            availability_service.invalidate_day(barber_id, d)
+            e_start_m = to_mins(appt["start_time"])
+            if appt.get("end_time"):
+                e_end_m = to_mins(appt["end_time"])
+            else:
+                # Fallback if legacy data has no end_time
+                e_end_m = e_start_m + duration
+            
+            # Allow touching but not overlapping? 
+            # Usually: start < existing_end AND end > existing_start
+            if new_start_m < e_end_m and new_end_m > e_start_m:
+                 return jsonify({
+                     "error": "Slot unavailable due to overlap",
+                     "conflict": {"start": appt["start_time"], "end": appt.get("end_time")}
+                 }), 409
+        except Exception:
+            # If data is corrupt, skip or log? For safety, treat as potential blocker?
+            # Let's log and continue to avoid blocking valid slots due to bad legacy data, 
+            # but in strict mode we might want to block. 
+            pass
+
+    # 4. Insert with Success Confirmation
+    # 4. Insert with Success Confirmation
+    try:
+        # Force return of data if supported by client/backend
+        res = supabase.table("appointments").insert({
+            "barber_id": barber_id,
+            "date": d_str,
+            "start_time": start_norm,
+            "end_time": end_norm,
+            "client_name": data.get("client_name"),
+            "client_phone": data.get("client_phone"),
+            "client_email": data.get("client_email"),
+            "status": "booked"
+        }).execute()
+        
+        created_appt = None
+        
+        if res.data:
+            created_appt = res.data[0]
+        else:
+            # FALLBACK: If insert returned no data (RLS off/minimal return), verify existence.
+            # This is critical for production where RLS might be OFF but Prefer: return=minimal is default
+            print(f"Warning: Insert returned empty data for {barber_id} on {d_str} {start_norm}. Verifying...")
+            
+            # Deterministic lookup
+            verify_res = supabase.table("appointments").select("*")\
+                .eq("barber_id", barber_id)\
+                .eq("date", d_str)\
+                .eq("start_time", start_norm)\
+                .eq("status", "booked")\
+                .order("created_at", desc=True)\
+                .limit(1)\
+                .execute()
+                
+            if verify_res.data:
+                print("Success: Verified appointment existence after empty insert.")
+                created_appt = verify_res.data[0]
+            else:
+                 print("Error: Could not verify appointment existence after insert.")
+                 return jsonify({"error": "Booking failed (Verification failed)"}), 500
+
+        # 5. Invalidate Cache
+        try:
+            availability_service.invalidate_day(barber_id, d_str)
         except Exception as e:
             print(f"Cache invalidation error: {e}")
-            
-        return jsonify(res.data[0])
-    
-    return jsonify({"error": "Failed"}), 500
+
+        return jsonify(created_appt), 201
+
+    except Exception as e:
+        print(f"Booking invalid: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 
