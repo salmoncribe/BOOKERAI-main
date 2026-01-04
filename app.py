@@ -221,6 +221,10 @@ def signup():
         request.form.get("promo_code", "").upper().strip() or None
     )
 
+    # Force ignore promo code for Free plans
+    if selected_plan == "free":
+        used_promo_code = None
+
     # ------------------------------------------------------------
     # REQUIRED for ALL signups (free + premium)
     # ------------------------------------------------------------
@@ -932,7 +936,6 @@ def create_appt():
             "end_time": end_norm,
             "client_name": data.get("client_name"),
             "client_phone": data.get("client_phone"),
-            "client_email": data.get("client_email"),
             "status": "booked"
         }).execute()
         

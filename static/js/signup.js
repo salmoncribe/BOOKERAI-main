@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const emailGroup = document.getElementById("emailGroup");
   const emailInput = document.getElementById("email");
   const selectedPlanInput = document.getElementById("selectedPlanInput");
+  const promoCodeContainer = document.getElementById("promoCodeContainer");
   const formTitle = document.getElementById("formTitle");
   const formSubtitle = document.getElementById("formSubtitle");
   const submitBtn = document.getElementById("submitBtn");
@@ -35,6 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
         formTitle.textContent = "Setup Premium Profile";
         formSubtitle.textContent = "Enter your details to proceed to secure checkout.";
         submitBtn.textContent = "Proceed to Payment";
+
+        // Show Promo Code for Premium
+        if (promoCodeContainer) promoCodeContainer.classList.remove("hidden");
+
       } else {
         // Free: Email Required
         selectedPlanInput.value = 'free';
@@ -44,6 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
         formTitle.textContent = "Create Free Account";
         formSubtitle.textContent = "Join thousands of pros growing their business.";
         submitBtn.textContent = "Create Account";
+
+        // Hide Promo Code for Free
+        if (promoCodeContainer) promoCodeContainer.classList.add("hidden");
       }
 
       // Fade in auth section

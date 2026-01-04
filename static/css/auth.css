@@ -14,13 +14,24 @@
 }
 
 /* Page Background */
+html,
+body {
+    height: auto;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 .auth-page-body {
     background: radial-gradient(circle at top left, #e0f2fe, #f0f9ff, #ffffff);
-    min-height: 100vh;
+    min-height: 100dvh;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--text-main);
     overflow-x: hidden;
+    overflow-y: auto;
     position: relative;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scroll on iOS */
 }
 
 /* ✨ Floating Background Blobs */
@@ -65,32 +76,43 @@
 
 /* 🏗️ Main Container */
 .auth-container-wrapper {
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 1rem;
+    /* Reduced side padding for mobile, still good for desktop */
     min-height: 100dvh;
+    /* Fill screen but allow scroll */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    position: relative;
+    /* Centers vertically if content is short */
     align-items: center;
-    padding-bottom: env(safe-area-inset-bottom);
-    /* Fix for iOS home bar */
+    position: relative;
+    box-sizing: border-box;
+    /* Ensure padding doesn't cause overflow */
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
+    /* Safe area for iOS */
 }
 
 /* 🔄 Transitions */
 .fade-out {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.98) translateY(-10px);
+    /* Subtle scale down and move up */
     pointer-events: none;
     position: absolute;
     width: 100%;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Keep layout stable during transition */
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-in {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
     position: relative;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -108,9 +130,10 @@
 }
 
 .plan-header h1 {
-    font-size: 2.5rem;
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    /* Responsive font size */
     font-weight: 800;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     background: var(--text-main);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -120,43 +143,47 @@
 .plan-header p {
     font-size: 1.1rem;
     color: var(--text-muted);
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
 }
 
 .cards-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* Auto grid magic */
     gap: 2rem;
     justify-content: center;
-    flex-wrap: wrap;
+    width: 100%;
 }
 
 .plan-card {
-    flex: 1;
-    min-width: 300px;
-    max-width: 380px;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 24px;
     padding: 2.5rem;
     text-align: left;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
     cursor: pointer;
+    height: 100%;
+    /* Make cards equal height */
+    display: flex;
+    flex-direction: column;
 }
 
 .plan-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.1);
-    background: rgba(255, 255, 255, 0.8);
+    transform: translateY(-5px);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 /* Premium Specifics */
 .plan-card.premium {
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.8), rgba(243, 232, 255, 0.4));
 }
 
 .plan-card.premium::before {
@@ -165,18 +192,18 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 6px;
+    height: 4px;
     background: var(--premium-gradient);
 }
 
 .plan-card .icon {
     font-size: 2.5rem;
     margin-bottom: 1.5rem;
-    display: inline-block;
+    display: inline-flex;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.8);
+    background: white;
     border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .plan-name {
@@ -186,6 +213,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    color: var(--text-main);
 }
 
 .plan-price {
@@ -201,10 +229,13 @@
     font-weight: 500;
 }
 
+/* Features List - Pushes Button Down */
 .features-list {
     list-style: none;
     padding: 0;
     margin: 0 0 2rem 0;
+    flex-grow: 1;
+    /* Pushes button to bottom */
 }
 
 .features-list li {
@@ -213,6 +244,7 @@
     position: relative;
     color: var(--text-muted);
     font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 .features-list li::before {
@@ -231,7 +263,8 @@
     font-size: 1rem;
     border: none;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    text-align: center;
 }
 
 .plan-btn:active {
@@ -240,13 +273,16 @@
 
 .btn-free {
     background: white;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0;
     color: var(--text-main);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .btn-free:hover {
     border-color: #cbd5e1;
     background: #f8fafc;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
 }
 
 .btn-premium {
@@ -256,7 +292,7 @@
 }
 
 .btn-premium:hover {
-    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 8px 25px rgba(168, 85, 247, 0.5);
     filter: brightness(1.05);
 }
 
@@ -264,14 +300,10 @@
 .auth-section-card {
     width: 100%;
     max-width: 500px;
-    /* More centered for login/single forms */
     margin: 0 auto;
-    opacity: 0;
-    /* JS fade-in usually handles this, or set to 1 by default if pure CSS */
     animation: fadeSlideUp 0.6s ease-out forwards;
 }
 
-/* Re-using fadeSlideUp from base.css if available, else define: */
 @keyframes fadeSlideUp {
     from {
         opacity: 0;
@@ -285,15 +317,17 @@
 }
 
 .auth-glass-card {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(25px);
     -webkit-backdrop-filter: blur(25px);
     border: 1px solid rgba(255, 255, 255, 1);
     border-radius: 24px;
-    padding: 3rem;
+    padding: 2.5rem 3rem;
     box-shadow: var(--glass-shadow);
     width: 100%;
-    /* Ensure it fills container */
+    box-sizing: border-box;
+    margin-bottom: 2rem;
+    /* Ensure space at bottom for scrolling */
 }
 
 /* Back Button */
@@ -309,6 +343,7 @@
     gap: 0.5rem;
     padding: 0;
     transition: color 0.2s;
+    font-weight: 500;
 }
 
 .back-btn:hover {
@@ -322,14 +357,13 @@
 
 .form-header h2 {
     font-size: 2rem;
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: 0.5rem;
     color: var(--text-main);
 }
 
 .form-header p {
     color: var(--text-muted);
-    /* margin-bottom handled by container usually */
 }
 
 /* Input Styles */
@@ -343,18 +377,10 @@
     grid-column: 1 / -1;
 }
 
-.input-group {
-    margin-bottom: 1rem;
-    /* Default spacing if not in grid */
-}
-
 .input-group label,
-label span
-
-/* For existing structure support */
-    {
+label span {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     color: var(--text-main);
@@ -363,20 +389,17 @@ label span
 .input-group input,
 .input-group select,
 .input-group textarea,
-label input
-
-/* For existing structure support */
-    {
+label input {
     width: 100%;
-    padding: 0.8rem 1rem;
+    padding: 0.85rem 1rem;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.7);
     font-family: inherit;
     font-size: 0.95rem;
     transition: all 0.2s;
     box-sizing: border-box;
-    /* Critical for padding */
+    color: var(--text-main);
 }
 
 .input-group input:focus,
@@ -385,7 +408,7 @@ label input
 label input:focus {
     outline: none;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     background: white;
 }
 
@@ -426,7 +449,7 @@ label input:focus {
 .signup-link-text {
     color: #3b82f6;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .alt-link a:hover {
@@ -441,11 +464,11 @@ label input:focus {
 }
 
 .auth-trust h3 {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     color: var(--text-muted);
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 1rem;
 }
 
@@ -453,10 +476,9 @@ label input:focus {
     list-style: none;
     padding: 0;
     margin: 0;
-    text-align: left;
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;
     justify-content: center;
 }
 
@@ -465,27 +487,55 @@ label input:focus {
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
 }
 
+/* 📱 Mobile Specific Overrides */
 @media (max-width: 768px) {
-    .input-grid {
-        grid-template-columns: 1fr;
+    .auth-container-wrapper {
+        padding: 1.5rem 1rem;
+        /* Ensure content doesn't hit edges */
+        overflow-x: hidden;
+        /* Prevent horizontal scroll */
+        justify-content: flex-start;
+        /* Start from top on mobile */
     }
 
-    .auth-container-wrapper {
-        padding: 1rem;
+    .plan-header h1 {
+        font-size: 2rem;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        /* Single column stack */
+        max-width: 420px;
+        margin: 0 auto;
+    }
+
+    .plan-card {
+        padding: 2rem;
     }
 
     .auth-glass-card {
-        padding: 1.5rem;
+        padding: 2rem 1.5rem;
     }
 
-    /* Prevent Zoom on Focus */
+    .input-grid {
+        grid-template-columns: 1fr;
+        /* Stack inputs */
+    }
+
+    /* Prevent text zoom on input focus for iOS */
     .input-group input,
     .input-group select,
     .input-group textarea,
     label input {
         font-size: 16px !important;
+    }
+
+    /* Slightly smaller text for mobile labels */
+    .input-group label,
+    label span {
+        font-size: 0.9rem;
     }
 }
