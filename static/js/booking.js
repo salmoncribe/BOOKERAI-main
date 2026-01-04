@@ -378,6 +378,8 @@
   bookBtn.addEventListener("click", async () => {
     if (bookBtn.disabled) return;
 
+    // 1. Loading State
+    const originalText = bookBtn.textContent;
     bookBtn.disabled = true;
     bookBtn.textContent = "Booking...";
 
@@ -390,20 +392,36 @@
     };
 
     try {
+      // 2. Network Call
       const res = await fetch("/api/appointments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      // Robust JSON parsing (server might return non-JSON on 500s)
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.warn("JSON parse failed", e);
+      }
 
-      if (res.ok && data.success) {
-        // Show success modal
+      // 3. Success Check (Treat 'ok' as success even if data is null/weird)
+      if (res.ok) {
+        // --- SUCCESS FLOW ---
+
+        // Transition Button
+        bookBtn.textContent = "Booked ✅";
+
+        // Wait 1s for effect
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Show Success Card (Modal)
         const confirmText = $("#confirmText");
         const confirmBackdrop = $("#confirmBackdrop");
 
-        // Format date/time for display
+        // Format for display
         const d = ISOToDate(selected.dateISO);
         const dateStr = prettyDate(d);
         const timeStr = to12h(selected.timeHM);
@@ -411,18 +429,23 @@
         confirmText.textContent = `${dateStr} @ ${timeStr}`;
         confirmBackdrop.classList.remove("hidden");
 
-        // Setup ICS link if needed
-        // (Optional: generate .ics blob here)
+        // Mobile auto-scroll to success message just in case
+        confirmBackdrop.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
       } else {
-        throw new Error(data.error || "Booking failed");
+        // --- ERROR FLOW ---
+        const errorMsg = (data && data.error) ? data.error : "Booking failed. Please try again.";
+        throw new Error(errorMsg);
       }
 
     } catch (err) {
+      // --- FAILURE RECOVERY ---
       console.error(err);
-      alert("Error: " + err.message);
+      showToast("Error: " + err.message);
+
+      // Reset Button so user can try again
+      bookBtn.textContent = "Book appointment"; // or originalText
       bookBtn.disabled = false;
-      bookBtn.textContent = "Book appointment";
     }
   });
 
