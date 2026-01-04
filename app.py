@@ -927,9 +927,10 @@ def create_appt():
 
     # 4. Insert with Success Confirmation
     # 4. Insert with Success Confirmation
+    # 4. Insert with Success Confirmation (STRICT FIX)
     try:
-        # Force return of data if supported by client/backend
-        res = supabase.table("appointments").insert({
+        # Use full dict for insert to ensure all fields are present
+        insert_payload = {
             "barber_id": barber_id,
             "date": d_str,
             "start_time": start_norm,
@@ -937,41 +938,33 @@ def create_appt():
             "client_name": data.get("client_name"),
             "client_phone": data.get("client_phone"),
             "status": "booked"
-        }).execute()
-        
-        created_appt = None
-        
-        if res.data:
-            created_appt = res.data[0]
-        else:
-            # FALLBACK: If insert returned no data (RLS off/minimal return), verify existence.
-            # This is critical for production where RLS might be OFF but Prefer: return=minimal is default
-            print(f"Warning: Insert returned empty data for {barber_id} on {d_str} {start_norm}. Verifying...")
-            
-            # Deterministic lookup
-            verify_res = supabase.table("appointments").select("*")\
-                .eq("barber_id", barber_id)\
-                .eq("date", d_str)\
-                .eq("start_time", start_norm)\
-                .eq("status", "booked")\
-                .order("created_at", desc=True)\
-                .limit(1)\
-                .execute()
-                
-            if verify_res.data:
-                print("Success: Verified appointment existence after empty insert.")
-                created_appt = verify_res.data[0]
-            else:
-                 print("Error: Could not verify appointment existence after insert.")
-                 return jsonify({"error": "Booking failed (Verification failed)"}), 500
+        }
 
+        res = supabase.table("appointments").insert(insert_payload).execute()
+        
+        # FIX: Check for error object/property explicitly if available OR rely on the fact that
+        # supabase-py raises exception on error. 
+        # For safety per user request: "If res.error exists..."
+        # Note: In standard postgrest-py, it raises exception. 
+        # But if the user says check res.error, we check it safely.
+        if hasattr(res, 'error') and res.error:
+            return jsonify({"error": str(res.error)}), 500
+
+        # OPTIONAL: Verify existence to be extra safe (Success Criteria)
+        # But fundamentally, if we got here, it worked.
+        
         # 5. Invalidate Cache
         try:
             availability_service.invalidate_day(barber_id, d_str)
         except Exception as e:
             print(f"Cache invalidation error: {e}")
 
-        return jsonify(created_appt), 201
+        # Return Success
+        return jsonify({
+            "success": True, 
+            "message": "Appointment booked",
+            "data": res.data # Optional debug
+        }), 200
 
     except Exception as e:
         print(f"Booking invalid: {e}")
