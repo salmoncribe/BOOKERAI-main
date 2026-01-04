@@ -1,240 +1,347 @@
 {% extends "layout.html" %}
 {% block title %}Preview — BookerAI Premium{% endblock %}
 
-{% block head %}
-<style>
-  /* Demo-Specific Polish */
-  .demo-badge {
-    background: linear-gradient(135deg, #fbbf24, #d97706);
-    color: white;
-    font-weight: 700;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    box-shadow: 0 4px 10px rgba(251, 191, 36, 0.4);
-    display: inline-block;
-    margin-bottom: 0.5rem;
-  }
-
-  .dashboard-grid-demo {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    padding-bottom: 3rem;
-  }
-
-  @media(min-width: 900px) {
-    .dashboard-grid-demo {
-      grid-template-columns: 2fr 1fr;
-      align-items: start;
-    }
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<section class="dashboard vibrant-auth">
+<!-- Replicating Dashboard.html Premium Theme exactly -->
+<section class="dashboard vibrant-auth premium-theme" id="dashboardRoot">
+
   <div class="animated-bg"></div>
 
-  <!-- Header -->
+  <!-- Header Section -->
   <div class="dash-head">
-    <div style="display:flex;align-items:center;gap:1.5rem;">
-      <div
-        style="width:70px;height:70px;border-radius:50%;overflow:hidden;border:3px solid white;box-shadow:0 8px 20px rgba(0,0,0,0.1);">
-        <img src="{{ url_for('static', filename='img/demo_barber.jpg') }}" alt="Demo Barber"
-          style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+    <div class="premium-bubble" title="Premium Active"></div>
+
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <!-- Avatar (Static for Demo) -->
+      <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;">
+        <!-- Using Unsplash for realistic demo avatar -->
+        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&h=150"
+          alt="Alexander" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;
+                      background:linear-gradient(135deg,var(--sky-blue),var(--teal));
+                      border-radius:50%;display:flex;align-items:center;justify-content:center;
+                      color:#fff;font-size:0.75rem;">
+          📷
+        </div>
       </div>
+
+      <!-- Text -->
       <div>
-        <span class="demo-badge">Premium Preview</span>
-        <h1 class="dash-title" style="margin-bottom:0.2rem;">Hello, Alexander ✂️</h1>
-        <p class="muted small" style="font-size:0.95rem;">Master Barber • <strong>Platinum Plan</strong></p>
+        <h1 class="dash-title">
+          Welcome, Alexander
+        </h1>
+        <p class="muted small">Manage your hours and appointments below.</p>
       </div>
     </div>
 
-    <div class="dash-actions" style="margin-top:0;">
-      <button class="btn-primary gradient-btn small" onclick="alert('This feature is available in the full version!')">
-        <span style="font-size:1.1rem;margin-right:0.3rem;">🔗</span> Copy booking link
+    <!-- Header Actions -->
+    <div class="dash-head-actions" style="margin-left:auto; display:flex; gap:0.75rem;">
+      <button class="nav-action-btn desktop-dash-btn" onclick="alert('This would download your report!')"
+        style="color:var(--text-premium); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
+        <i data-lucide="download" style="width:16px;height:16px;"></i> Reports
+      </button>
+      <button class="nav-action-btn desktop-dash-btn" onclick="alert('This would open your settings!')"
+        style="color:var(--text-premium); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
+        <i data-lucide="settings" style="width:16px;height:16px;"></i> Settings
       </button>
     </div>
   </div>
 
-  <div class="dashboard-grid-demo">
-
-    <!-- Left Column (Main Stats & Schedule) -->
+  <div class="dashboard-grid">
+    <!-- Main Content -->
     <div class="main-content">
-      <!-- Insights -->
-      <div class="insights-grid fade-up">
-        <div class="insight-card">
-          <h4>Monthly Revenue</h4>
-          <p>$12,450</p>
-        </div>
-        <div class="insight-card">
-          <h4>Total Clients</h4>
-          <p>482</p>
-        </div>
-        <div class="insight-card">
-          <h4>Profile Views</h4>
-          <p>1.2k</p>
-        </div>
-      </div>
-
-      <!-- Appointments -->
-      <div class="wow-card appointments-card faded-in-up">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-          <h3>Today's Schedule</h3>
-          <span style="font-size:0.9rem;color:var(--sky-blue);font-weight:600;cursor:pointer;"
-            onclick="openCalendar()">View Calendar →</span>
+      <!-- Upcoming Appointments -->
+      <div class="card appointments-card">
+        <div class="appt-header"
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3>Upcoming Appointments</h3>
+          <button class="btn btn-secondary small" onclick="openDemoCalendar()">View Calendar</button>
         </div>
 
         <div class="table-scroll">
           <table class="table">
             <thead>
               <tr>
-                <th>Time</th>
                 <th>Client</th>
-                <th>Service</th>
-                <th>Status</th>
-                <th></th>
+                <th>Phone</th>
+                <th>When</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong>9:00 AM</strong></td>
-                <td>Michael Rossi</td>
-                <td>Fade & Beard Trim</td>
-                <td><span
-                    style="color:#10b981;font-weight:600;font-size:0.85rem;background:#dcfce7;padding:4px 8px;border-radius:6px;">Confirmed</span>
+                <td data-label="Client">Michael Rossi</td>
+                <td data-label="Phone">
+                  <a href="#">555-0123</a>
                 </td>
-                <td><button class="btn btn-secondary small" style="padding:0.3rem 0.6rem;">Details</button></td>
+                <td data-label="When" style="font-weight:600; color:var(--sky-blue);">Today 9:00 AM</td>
               </tr>
               <tr>
-                <td><strong>10:15 AM</strong></td>
-                <td>David Chen</td>
-                <td>Classic Cut</td>
-                <td><span
-                    style="color:#10b981;font-weight:600;font-size:0.85rem;background:#dcfce7;padding:4px 8px;border-radius:6px;">Confirmed</span>
+                <td data-label="Client">David Chen</td>
+                <td data-label="Phone">
+                  <a href="#">555-0198</a>
                 </td>
-                <td><button class="btn btn-secondary small" style="padding:0.3rem 0.6rem;">Details</button></td>
+                <td data-label="When">Today 10:15 AM</td>
               </tr>
               <tr>
-                <td><strong>11:30 AM</strong></td>
-                <td>Marcus Johnson</td>
-                <td>Full Service</td>
-                <td><span
-                    style="color:#f59e0b;font-weight:600;font-size:0.85rem;background:#fef3c7;padding:4px 8px;border-radius:6px;">Check-in</span>
+                <td data-label="Client">Sarah Williams</td>
+                <td data-label="Phone">
+                  <a href="#">555-2468</a>
                 </td>
-                <td><button class="btn btn-secondary small" style="padding:0.3rem 0.6rem;">Details</button></td>
+                <td data-label="When">Tomorrow 2:00 PM</td>
               </tr>
               <tr>
-                <td><strong>1:00 PM</strong></td>
-                <td>Sarah Williams</td>
-                <td>Undercut Design</td>
-                <td><span
-                    style="color:#64748b;font-weight:600;font-size:0.85rem;background:#f1f5f9;padding:4px 8px;border-radius:6px;">Pending</span>
+                <td data-label="Client">Marcus Johnson</td>
+                <td data-label="Phone">
+                  <a href="#">555-3344</a>
                 </td>
-                <td><button class="btn btn-secondary small" style="padding:0.3rem 0.6rem;">Details</button></td>
+                <td data-label="When">Fri Oct 24 11:30 AM</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="mobile-view-calendar-btn">
-          <button class="btn btn-secondary full-width" onclick="openCalendar()">View Full Calendar</button>
-        </div>
+        <!-- No bottom button - Removed as per premium guidelines -->
       </div>
 
-      <!-- Hours Editor (Visual Only) -->
-      <div class="wow-card hours-card">
-        <div class="hours-header">
-          <h3>Operating Hours</h3>
+      <!-- Business Hours -->
+      <div class="card hours-card">
+        <div class="hours-header" style="flex-direction:column; gap:0.5rem; margin-bottom:1rem;">
+          <h3>Business Hours</h3>
+          <p class="muted small" style="margin:0;">
+            Set your availability so clients can book you online.
+          </p>
         </div>
-        <div class="hours-grid">
-          <!-- Just showing M-W for smoothness in demo layout, keeps it tight -->
-          {% for d in ["mon","tue","wed"] %}
-          <div class="day-editor" data-day="{{ d }}">
-            <h4>{{ d|capitalize }}</h4>
-            <div class="toggle-wrap">
-              <div class="day-toggle active"></div>
+
+        <div style="text-align:center; margin-bottom:1rem;">
+          <button class="btn btn-secondary small" onclick="alert('Hours editor is interactive in the full version!')">
+            Edit Hours
+          </button>
+        </div>
+
+        <!-- Static Hours List for Demo -->
+        <div class="hours-list">
+          <!-- Mon - Fri -->
+          {% for d in ["Mon", "Tue", "Wed", "Thu", "Fri"] %}
+          <div class="hours-row" style="opacity: 1;">
+            <div class="day-label">{{ d }}</div>
+            <div class="day-actions">
+              <label class="toggle-switch">
+                <input type="checkbox" checked disabled>
+                <span class="slider"></span>
+              </label>
+              <div class="time-range">
+                <span style="font-size:0.9rem; font-weight:600; color:var(--text-premium);">09:00 to 17:00</span>
+              </div>
+              <div class="save-check" style="opacity:0">✅</div>
             </div>
-            <div class="time-inputs">
-              <input type="time" class="open-time" value="09:00" disabled>
-              <span>–</span>
-              <input type="time" class="close-time" value="18:00" disabled>
+          </div>
+          {% endfor %}
+          <!-- Weekends Closed -->
+          {% for d in ["Sat", "Sun"] %}
+          <div class="hours-row closed" style="opacity: 1;">
+            <div class="day-label">{{ d }}</div>
+            <div class="day-actions">
+              <label class="toggle-switch">
+                <input type="checkbox" disabled>
+                <span class="slider"></span>
+              </label>
+              <div class="time-range" style="opacity:0.5">
+                <span style="font-size:0.9rem; font-weight:600;">09:00 to 17:00</span>
+              </div>
             </div>
           </div>
           {% endfor %}
         </div>
-        <div style="text-align:center;margin-top:1.5rem;">
-          <p class="muted small">...and 4 more days</p>
-        </div>
       </div>
     </div>
 
-    <!-- Right Column (Upsell & Features) -->
-    <div class="sidebar-sticky">
-      <div class="promo-card" style="margin-top:0;">
-        <div class="promo-header">
-          <h3>🚀 Boost Your Reach</h3>
-          <p>Premium members get 3x more bookings.</p>
+    <!-- Sidebar -->
+    <aside class="sidebar-sticky">
+
+      <!-- Media Upload Section (Mock) -->
+      <div class="card media-card">
+        <h3>Profile Photos & Videos</h3>
+        <p class="muted small">Show off your work — upload photos or videos directly to your profile gallery.</p>
+        <div style="margin-top:1rem;">
+          <button type="button" class="gradient-btn small" style="width:100%;"
+            onclick="alert('File upload available in full version!')">
+            📤 Upload File
+          </button>
         </div>
-        <div class="promo-body">
-          <button onclick="window.location.href=`{{ url_for('signup') }}`; ">Start Free Trial</button>
+        <div class="media-gallery" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;">
+          <!-- Mock Gallery -->
+          <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=100&h=100"
+            style="width:30%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+          <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=100&h=100"
+            style="width:30%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+          <img src="https://images.unsplash.com/photo-1503951914875-befbb7135952?auto=format&fit=crop&w=100&h=100"
+            style="width:30%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+        </div>
+      </div>
+
+      <!-- Promo Card (Mock) -->
+      <div class="card promo-card">
+        <h3>Your Promo Code</h3>
+        <p class="muted small">
+          Share this — when someone upgrades, you both get a free month.
+        </p>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem;">
+          <input type="text" value="ALEX2025" readonly
+            style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc; background: rgba(255,255,255,0.1); color:white;">
+          <button type="button" class="copy-btn-modern" onclick="alert('Copied!')">
+            <span>Copy</span>
+          </button>
         </div>
       </div>
 
-      <div class="card media-card" style="margin-top:2rem;">
-        <h3>Portfolio Gallery</h3>
-        <div style="display:flex;gap:0.5rem;margin-top:1rem;">
-          <div style="display:flex;gap:0.5rem;margin-top:1rem;">
-            <div style="flex:1;aspect-ratio:1;background:#ddd;border-radius:8px;overflow:hidden;">
-              <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=300"
-                alt="Cut 1" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
-            </div>
-            <div style="flex:1;aspect-ratio:1;background:#ddd;border-radius:8px;overflow:hidden;">
-              <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=300"
-                alt="Cut 2" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
-            </div>
-            <div style="flex:1;aspect-ratio:1;background:#ddd;border-radius:8px;overflow:hidden;">
-              <img src="https://images.unsplash.com/photo-1503951914875-befbb7135952?auto=format&fit=crop&w=300"
-                alt="Cut 3" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
-            </div>
-          </div>
-        </div>
+      <!-- Sticky CTA -->
+      <div class="card"
+        style="background:linear-gradient(135deg,#fbbf24,#d97706); border:none; color:white; text-align:center;">
+        <h3 style="color:white; margin-bottom:0.5rem;">Start Your Free Trial</h3>
+        <p style="font-size:0.9rem; opacity:0.9; margin-bottom:1rem;">Like what you see? Get your own premium dashboard
+          today.</p>
+        <a href="{{ url_for('signup') }}" class="btn"
+          style="background:white; color:#d97706; border:none; font-weight:700; display:block; padding:0.8rem;">Create
+          Account</a>
       </div>
-    </div>
 
-  </div> <!-- /grid -->
+    </aside>
+  </div>
 
-  <!-- Footer -->
-  <footer style="text-align:center;margin-top:3rem;padding-bottom:2rem;">
-    <p class="muted small">
-      Want a dashboard like Alexander's?
-      <a href="{{ url_for('signup') }}" class="gradient-btn small" style="margin-left:0.5rem;display:inline-block;">Get
-        Started</a>
-    </p>
-  </footer>
-</section>
-<!-- Calendar Modal -->
-<div id="calendarModal" class="calendar-modal">
-  <div class="calendar-content">
-    <div class="calendar-header">
-      <h2>Schedule</h2>
-      <button class="close-modal-btn" onclick="closeCalendar()">×</button>
-    </div>
-    <div id="calendarGrid" class="cal-grid">
-      <!-- JS will populate -->
+  <!-- Calendar Modal -->
+  <div id="calendarModal" class="calendar-modal">
+    <div class="calendar-content">
+      <div class="calendar-header">
+        <h2>Schedule</h2>
+        <button class="close-modal-btn" onclick="closeCalendar()">×</button>
+      </div>
+      <div id="calendarGrid" class="cal-grid">
+        <!-- JS will populate -->
+      </div>
+      <!-- Detail Panel -->
+      <div id="calendarDetails" class="cal-details-panel">
+        <p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>
+      </div>
     </div>
   </div>
-</div>
+
+</section>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Include base dashboard js for toggle logic, but we will override calendar -->
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Fade in demo elements
-    document.querySelectorAll(".fade-up").forEach(el => el.classList.add("visible"));
-  });
+  // Mock Data for Demo Calendar
+  const DEMO_APPOINTMENTS = [
+    { date: new Date().toISOString().split('T')[0], start_time: "09:00", client_name: "Michael Rossi", service: "Fade & Beard", status: "confirmed" },
+    { date: new Date().toISOString().split('T')[0], start_time: "10:15", client_name: "David Chen", service: "Classic Cut", status: "confirmed" },
+    { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], start_time: "14:00", client_name: "Sarah Williams", service: "Color", status: "booked" },
+  ];
+
+  window.openDemoCalendar = function () {
+    const modal = document.getElementById("calendarModal");
+    if (modal) {
+      modal.classList.add("active");
+      renderDemoCalendar();
+    }
+  }
+
+  window.closeCalendar = function () {
+    const modal = document.getElementById("calendarModal");
+    if (modal) modal.classList.remove("active");
+    const details = document.getElementById("calendarDetails");
+    if (details) details.innerHTML = '<p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>';
+  }
+
+  function renderDemoCalendar() {
+    const grid = document.getElementById("calendarGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1).getDay();
+
+    const days = ["S", "M", "T", "W", "T", "F", "S"];
+    days.forEach(d => {
+      const el = document.createElement("div");
+      el.className = "cal-day-name";
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    for (let i = 0; i < firstDay; i++) {
+      const el = document.createElement("div");
+      el.className = "cal-day empty";
+      grid.appendChild(el);
+    }
+
+    const today = now.getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+      const el = document.createElement("div");
+      el.className = "cal-day";
+      if (i === today) el.classList.add("today");
+
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const dayAppts = DEMO_APPOINTMENTS.filter(a => a.date === dateStr);
+
+      if (dayAppts.length > 0) {
+        el.classList.add("has-event");
+        const dot = document.createElement("div");
+        dot.className = "cal-dot";
+        el.appendChild(dot);
+      }
+
+      el.textContent = i;
+      el.onclick = () => {
+        document.querySelectorAll(".cal-day").forEach(c => c.classList.remove("selected"));
+        el.classList.add("selected");
+        renderDemoDetails(dateStr, dayAppts);
+      };
+      grid.appendChild(el);
+    }
+  }
+
+  function renderDemoDetails(dateStr, appts) {
+    const panel = document.getElementById("calendarDetails");
+    if (!panel) return;
+    panel.innerHTML = "";
+
+    const dateHeader = document.createElement("h4");
+    dateHeader.className = "cal-details-header";
+    const dateObj = new Date(dateStr + "T12:00:00");
+    dateHeader.textContent = dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    panel.appendChild(dateHeader);
+
+    if (appts.length === 0) {
+      const emptyState = document.createElement("div");
+      emptyState.className = "cal-empty-state";
+      emptyState.innerHTML = `<p>No appointments yet for this day 😊</p>`;
+      panel.appendChild(emptyState);
+      return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "cal-appt-list";
+
+    appts.forEach(a => {
+      const item = document.createElement("div");
+      item.className = "cal-appt-item";
+      item.innerHTML = `
+            <div class="cal-appt-time">${a.start_time}</div>
+            <div class="cal-appt-info">
+            <div class="cal-client-name">${a.client_name}</div>
+            <div class="cal-service">${a.service}</div>
+            </div>
+            <div class="cal-appt-status status-${a.status}">${a.status}</div>
+        `;
+      list.appendChild(item);
+    });
+    panel.appendChild(list);
+  }
 </script>
 {% endblock %}

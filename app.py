@@ -1245,6 +1245,10 @@ def find_pro():
         service=service,
     )
 
+@app.route("/confirmed")
+def confirmed():
+    return render_template("confirmed.html")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
