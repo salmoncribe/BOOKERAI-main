@@ -799,6 +799,23 @@ def calendar_slots(barber_id):
 # APPOINTMENT CREATION
 # ============================================================
 
+@app.get("/api/barber/appointments")
+@login_required
+def get_barber_appointments():
+    barber_id = session["barberId"]
+    
+    # Fetch all appointments for this barber
+    # TODO: Filter by month if dataset gets too large, but for now fetch all future
+    now = datetime.utcnow().strftime("%Y-%m-%d")
+    appts = supabase.table("appointments").select("*")\
+        .eq("barber_id", barber_id)\
+        .gte("date", now)\
+        .neq("status", "cancelled")\
+        .order("date").order("start_time").execute().data
+        
+    return jsonify(appts)
+
+
 @app.get("/api/public/slots/<barber_id>")
 def public_slots(barber_id):
     # Old RPC way - keeping for compat if needed, or we can switch this to use new service too!

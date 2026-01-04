@@ -89,9 +89,7 @@
             </tbody>
           </table>
         </div>
-        <div class="mobile-view-calendar-btn" style="display:block; margin-top:1rem;">
-          <button class="btn btn-secondary full-width" onclick="openCalendar()">View Full Calendar</button>
-        </div>
+
         {% else %}
         <div style="text-align:center; padding: 2rem 1rem;">
           <p class="muted">No upcoming appointments yet.</p>
@@ -211,6 +209,10 @@
       </div>
       <div id="calendarGrid" class="cal-grid">
         <!-- JS will populate -->
+      </div>
+      <!-- Detail Panel -->
+      <div id="calendarDetails" class="cal-details-panel">
+        <p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>
       </div>
     </div>
   </div>

@@ -64,18 +64,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Calendar Modal Logic
   const calendarModal = document.getElementById("calendarModal");
+  let cachedAppointments = [];
+
   window.openCalendar = function () {
     if (calendarModal) {
       calendarModal.classList.add("active");
-      renderCalendar();
+      // Fetch latest appointments
+      fetch("/api/barber/appointments")
+        .then(r => r.json())
+        .then(data => {
+          cachedAppointments = data;
+          renderCalendar();
+        })
+        .catch(err => {
+          console.error("Failed to load appointments", err);
+          renderCalendar(); // Render grid anyway
+        });
     }
   };
   window.closeCalendar = function () {
-    if (calendarModal) calendarModal.classList.remove("active");
+    if (calendarModal) {
+      calendarModal.classList.remove("active");
+      // Reset details panel
+      const details = document.getElementById("calendarDetails");
+      if (details) details.innerHTML = '<p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>';
+    }
   };
 
   function renderCalendar() {
     const grid = document.getElementById("calendarGrid");
+    const detailsPanel = document.getElementById("calendarDetails");
     if (!grid) return;
     grid.innerHTML = "";
 
@@ -108,14 +126,85 @@ document.addEventListener("DOMContentLoaded", () => {
       const el = document.createElement("div");
       el.className = "cal-day";
       if (i === today) el.classList.add("today");
-      if (Math.random() > 0.7) el.classList.add("has-event"); // Fake events for visual
+
+      // Check for appointments on this day
+      // Date format YYYY-MM-DD
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const dayAppts = cachedAppointments.filter(a => a.date === dateStr);
+
+      if (dayAppts.length > 0) {
+        el.classList.add("has-event");
+        // Add dot indicator
+        const dot = document.createElement("div");
+        dot.className = "cal-dot";
+        el.appendChild(dot);
+      }
+
       el.textContent = i;
       el.onclick = () => {
-        document.querySelectorAll(".cal-day").forEach(c => c.style.background = "");
-        if (!el.classList.contains("today")) el.style.background = "#e2e8f0";
+        // Highlight logic
+        document.querySelectorAll(".cal-day").forEach(c => c.classList.remove("selected"));
+        el.classList.add("selected");
+
+        // Render Details
+        renderDayDetails(dateStr, dayAppts);
       };
       grid.appendChild(el);
     }
+  }
+
+  function renderDayDetails(dateStr, appts) {
+    const panel = document.getElementById("calendarDetails");
+    if (!panel) return;
+
+    panel.innerHTML = ""; // Clear current
+
+    // Header for panel
+    const dateHeader = document.createElement("h4");
+    dateHeader.className = "cal-details-header";
+    // Format friendly date
+    const dateObj = new Date(dateStr + "T12:00:00"); // Avoid timezone shift
+    dateHeader.textContent = dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    panel.appendChild(dateHeader);
+
+    if (appts.length === 0) {
+      const emptyState = document.createElement("div");
+      emptyState.className = "cal-empty-state";
+      emptyState.innerHTML = `
+        <p>No appointments yet for this day 😊</p>
+      `;
+      panel.appendChild(emptyState);
+      return;
+    }
+
+    const list = document.createElement("div");
+    list.className = "cal-appt-list";
+
+    appts.forEach(a => {
+      const item = document.createElement("div");
+      item.className = "cal-appt-item";
+
+      // Time formatting (HH:MM:SS -> h:mm A)
+      let timeDisplay = a.start_time;
+      try {
+        const [h, m] = a.start_time.split(":");
+        const d = new Date();
+        d.setHours(h, m);
+        timeDisplay = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      } catch (e) { }
+
+      item.innerHTML = `
+        <div class="cal-appt-time">${timeDisplay}</div>
+        <div class="cal-appt-info">
+          <div class="cal-client-name">${a.client_name || 'Client'}</div>
+          ${a.service ? `<div class="cal-service">${a.service}</div>` : ''}
+        </div>
+        <div class="cal-appt-status status-${a.status}">${a.status}</div>
+      `;
+      list.appendChild(item);
+    });
+
+    panel.appendChild(list);
   }
 
   // ===============================
