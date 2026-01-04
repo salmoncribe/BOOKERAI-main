@@ -200,10 +200,18 @@ def generate_promo_code(name):
 # AUTH — BARBER (SIGNUP / LOGIN / LOGOUT)
 # ============================================================
 
-@app.route("/signup", methods=["GET", "POST"])
+@app.route("/signup")
 def signup():
+    return render_template("signup.html")
+
+@app.route("/signup/premium")
+def signup_premium():
+    return render_template("signup_premium.html")
+
+@app.route("/signup/free", methods=["GET", "POST"])
+def signup_free():
     if request.method == "GET":
-        return render_template("signup.html")
+        return render_template("signup_free.html")
 
     # ------------------------------------------------------------
     # Read form data
@@ -215,34 +223,16 @@ def signup():
     bio = request.form.get("bio", "")
     address = request.form.get("address", "")
     profession = request.form.get("profession", "")
-    selected_plan = request.form.get("selected_plan", "free")
-
-    used_promo_code = (
-        request.form.get("promo_code", "").upper().strip() or None
-    )
-
-    # Force ignore promo code for Free plans
-    if selected_plan == "free":
-        used_promo_code = None
-
+    # plan is always "free" here
+    
     # ------------------------------------------------------------
-    # REQUIRED for ALL signups (free + premium)
+    # REQUIRED
     # ------------------------------------------------------------
-    # Email and Password are required for EVERYONE now.
     if not email or not password:
         flash("Email and password are required.")
-        return redirect(url_for("signup"))
+        return redirect(url_for("signup_free"))
 
-    if selected_plan != "premium":
-        # Prevent duplicate accounts (Free only check here)
-        # For Premium, we could check here too, but the original logic
-        # relied on Stripe or postponed it. Let's keep it consistent
-        # and check duplications for free plans fast.
-        # Actually, if we are sending email to Stripe, we should probably check if it exists in our DB first
-        # to avoid kicking them to Stripe if they already have an account.
-        pass
-    
-    # Check for existing email in OUR system for both plans to be safe
+    # Check for existing email in OUR system
     existing = (
         supabase.table("barbers")
         .select("id")
@@ -253,51 +243,6 @@ def signup():
     if existing:
         flash("An account with this email already exists.")
         return redirect(url_for("login"))
-
-    # ------------------------------------------------------------
-    # Validate promo code (if provided)
-    # ------------------------------------------------------------
-    if used_promo_code:
-        owner = (
-            supabase.table("barbers")
-            .select("id")
-            .eq("promo_code", used_promo_code)
-            .execute()
-            .data
-        )
-        if not owner:
-            flash("Invalid promo code.")
-            return redirect(url_for("signup"))
-
-    # ------------------------------------------------------------
-    # PREMIUM SIGNUP → STRIPE FIRST (ACCOUNT CREATED IN WEBHOOK)
-    # ------------------------------------------------------------
-    if selected_plan == "premium":
-        # Create Stripe Checkout Session WITHOUT customer_email
-        # We rely on Stripe to collect the email
-        # UPDATE: Now we DO pass customer_email from the form
-        checkout = stripe.checkout.Session.create(
-            mode="subscription",
-            customer_email=email,  # <--- PRE-FILL EMAIL IN STRIPE
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-            metadata={
-                "source": "signup",
-                "plan": "premium",
-                "name": name,
-                "email": email, # Also store in metadata for safety
-                "phone": phone,
-                "bio": bio,
-                "address": address,
-                "profession": profession,
-                "used_promo_code": used_promo_code or "",
-                # Hash password ONCE, safely
-                "password_hash": generate_password_hash(password),
-            },
-            success_url=url_for("login", _external=True),
-            cancel_url=url_for("signup", _external=True),
-        )
-
-        return redirect(checkout.url, 303)
 
     # ------------------------------------------------------------
     # FREE SIGNUP → CREATE ACCOUNT IMMEDIATELY
@@ -329,12 +274,11 @@ def signup():
         "plan": "free",
         "role": "barber",
         "promo_code": promo_code,
-        "used_promo_code": used_promo_code,
     }).execute()
 
     if not res.data:
         flash("Signup failed. Please try again.")
-        return redirect(url_for("signup"))
+        return redirect(url_for("signup_free"))
 
     barber = res.data[0]
 
@@ -585,17 +529,31 @@ def add_premium_month(barber_id):
 
 @app.post("/create-premium-checkout")
 def create_premium_checkout():
-    checkout = stripe.checkout.Session.create(
-        mode="subscription",
-        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-        success_url=url_for("login", _external=True),
-        cancel_url=url_for("signup", _external=True),
-        metadata={
-            "source": "signup"
-        }
-    )
+    # Handle both JSON (from new separate flow) or request params if any legacy (but we are moving to JSON)
+    try:
+        data = request.json
+        email = data.get("email") if data else None
+        
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
 
-    return jsonify({"url": checkout.url})
+        checkout = stripe.checkout.Session.create(
+            mode="subscription",
+            customer_email=email, # Use the passed email
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            success_url=url_for("login", _external=True),
+            cancel_url=url_for("signup_premium", _external=True), # Cancel goes back to premium input
+            metadata={
+                "source": "signup",
+                "plan": "premium",
+                "email": email 
+            }
+        )
+
+        return jsonify({"url": checkout.url})
+    except Exception as e:
+        print(f"Checkout error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 

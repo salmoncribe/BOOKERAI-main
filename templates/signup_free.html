@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+{% block title %}Create Free Account — BookerAI{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}?v={{ asset_ver }}">
+{% endblock %}
+
+{% block content %}
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="auth-container-wrapper">
+
+    <div class="auth-section">
+        <div class="auth-card">
+            <a href="{{ url_for('signup') }}" class="back-btn">
+                ← Back to Plans
+            </a>
+
+            <div class="form-header">
+                <h2>Create Free Account</h2>
+                <p>Join thousands of pros growing their business.</p>
+            </div>
+
+            <!-- POST to the same route for Free Signup logic -->
+            <form method="post" action="{{ url_for('signup_free') }}" class="signup-form">
+                <input type="hidden" name="selected_plan" value="free">
+
+                <div class="input-grid">
+                    <div class="full-width">
+                        <label for="name">Full Name</label>
+                        <input id="name" name="name" placeholder="e.g. Jordan Miller" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="email">Email Address</label>
+                        <input id="email" type="email" name="email" placeholder="e.g. jordan@example.com" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" name="password" placeholder="Min. 8 characters" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="phone">Phone Number</label>
+                        <input id="phone" name="phone" placeholder="(555) 123-4567" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="address">Work Address / Location</label>
+                        <input id="address" name="address" placeholder="e.g. 123 Main St, Suite 4" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="profession">Profession</label>
+                        <select id="profession" name="profession">
+                            <option value="barber">Barber</option>
+                            <option value="hairstylist">Hair Stylist</option>
+                            <option value="nail tech">Nail Tech</option>
+                            <option value="lash tech">Lash Tech</option>
+                            <option value="makeup artist">Makeup Artist</option>
+                            <option value="estor">Esthetician</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="full-width">
+                        <label for="bio">Short Bio</label>
+                        <textarea id="bio" name="bio" rows="2"
+                            placeholder="Tell clients about your style..."></textarea>
+                    </div>
+
+                </div>
+
+                <button type="submit" class="submit-btn">Create Account</button>
+
+                <p class="alt-link">
+                    Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

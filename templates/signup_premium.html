@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block title %}Setup Premium — BookerAI{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}?v={{ asset_ver }}">
+{% endblock %}
+
+{% block content %}
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="auth-container-wrapper">
+
+    <div class="auth-section">
+        <div class="auth-card">
+            <a href="{{ url_for('signup') }}" class="back-btn">
+                ← Back to Plans
+            </a>
+
+            <div class="form-header">
+                <h2>Setup Premium Profile</h2>
+                <p>Enter your email to proceed to secure checkout.</p>
+            </div>
+
+            <form id="premiumForm" class="signup-form">
+                <div class="input-grid">
+
+                    <div class="full-width">
+                        <label for="email">Email Address</label>
+                        <input id="email" type="email" name="email" placeholder="e.g. jordan@example.com" required />
+                    </div>
+
+                </div>
+
+                <button type="submit" class="submit-btn btn-premium" id="premiumSubmitBtn">
+                    Proceed to Checkout
+                </button>
+
+                <p class="alt-link">
+                    Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+                </p>
+
+                <p class="alt-link" style="font-size: 0.8rem; margin-top: 1rem;">
+                    Secure payment processing by Stripe.
+                </p>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/signup_premium.js') }}"></script>
+{% endblock %}

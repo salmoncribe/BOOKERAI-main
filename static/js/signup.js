@@ -62,7 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
       void authSection.offsetWidth;
       authSection.classList.add("fade-in");
       authSection.style.opacity = "1";
-      authSection.style.display = "block";
+      // FIX: Use flex to maintain centering defined in CSS
+      authSection.style.display = "flex";
+
+      // Scroll to form (smoothly)
+      setTimeout(() => {
+        authSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     }, 500);
   };
 
