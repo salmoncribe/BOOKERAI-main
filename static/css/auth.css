@@ -17,21 +17,22 @@
 html,
 body {
     height: auto;
-    width: 100%;
+    min-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scroll on iOS */
     margin: 0;
     padding: 0;
 }
 
 .auth-page-body {
     background: radial-gradient(circle at top left, #e0f2fe, #f0f9ff, #ffffff);
-    min-height: 100dvh;
+    min-height: 100%;
+    /* Changed from 100dvh to allow natural growth */
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--text-main);
     overflow-x: hidden;
-    overflow-y: auto;
     position: relative;
-    -webkit-overflow-scrolling: touch;
-    /* Smooth scroll on iOS */
 }
 
 /* ✨ Floating Background Blobs */
@@ -79,20 +80,18 @@ body {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1rem;
-    /* Reduced side padding for mobile, still good for desktop */
-    min-height: 100dvh;
-    /* Fill screen but allow scroll */
+    min-height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    /* Centers vertically if content is short */
+    /* Replaced full-height centering with top-aligned flow */
     align-items: center;
-    position: relative;
-    box-sizing: border-box;
-    /* Ensure padding doesn't cause overflow */
+    justify-content: flex-start;
+    padding-top: max(4rem, env(safe-area-inset-top));
     padding-bottom: max(2rem, env(safe-area-inset-bottom));
-    /* Safe area for iOS */
+    padding-left: 1rem;
+    padding-right: 1rem;
+    box-sizing: border-box;
+    position: relative;
 }
 
 /* 🔄 Transitions */
@@ -102,8 +101,8 @@ body {
     /* Subtle scale down and move up */
     pointer-events: none;
     position: absolute;
-    width: 100%;
-    /* Keep layout stable during transition */
+    width: 90%;
+    /* prevent overflow width issues during transition */
     left: 0;
     right: 0;
     margin: 0 auto;
@@ -153,6 +152,8 @@ body {
     gap: 2rem;
     justify-content: center;
     width: 100%;
+    /* Ensure no scroll-jail here */
+    overflow: visible;
 }
 
 .plan-card {
@@ -326,8 +327,6 @@ body {
     box-shadow: var(--glass-shadow);
     width: 100%;
     box-sizing: border-box;
-    margin-bottom: 2rem;
-    /* Ensure space at bottom for scrolling */
 }
 
 /* Back Button */
@@ -494,15 +493,17 @@ label input:focus {
 @media (max-width: 768px) {
     .auth-container-wrapper {
         padding: 1.5rem 1rem;
-        /* Ensure content doesn't hit edges */
-        overflow-x: hidden;
-        /* Prevent horizontal scroll */
-        justify-content: flex-start;
-        /* Start from top on mobile */
+        overflow: visible;
+        /* Prevent forcing hidden overflow on wrapper */
+        height: auto;
+        min-height: 100%;
+        display: block;
+        /* Switch to block to avoid flexbox fighting scroll */
     }
 
     .plan-header h1 {
         font-size: 2rem;
+        margin-top: 1rem;
     }
 
     .cards-grid {
@@ -510,14 +511,28 @@ label input:focus {
         /* Single column stack */
         max-width: 420px;
         margin: 0 auto;
+        overflow: visible;
+    }
+
+    /* Disable transform animations on mobile to prevent layout locks */
+    .plan-card:hover,
+    .plan-card,
+    .auth-glass-card {
+        transform: none !important;
     }
 
     .plan-card {
         padding: 2rem;
+        margin-bottom: 2rem;
+        /* Add natural spacing between stacked cards */
+        height: auto;
+        /* Let card grow naturally */
     }
 
     .auth-glass-card {
         padding: 2rem 1.5rem;
+        margin-bottom: 4rem;
+        /* Ensure plenty of bottom scroll space */
     }
 
     .input-grid {
