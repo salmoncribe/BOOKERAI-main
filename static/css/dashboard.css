@@ -299,28 +299,29 @@ button:active,
         margin-top: 0.5rem;
     }
 
+    /* ----------------------------------------------------------
+   TABLE SCROLL COMPONENT (Restored)
+   ---------------------------------------------------------- */
     .table-scroll {
-        flex: 1;
         width: 100%;
-        overflow-y: hidden;
+        /* Vertical Scroll for Desktop/All */
+        max-height: 400px;
+        overflow-y: auto;
         overflow-x: auto;
+        /* Allow horizontal if needed (mobile) */
         -webkit-overflow-scrolling: touch;
         border-radius: 0.6rem;
         border: 1px solid rgba(14, 165, 233, 0.08);
         background: #fcfeff;
-        /* Visual Hint for horizontal scroll */
-        background: linear-gradient(to right, #fcfeff 30%, rgba(255, 255, 255, 0)),
-            linear-gradient(to right, rgba(255, 255, 255, 0), #fcfeff 70%) 0 100%,
-            radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0)),
-            radial-gradient(farthest-side at 100% 50%, rgba(14, 165, 233, 0.15), rgba(0, 0, 0, 0)) 100%;
-        background-repeat: no-repeat;
-        background-attachment: local, local, scroll, scroll;
-        background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+        position: relative;
+
+        /* Visual Hint for scrolls (subtle) */
+        scrollbar-width: thin;
+        scrollbar-color: var(--sky-blue) rgba(240, 250, 255, 0.7);
     }
 
     .table-scroll::-webkit-scrollbar {
         height: 6px;
-        /* Sleeker scrollbar */
         width: 6px;
     }
 
@@ -333,60 +334,119 @@ button:active,
         background: rgba(240, 250, 255, 0.7);
     }
 
-    /* Ensure horizontal scroll */
-    .table-scroll {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-    }
-
     .table {
         width: 100%;
         border-collapse: collapse;
-        /* Removed fixed min-width */
+        min-width: 100%;
+        /* Ensure it fills container */
     }
 
     .table th,
     .table td {
-        padding: 0.75rem 1rem;
+        padding: 1rem 1.25rem;
         text-align: left;
         border-bottom: 1px solid rgba(14, 165, 233, 0.08);
-        white-space: nowrap;
     }
 
+    /* Sticky Header */
     .table th {
+        background: #f9feff;
         color: var(--muted);
         font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         position: sticky;
         top: 0;
-        background: #f9feff;
-        z-index: 2;
+        z-index: 10;
+        /* Ensure over rows */
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .table td {
+        color: var(--text-dark);
+        font-size: 0.95rem;
+        white-space: nowrap;
+        /* Prevent wrapping for clean rows */
+    }
+
+    /* Mobile Specific Tweaks for Table */
+    @media (max-width: 768px) {
+        .table-scroll {
+            /* On mobile, ensure horizontal scroll is obvious */
+            display: block;
+            max-height: 500px;
+            /* Allow a bit more height on mobile if needed */
+
+            /* Mobile Scroll Hint Gradients */
+            background:
+                linear-gradient(to right, #fcfeff 30%, rgba(255, 255, 255, 0)),
+                linear-gradient(to right, rgba(255, 255, 255, 0), #fcfeff 70%) 0 100%,
+                radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0)),
+                radial-gradient(farthest-side at 100% 50%, rgba(14, 165, 233, 0.15), rgba(0, 0, 0, 0)) 100%;
+            background-repeat: no-repeat;
+            background-attachment: local, local, scroll, scroll;
+            background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.85rem 1rem;
+        }
     }
 
     .table td a {
         color: var(--sky-blue);
         text-decoration: none;
+        font-weight: 500;
     }
 
     .table td a:hover {
         text-decoration: underline;
     }
 
+    /* Status Badges within Table */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.6rem;
+        border-radius: 99px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-booked {
+        background: #e0f2fe;
+        color: #0284c7;
+    }
+
+    .status-completed {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-cancelled {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
     .cancel-btn {
-        background: #fff;
-        color: var(--teal);
-        border: 1.5px solid var(--teal);
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border-light);
+        border-radius: 0.4rem;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        transition: all 0.25s ease;
-        white-space: nowrap;
+        transition: all 0.2s;
+        cursor: pointer;
     }
 
     .cancel-btn:hover {
-        background: var(--teal);
-        color: #fff;
-        box-shadow: 0 6px 14px rgba(20, 184, 166, 0.3);
+        background: #fee2e2;
+        color: #dc2626;
+        border-color: #fee2e2;
     }
 
     /* ----------------------------------------------------------

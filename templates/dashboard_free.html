@@ -50,13 +50,55 @@
     <!-- Main Content -->
     <div class="main-content">
       <!-- Upcoming Appointments -->
-      <!-- React Root for Appointments & Calendar -->
-      <div id="react-appointments-root"></div>
+      <!-- Upcoming Appointments -->
+      <div class="card appointments-card">
+        <div class="appt-header"
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3>Upcoming Appointments</h3>
+          <!-- Hidden on mobile, shown on desktop mostly via classes (kept simple) -->
+          <button class="btn btn-secondary small" onclick="openCalendar()">View Calendar</button>
+        </div>
 
-      <!-- Data Payload for React -->
-      <script id="appt-data" type="application/json">
-        {{ appointments | tojson(indent=2) if appointments else "[]" }}
-      </script> <!-- Business Hours -->
+        {% if appointments %}
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Phone</th>
+                <th>When</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in appointments %}
+              <tr>
+                <td>{{ a.client_name or "Unknown" }}</td>
+                <td>
+                  <a href="tel:{{ a.client_phone }}">{{ a.client_phone }}</a>
+                </td>
+                <td>
+                  <div style="font-weight:600;">{{ a.date }}</div>
+                  <div class="muted small">{{ a.start_time }}</div>
+                </td>
+                <td>
+                  <span class="status-badge status-{{ a.status }}">{{ a.status }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="mobile-view-calendar-btn" style="display:block; margin-top:1rem;">
+          <button class="btn btn-secondary full-width" onclick="openCalendar()">View Full Calendar</button>
+        </div>
+        {% else %}
+        <div style="text-align:center; padding: 2rem 1rem;">
+          <p class="muted">No upcoming appointments yet.</p>
+          <p class="small text-muted">Share your link to get booked!</p>
+        </div>
+        {% endif %}
+      </div>
       <div class="card hours-card">
         <div class="hours-header" style="flex-direction:column; gap:0.5rem; margin-bottom:1rem;">
           <h3>Business Hours</h3>
@@ -187,6 +229,4 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
 
-<!-- React Dashboard Component -->
-<script type="text/babel" src="{{ url_for('static', filename='js/dashboard_react.js') }}"></script>
 {% endblock %}
