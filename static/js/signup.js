@@ -27,11 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
       planSelection.classList.add("hidden");
 
       // Configure Form based on plan
+      // Configure Form based on plan
       if (plan === 'premium') {
-        // Premium: No Email (Stripe collects it), Tag as premium
+        // Premium: Email IS required now (passed to Stripe)
         selectedPlanInput.value = 'premium';
-        emailGroup.classList.add("hidden");
-        emailInput.removeAttribute("required");
+        // Ensure email is visible & required
+        emailGroup.classList.remove("hidden");
+        emailInput.setAttribute("required", "true");
 
         formTitle.textContent = "Setup Premium Profile";
         formSubtitle.textContent = "Enter your details to proceed to secure checkout.";

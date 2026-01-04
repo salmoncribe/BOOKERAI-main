@@ -21,7 +21,12 @@
     <div class="cards-grid">
       <!-- Free Plan -->
       <div class="plan-card" onclick="selectPlan('free')">
-        <div class="icon">🚀</div>
+        <div class="icon-wrapper">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
         <div class="plan-name">Starter</div>
         <div class="plan-price">Free <span>/ forever</span></div>
         <ul class="features-list">
@@ -35,10 +40,15 @@
 
       <!-- Premium Plan -->
       <div class="plan-card premium" onclick="selectPlan('premium')">
-        <div class="icon">💎</div>
-        <div class="plan-name">Premium <span
-            style="font-size:0.8rem; background:#f3e8ff; color:#7e22ce; padding:2px 8px; border-radius:10px;">POPULAR</span>
+        <div class="icon-wrapper premium-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" class="feather feather-star">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+            </polygon>
+          </svg>
         </div>
+        <div class="plan-name">Premium <span class="popular-badge">MOST POPULAR</span></div>
         <div class="plan-price">$20 <span>/ month</span></div>
         <ul class="features-list">
           <li><strong>Everything in Free, plus:</strong></li>

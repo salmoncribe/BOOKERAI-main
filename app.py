@@ -228,27 +228,31 @@ def signup():
     # ------------------------------------------------------------
     # REQUIRED for ALL signups (free + premium)
     # ------------------------------------------------------------
-    if selected_plan != "premium":
-        if not email or not password:
-            flash("Email and password are required.")
-            return redirect(url_for("signup"))
+    # Email and Password are required for EVERYONE now.
+    if not email or not password:
+        flash("Email and password are required.")
+        return redirect(url_for("signup"))
 
+    if selected_plan != "premium":
         # Prevent duplicate accounts (Free only check here)
-        existing = (
-            supabase.table("barbers")
-            .select("id")
-            .eq("email", email)
-            .execute()
-            .data
-        )
-        if existing:
-            flash("An account with this email already exists.")
-            return redirect(url_for("login"))
-    else:
-        # Premium: Password is required, but Email is collected at Stripe
-        if not password:
-            flash("Password is required.")
-            return redirect(url_for("signup"))
+        # For Premium, we could check here too, but the original logic
+        # relied on Stripe or postponed it. Let's keep it consistent
+        # and check duplications for free plans fast.
+        # Actually, if we are sending email to Stripe, we should probably check if it exists in our DB first
+        # to avoid kicking them to Stripe if they already have an account.
+        pass
+    
+    # Check for existing email in OUR system for both plans to be safe
+    existing = (
+        supabase.table("barbers")
+        .select("id")
+        .eq("email", email)
+        .execute()
+        .data
+    )
+    if existing:
+        flash("An account with this email already exists.")
+        return redirect(url_for("login"))
 
     # ------------------------------------------------------------
     # Validate promo code (if provided)
@@ -271,15 +275,16 @@ def signup():
     if selected_plan == "premium":
         # Create Stripe Checkout Session WITHOUT customer_email
         # We rely on Stripe to collect the email
+        # UPDATE: Now we DO pass customer_email from the form
         checkout = stripe.checkout.Session.create(
             mode="subscription",
-            # customer_email param REMOVED
+            customer_email=email,  # <--- PRE-FILL EMAIL IN STRIPE
             line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
             metadata={
                 "source": "signup",
                 "plan": "premium",
                 "name": name,
-                # "email" is NOT in metadata (or is empty) because we don't have it yet
+                "email": email, # Also store in metadata for safety
                 "phone": phone,
                 "bio": bio,
                 "address": address,
