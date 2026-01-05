@@ -67,7 +67,7 @@ availability_service = AvailabilityService(cache)
 # ----------------------------------------------
 # Stripe
 # ----------------------------------------------
-stripe.api_key = os.getenv("STRIPE_TEST_SECRET_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # ----------------------------------------------
