@@ -18,28 +18,75 @@
             </a>
 
             <div class="form-header">
+                <div
+                    style="background-color: #ff9800; color: #000; padding: 0.5rem; border-radius: 4px; font-weight: bold; margin-bottom: 1rem; text-align: center; font-size: 0.9rem;">
+                    SANDBOX MODE - TEST DATA ONLY
+                </div>
                 <h2>Setup Premium Profile</h2>
-                <p>Enter your email to proceed to secure checkout.</p>
+                <p>Create your account &amp; proceed to secure checkout.</p>
             </div>
 
-            <form id="premiumForm" class="signup-form">
+            <!-- POST to Premium Signup logic -->
+            <form method="post" action="{{ url_for('signup_premium') }}" class="signup-form">
+                <input type="hidden" name="selected_plan" value="premium">
+
                 <div class="input-grid">
+                    <div class="full-width">
+                        <label for="name">Full Name</label>
+                        <input id="name" name="name" placeholder="e.g. Jordan Miller" required />
+                    </div>
 
                     <div class="full-width">
                         <label for="email">Email Address</label>
                         <input id="email" type="email" name="email" placeholder="e.g. jordan@example.com" required />
                     </div>
 
+                    <div class="full-width">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" name="password" placeholder="Min. 8 characters" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="phone">Phone Number</label>
+                        <input id="phone" name="phone" placeholder="(555) 123-4567" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="address">Work Address / Location</label>
+                        <input id="address" name="address" placeholder="e.g. 123 Main St, Suite 4" required />
+                    </div>
+
+                    <div class="full-width">
+                        <label for="bio">Short Bio</label>
+                        <textarea id="bio" name="bio" rows="2"
+                            placeholder="Tell clients about your style..."></textarea>
+                    </div>
+
+                    <div class="full-width">
+                        <label for="profession">Profession</label>
+                        <select id="profession" name="profession">
+                            <option value="barber">Barber</option>
+                            <option value="hairstylist">Hair Stylist</option>
+                            <option value="nail tech">Nail Tech</option>
+                            <option value="lash tech">Lash Tech</option>
+                            <option value="makeup artist">Makeup Artist</option>
+                            <option value="esthetician">Esthetician</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="full-width" id="promoCodeContainer">
+                        <label for="promo_code">Promo Code (Optional)</label>
+                        <input id="promo_code" name="promo_code" placeholder="e.g. SAVE20"
+                            style="text-transform:uppercase;">
+                    </div>
                 </div>
 
-                <button type="submit" class="submit-btn btn-premium" id="premiumSubmitBtn">
-                    Proceed to Checkout
-                </button>
+                <button type="submit" class="submit-btn btn-premium">Create account &amp; continue to checkout</button>
 
                 <p class="alt-link">
                     Already have an account? <a href="{{ url_for('login') }}">Log in</a>
                 </p>
-
                 <p class="alt-link" style="font-size: 0.8rem; margin-top: 1rem;">
                     Secure payment processing by Stripe.
                 </p>
@@ -51,5 +98,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/signup_premium.js') }}"></script>
+<script src="{{ url_for('static', filename='js/signup.js') }}"></script>
 {% endblock %}

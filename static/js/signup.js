@@ -92,40 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 500);
   };
 
-  // 3. Profession "Other" Toggle
-  if (professionSelect) {
-    professionSelect.addEventListener("change", () => {
-      if (professionSelect.value === "other") {
-        otherProfessionGroup.classList.remove("hidden");
-        otherProfessionInput.setAttribute("required", "true");
-      } else {
-        otherProfessionGroup.classList.add("hidden");
-        otherProfessionInput.removeAttribute("required");
-      }
-    });
-  }
-
   // 4. Form Submit Cleanup
   const form = document.querySelector("form");
   if (form) {
     form.addEventListener("submit", (e) => {
-      // If "Other" is selected, copy value to select for backend consistency if needed
-      // actually backend usually takes the select value. If it's "other", backend sees "other".
-      // App.py: profession = request.form.get("profession", "")
-      // It doesn't seem to look for "other_profession". 
-      // Let's check app.py logic logic for profession again or just append it.
-      // Looking at app.py, it just grabs "profession".
-      // So if value is "other", we might want to put the custom text into the 'profession' field before submit?
-      // Or maybe the backend handles 'other'? 
-      // The current app.py just saves `profession`. If I send "other", it saves "other".
-      // Let's swap the values just in case the user wants the specific text.
-
-      if (professionSelect.value === "other" && otherProfessionInput.value.trim() !== "") {
-        // Create a hidden input or change option value? 
-        // Simplest: change the selected option's value
-        const selectedOption = professionSelect.options[professionSelect.selectedIndex];
-        selectedOption.value = otherProfessionInput.value.trim();
-      }
+      // Standard submit
     });
   }
 });

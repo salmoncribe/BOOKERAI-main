@@ -67,7 +67,7 @@ availability_service = AvailabilityService(cache)
 # ----------------------------------------------
 # Stripe
 # ----------------------------------------------
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = os.getenv("STRIPE_TEST_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 # ----------------------------------------------
@@ -196,6 +196,62 @@ def generate_promo_code(name):
     return f"{base}{suffix}"
 
 
+def create_barber_and_login(name, email, password, phone, bio, address, profession, plan, promo_code=None):
+    """
+    Shared logic to create a barber account and log them into the session.
+    """
+    password_hash = generate_password_hash(password)
+
+    # Generate unique promo code if not provided
+    if not promo_code:
+        while True:
+            promo_code = generate_promo_code(name)
+            exists = (
+                supabase.table("barbers")
+                .select("id")
+                .eq("promo_code", promo_code)
+                .execute()
+                .data
+            )
+            if not exists:
+                break
+    
+    # Insert Barber
+    # Note: 'plan' logic is passed in. 
+    # For Premium: we might pass 'pending_payment' or just 'premium' but rely on stripe redirect.
+    # The requirement says: status="pending_payment" (or equivalent column if exists).
+    # Since I didn't see a status column, I will use plan="pending_premium" as discussed.
+    
+    res = supabase.table("barbers").insert({
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "bio": bio,
+        "address": address,
+        "profession": profession,
+        "password_hash": password_hash,
+        "slot_duration": 60,
+        "plan": plan, 
+        "role": "barber",
+        "promo_code": promo_code,
+    }).execute()
+
+    if not res.data:
+        return None
+
+    barber = res.data[0]
+
+    # Auto-login
+    session["barberId"] = barber["id"]
+    session["user_email"] = barber["email"]
+    session["barber_name"] = barber["name"]
+    
+    # Ensure default data
+    ensure_default_weekly_hours(barber["id"])
+    
+    return barber
+
+
 # ============================================================
 # AUTH — BARBER (SIGNUP / LOGIN / LOGOUT)
 # ============================================================
@@ -204,9 +260,64 @@ def generate_promo_code(name):
 def signup():
     return render_template("signup.html")
 
-@app.route("/signup/premium")
+@app.route("/signup/premium", methods=["GET", "POST"])
 def signup_premium():
-    return render_template("signup_premium.html")
+    if request.method == "GET":
+        return render_template("signup_premium.html")
+
+    # ------------------------------------------------------------
+    # PREMIUM SIGNUP -> 1. Collect Data -> 2. Create Acct (Pending) -> 3. Stripe
+    # ------------------------------------------------------------
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").lower().strip()
+    password = request.form.get("password")
+    phone = request.form.get("phone")
+    bio = request.form.get("bio", "")
+    address = request.form.get("address", "")
+    profession = request.form.get("profession", "")
+    
+    if not email or not password:
+        flash("Email and password are required.")
+        return redirect(url_for("signup_premium"))
+
+    # Check existing
+    existing = supabase.table("barbers").select("id").eq("email", email).execute().data
+    if existing:
+        flash("An account with this email already exists.")
+        return redirect(url_for("login"))
+
+    # Create Account (Pending Payment)
+    barber = create_barber_and_login(
+        name=name, email=email, password=password, phone=phone,
+        bio=bio, address=address, profession=profession,
+        plan="pending_premium"  # Temporary state until webhook confirms
+    )
+    
+    if not barber:
+        flash("Signup failed. Please try again.")
+        return redirect(url_for("signup_premium"))
+
+    # Create Stripe Checkout session
+    try:
+        checkout = stripe.checkout.Session.create(
+            mode="subscription",
+            customer_email=email,
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            success_url=url_for("login", _external=True), # Will check status on login or webhook updates it
+            cancel_url=url_for("signup_premium", _external=True),
+            metadata={
+                "source": "signup",
+                "plan": "premium",
+                "barber_id": barber["id"],  # Pass ID to link easily in webhook
+                "email": email 
+            }
+        )
+        return redirect(checkout.url, code=303)
+        
+    except Exception as e:
+        print(f"Stripe Checkout Error: {e}")
+        flash("Account created, but payment initialization failed. Please log in and upgrade from dashboard.")
+        return redirect(url_for("dashboard"))
 
 @app.route("/signup/free", methods=["GET", "POST"])
 def signup_free():
@@ -247,45 +358,15 @@ def signup_free():
     # ------------------------------------------------------------
     # FREE SIGNUP → CREATE ACCOUNT IMMEDIATELY
     # ------------------------------------------------------------
-    password_hash = generate_password_hash(password)
+    barber = create_barber_and_login(
+        name=name, email=email, password=password, phone=phone,
+        bio=bio, address=address, profession=profession,
+        plan="free"
+    )
 
-    # Generate unique promo code
-    while True:
-        promo_code = generate_promo_code(name)
-        exists = (
-            supabase.table("barbers")
-            .select("id")
-            .eq("promo_code", promo_code)
-            .execute()
-            .data
-        )
-        if not exists:
-            break
-
-    res = supabase.table("barbers").insert({
-        "name": name,
-        "email": email,
-        "phone": phone,
-        "bio": bio,
-        "address": address,
-        "profession": profession,
-        "password_hash": password_hash,
-        "slot_duration": 60,
-        "plan": "free",
-        "role": "barber",
-        "promo_code": promo_code,
-    }).execute()
-
-    if not res.data:
+    if not barber:
         flash("Signup failed. Please try again.")
         return redirect(url_for("signup_free"))
-
-    barber = res.data[0]
-
-    # Auto-login after free signup
-    session["barberId"] = barber["id"]
-    session["user_email"] = barber["email"]
-    session["barber_name"] = barber["name"]
 
     return redirect(url_for("dashboard"))
 
@@ -581,70 +662,45 @@ def stripe_webhook():
     email = session_obj.get("customer_details", {}).get("email")
 
     # ============================================================
-    # CASE 1: PREMIUM SIGNUP (ACCOUNT DOES NOT EXIST YET)
+    # CASE 1: PREMIUM SIGNUP (Update Pending Account)
     # ============================================================
     if metadata.get("source") == "signup":
-        if not email:
-            # Should not happen if Stripe is configured to collect address/email
-            return "OK", 200
-
-        existing = (
-            supabase.table("barbers")
-            .select("id")
-            .eq("email", email)
-            .execute()
-            .data
-        )
-        if existing:
-            # Email already exists, prevent crash. 
-            # In a real app we might want to email them or link account, but for now just stop.
-            return "OK", 200
-
-        while True:
-            promo_code = generate_promo_code(metadata.get("name"))
-            exists = (
-                supabase.table("barbers")
-                .select("id")
-                .eq("promo_code", promo_code)
-                .execute()
-                .data
-            )
-            if not exists:
-                break
-
-        res = supabase.table("barbers").insert({
-            "name": metadata.get("name"),
-            "email": email,
-            "phone": metadata.get("phone"),
-            "bio": metadata.get("bio"),
-            "address": metadata.get("address"),
-            "profession": metadata.get("profession"),
-            "password_hash": metadata.get("password_hash"),
-            "slot_duration": 60,
-            "plan": "premium",
-            "role": "barber",
-            "promo_code": promo_code,
-            "used_promo_code": metadata.get("used_promo_code") or None,
-            "last_stripe_session_id": session_id,
-        }).execute()
-
-        barber_id = res.data[0]["id"]
-
-        ensure_default_weekly_hours(barber_id)
-        add_premium_month(barber_id)
-
-        used_code = metadata.get("used_promo_code")
-        if used_code:
-            owner = (
-                supabase.table("barbers")
-                .select("id")
-                .eq("promo_code", used_code)
-                .execute()
-                .data
-            )
-            if owner:
-                add_premium_month(owner[0]["id"])
-
+        # We now create the account BEFORE Stripe, so we just need to find it and update it.
+        # Check by barber_id (preferred) or email.
+        
+        target_barber_id = metadata.get("barber_id")
+        
+        if target_barber_id:
+            # Update the existing pending account
+             supabase.table("barbers").update({
+                "plan": "premium", 
+                "last_stripe_session_id": session_id,
+                # If we want to store customer ID, do it here too
+            }).eq("id", target_barber_id).execute()
+            
+             add_premium_month(target_barber_id)
+             ensure_default_weekly_hours(target_barber_id) # Just in case
+             
+             return "OK", 200
+             
+        # FALLBACK: If for some reason we didn't pass barber_id (old version?), try to find by email
+        # This part assumes account existence logic which we just refactored OUT of webhook for new flow.
+        # But if we want to be safe, we can leave the old creation logic as a fallback?
+        # The prompt said "reuse existing account creation logic" which implies the new flow.
+        # I will assume the new flow is the way forward.
+        
+        if email:
+             # Find user with pending_premium or free
+             barber = supabase.table("barbers").select("id").eq("email", email).execute().data
+             if barber:
+                 barber_id = barber[0]["id"]
+                 supabase.table("barbers").update({
+                    "plan": "premium", 
+                    "last_stripe_session_id": session_id
+                }).eq("id", barber_id).execute()
+                 add_premium_month(barber_id)
+                 return "OK", 200
+        
         return "OK", 200
 
     # ============================================================
