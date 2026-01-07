@@ -266,31 +266,24 @@ def try_redeem_promo(email, promo_code, user_id):
         return False
 
     try:
-        # Check for valid, unused promo matching email and code
-        # Note: We need to match case-insensitively. 
-        # Supabase/Postgrest 'ilike' can be used.
-        
-        # We'll fetch potential match first.
-        res = supabase_admin.table("premium_promo_access").select("*")\
-            .ilike("email", email)\
-            .ilike("promo_code", promo_code)\
-            .eq("is_active", True)\
-            .is_("used_at", "null")\
-            .execute()
-            
-        if not res.data:
-            return False
-            
-        promo = res.data[0]
-        
-        # Attempt to mark as used ATOMICALLY (by checking used_at is still null in update)
-        update_res = supabase_admin.table("premium_promo_access").update({
+        # Normalize inputs
+        email = email.strip().lower()
+        promo_code = promo_code.strip().lower()
+
+        # Atomic UPDATE: Set used_at/used_by ONLY IF matching row exists and is unused
+        # Using ilike for case-insensitive match (though we normalized, ilike is safer/requested)
+        res = supabase_admin.table("premium_promo_access").update({
             "used_at": datetime.utcnow().isoformat(),
             "used_by_user_id": user_id
-        }).eq("id", promo["id"]).is_("used_at", "null").execute()
+        })\
+        .ilike("email", email)\
+        .ilike("promo_code", promo_code)\
+        .eq("is_active", True)\
+        .is_("used_at", "null")\
+        .execute()
         
-        # Check if any row was actually updated
-        if update_res.data and len(update_res.data) == 1:
+        # Redemption succeeds ONLY if exactly 1 row is returned.
+        if res.data and len(res.data) == 1:
             return True
             
         return False
