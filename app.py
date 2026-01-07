@@ -369,63 +369,52 @@ def signup_premium():
         flash(msg)
         return redirect(url_for("signup_premium"))
 
-    user_id = barber["id"]
-
     # ------------------------------------------------------------
-    # PROMO REDEMPTION (BEFORE STRIPE)
-    # ------------------------------------------------------------
-    if promo_code:
-        redeemed = try_redeem_promo(email, promo_code, user_id)
-        
-        print(f"DEBUG: Promo attempt result: {redeemed}")
-
-        if redeemed:
-            # Success! Force Final Premium State
-            barber_id = user_id
-            now_plus_30 = (datetime.utcnow() + timedelta(days=30)).isoformat()
-
-            # 1. Explicit Update
-            supabase.table("barbers").update({
-                "plan": "premium", 
-                "used_promo_code": promo_code,
-                "premium_expires_at": now_plus_30
-            }).eq("id", barber_id).execute()
-            
-            # 2. VERIFY UPDATE (Requested by User)
-            try:
-                check = supabase.table("barbers").select("plan, used_promo_code, premium_expires_at").eq("id", barber_id).execute().data
-                if check:
-                    row = check[0]
-                    print(f"[PROMO-UPGRADE] barber_id={barber_id} plan={row.get('plan')} expires={row.get('premium_expires_at')}")
-                else:
-                    print(f"[PROMO-UPGRADE] CRITICAL: Could not fetch barber {barber_id} after update!")
-            except Exception as e:
-                print(f"[PROMO-UPGRADE] Error verifying update: {e}")
-
-            print(f"DEBUG: Promo redeemed successfully for {email}. Skipping Stripe.")
-            
-            # 3. RETURN EARLY
-            if request.is_json:
-                return jsonify({"ok": True, "skipped_payment": True})
-            
-            return redirect(url_for("dashboard"))
-            
-    # ------------------------------------------------------------
-    # FALLBACK: STRIPE CHECKOUT
+    # STRIPE CHECKOUT (ALWAYS REQUIRED)
     # ------------------------------------------------------------
     print(f"DEBUG: Proceeding to Stripe for {email}")
+    
+    # Pricing Logic (Hardcoded Back-end Source of Truth)
+    # Base Price: $20.00 (2000 cents)
+    base_price = 2000
+    final_price = base_price
+    
+    code_norm = promo_code.upper().strip()
+    
+    if code_norm == "TEST":
+        final_price = 0
+    elif code_norm == "LIVE25":
+        final_price = 1500 # $15.00
+        
     try:
+        # Create Checkout Session with dynamic price
+        # Note: 'price' arg is mutually exclusive with 'price_data'
+        
         checkout = stripe.checkout.Session.create(
             mode="subscription",
             customer_email=email,
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": "BookerAI Premium",
+                        "description": "Monthly subscription"
+                    },
+                    "unit_amount": final_price,
+                    "recurring": {
+                        "interval": "month"
+                    }
+                },
+                "quantity": 1
+            }],
             success_url=url_for("login", _external=True),
             cancel_url=url_for("signup_premium", _external=True),
             metadata={
                 "source": "signup",
                 "plan": "premium",
                 "barber_id": user_id,
-                "email": email 
+                "email": email,
+                "promo_code": code_norm
             }
         )
         
@@ -738,20 +727,45 @@ def create_premium_checkout():
     try:
         data = request.json
         email = data.get("email") if data else None
+        promo_code = data.get("promo_code") if data else None
         
         if not email:
             return jsonify({"error": "Email is required"}), 400
 
+        # Hardcoded Backend Pricing Logic
+        base_price = 2000
+        final_price = base_price
+        code_norm = (promo_code or "").strip().upper()
+
+        if code_norm == "TEST":
+            final_price = 0
+        elif code_norm == "LIVE25":
+            final_price = 1500
+
         checkout = stripe.checkout.Session.create(
             mode="subscription",
             customer_email=email, # Use the passed email
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": "BookerAI Premium",
+                        "description": "Monthly subscription"
+                    },
+                    "unit_amount": final_price,
+                    "recurring": {
+                        "interval": "month"
+                    }
+                },
+                "quantity": 1
+            }],
             success_url=url_for("login", _external=True),
             cancel_url=url_for("signup_premium", _external=True), # Cancel goes back to premium input
             metadata={
                 "source": "signup",
                 "plan": "premium",
-                "email": email 
+                "email": email,
+                "promo_code": code_norm
             }
         )
 
