@@ -258,20 +258,29 @@ def try_redeem_promo(email, promo_code, user_id):
     Attempts to redeem a promo code for premium access.
     Returns True if successful, False otherwise.
     """
+    # Normalize inputs
+    email = (email or "").strip().lower()
+    promo_code = (promo_code or "").strip().lower()
+    
+    print(f"DEBUG: Redeeming promo. Email: {email}, PromoLen: {len(promo_code)}")
+
     if not supabase_admin:
-        print("ERROR: Supabase Admin client not initialized.")
+        print("CRITICAL ERROR: Supabase Admin client not initialized. Cannot redeem promo.")
         return False
     
     if not promo_code:
+        print("DEBUG: Promo code empty.")
         return False
 
     try:
-        # Normalize inputs
-        email = email.strip().lower()
-        promo_code = promo_code.strip().lower()
-
         # Atomic UPDATE: Set used_at/used_by ONLY IF matching row exists and is unused
-        # Using ilike for case-insensitive match (though we normalized, ilike is safer/requested)
+        # Filters:
+        # - email (case-insensitive via ilike or since we lower() in Python, we can use eq but ilike is safer if DB differs)
+        # - promo_code (case-insensitive)
+        # - is_active = true
+        # - used_at is null
+        
+        # User requested atomic update.
         res = supabase_admin.table("premium_promo_access").update({
             "used_at": datetime.utcnow().isoformat(),
             "used_by_user_id": user_id
@@ -282,14 +291,18 @@ def try_redeem_promo(email, promo_code, user_id):
         .is_("used_at", "null")\
         .execute()
         
-        # Redemption succeeds ONLY if exactly 1 row is returned.
-        if res.data and len(res.data) == 1:
+        count = len(res.data) if res.data else 0
+        print(f"DEBUG: Promo redemption result count: {count}")
+        
+        if count == 1:
+            print("DEBUG: Promo redemption SUCCESS.")
             return True
             
+        print("DEBUG: Promo redemption FAILED (No matching inactive/unused row found).")
         return False
 
     except Exception as e:
-        print(f"Promo redemption error: {e}")
+        print(f"Promo redemption error checking: {e}")
         return False
 
 
@@ -306,10 +319,11 @@ def signup_premium():
     if request.method == "GET":
         return render_template("signup_premium.html")
 
-    # Handle JSON or Form Data (preferred JSON for new flow)
-    # But for backward compat/form submission we might get form data?
-    # The new JS will send JSON.
-    data = request.json if request.is_json else request.form
+    # Parse request robustly (support JSON and form)
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+    else:
+        data = request.form
 
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").lower().strip()
@@ -327,7 +341,8 @@ def signup_premium():
         flash("Email and password are required.")
         return redirect(url_for("signup_premium"))
 
-    # Check existing
+    # Check existing user
+    # Note: If user exists, we should probably redirect to login or handle it. Current logic redirects to login.
     existing = supabase.table("barbers").select("id").eq("email", email).execute().data
     if existing:
         if request.is_json:
@@ -336,7 +351,7 @@ def signup_premium():
         return redirect(url_for("login"))
 
     # Create Account (Pending Payment or Premium if promo)
-    # We start with pending_premium
+    # We will start with pending_premium and upgrade immediately if promo works.
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
@@ -350,34 +365,39 @@ def signup_premium():
         flash(msg)
         return redirect(url_for("signup_premium"))
 
+    user_id = barber["id"]
+
     # ------------------------------------------------------------
-    # PROMO CODE CHECK
+    # PROMO REDEMPTION (BEFORE STRIPE)
     # ------------------------------------------------------------
     if promo_code:
-        redeemed = try_redeem_promo(email, promo_code, barber["id"])
+        redeemed = try_redeem_promo(email, promo_code, user_id)
         
         if redeemed:
-            # Upgrade user immediately
-            # Add timestamp only if used elsewhere (the task said: 
-            # "set premium_expires_at ONLY if your existing code already uses it")
-            # Existing code uses it for month calculation in add_premium_month. 
-            # Let's use add_premium_month to be consistent!
-            add_premium_month(barber["id"])
+            # Success! Force Final Premium State
+            # 1. Update Plan to 'premium' (NOT pending)
+            # 2. Set used_promo_code
             
-            # Also set used_promo_code
+            # Note: add_premium_month also extends time and sets plan='premium'
+            add_premium_month(user_id)
+            
             supabase.table("barbers").update({
+                "plan": "premium", # redundancy for safety
                 "used_promo_code": promo_code
-            }).eq("id", barber["id"]).execute()
+            }).eq("id", user_id).execute()
             
+            print(f"DEBUG: Promo redeemed for {email}. Skipping Stripe.")
+            
+            # RETURN EARLY - DO NOT RUN STRIPE LOGIC
             if request.is_json:
                 return jsonify({"ok": True, "skipped_payment": True})
             
-            # Fallback for non-JS (unlikely given instructions, but good practice)
             return redirect(url_for("dashboard"))
-
+            
     # ------------------------------------------------------------
-    # STRIPE CHECKOUT (Default)
+    # FALLBACK: STRIPE CHECKOUT
     # ------------------------------------------------------------
+    print(f"DEBUG: Proceeding to Stripe for {email}")
     try:
         checkout = stripe.checkout.Session.create(
             mode="subscription",
@@ -388,7 +408,7 @@ def signup_premium():
             metadata={
                 "source": "signup",
                 "plan": "premium",
-                "barber_id": barber["id"],
+                "barber_id": user_id,
                 "email": email 
             }
         )
@@ -402,7 +422,7 @@ def signup_premium():
         print(f"Stripe Checkout Error: {e}")
         msg = "Account created, but payment initialization failed. Please log in and upgrade from dashboard."
         if request.is_json:
-             return jsonify({"ok": True, "redirect_url": url_for("dashboard"), "message": msg}) # Treat as success-ish (account created)
+             return jsonify({"ok": True, "redirect_url": url_for("dashboard"), "message": msg}) 
         
         flash(msg)
         return redirect(url_for("dashboard"))
