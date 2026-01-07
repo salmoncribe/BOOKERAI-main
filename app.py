@@ -7,6 +7,9 @@ mimetypes.add_type('text/css', '.css')
 from functools import wraps
 from datetime import datetime, timedelta, date
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import (
     Flask, render_template, request, redirect,
     url_for, session, jsonify, flash
