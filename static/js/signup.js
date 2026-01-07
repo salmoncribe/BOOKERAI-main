@@ -92,11 +92,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 500);
   };
 
-  // 4. Form Submit Cleanup
+  // 4. Form Submit Cleanup & Promo Handling
   const form = document.querySelector("form");
   if (form) {
-    form.addEventListener("submit", (e) => {
-      // Standard submit
+    form.addEventListener("submit", async (e) => {
+      // Only intercept if it's the premium signup form (checked via action or hidden input)
+      const isPremium = form.querySelector('input[name="selected_plan"][value="premium"]');
+
+      if (!isPremium) return; // Allow standard submit for others if any
+
+      e.preventDefault();
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Processing...";
+
+      try {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        const response = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.ok) {
+          if (result.skipped_payment) {
+            // Success! Promo redeemed.
+            window.location.href = "/dashboard";
+          } else if (result.redirect_url) {
+            // Stripe redirect
+            window.location.href = result.redirect_url;
+          } else {
+            // Fallback
+            window.location.href = "/dashboard";
+          }
+        } else {
+          // Error
+          alert(result.error || "Signup failed. Please try again.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
+
+      } catch (err) {
+        console.error("Signup error:", err);
+        alert("An unexpected error occurred.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
     });
   }
 });

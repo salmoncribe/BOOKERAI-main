@@ -22,6 +22,7 @@ from availability import AvailabilityService
 # Supabase
 # ----------------------------------------------
 from supabase import create_client, Client
+from supabase_client import supabase_admin
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -252,6 +253,53 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
     return barber
 
 
+def try_redeem_promo(email, promo_code, user_id):
+    """
+    Attempts to redeem a promo code for premium access.
+    Returns True if successful, False otherwise.
+    """
+    if not supabase_admin:
+        print("ERROR: Supabase Admin client not initialized.")
+        return False
+    
+    if not promo_code:
+        return False
+
+    try:
+        # Check for valid, unused promo matching email and code
+        # Note: We need to match case-insensitively. 
+        # Supabase/Postgrest 'ilike' can be used.
+        
+        # We'll fetch potential match first.
+        res = supabase_admin.table("premium_promo_access").select("*")\
+            .ilike("email", email)\
+            .ilike("promo_code", promo_code)\
+            .eq("is_active", True)\
+            .is_("used_at", "null")\
+            .execute()
+            
+        if not res.data:
+            return False
+            
+        promo = res.data[0]
+        
+        # Attempt to mark as used ATOMICALLY (by checking used_at is still null in update)
+        update_res = supabase_admin.table("premium_promo_access").update({
+            "used_at": datetime.utcnow().isoformat(),
+            "used_by_user_id": user_id
+        }).eq("id", promo["id"]).is_("used_at", "null").execute()
+        
+        # Check if any row was actually updated
+        if update_res.data and len(update_res.data) == 1:
+            return True
+            
+        return False
+
+    except Exception as e:
+        print(f"Promo redemption error: {e}")
+        return False
+
+
 # ============================================================
 # AUTH — BARBER (SIGNUP / LOGIN / LOGOUT)
 # ============================================================
@@ -265,58 +313,105 @@ def signup_premium():
     if request.method == "GET":
         return render_template("signup_premium.html")
 
-    # ------------------------------------------------------------
-    # PREMIUM SIGNUP -> 1. Collect Data -> 2. Create Acct (Pending) -> 3. Stripe
-    # ------------------------------------------------------------
-    name = (request.form.get("name") or "").strip()
-    email = (request.form.get("email") or "").lower().strip()
-    password = request.form.get("password")
-    phone = request.form.get("phone")
-    bio = request.form.get("bio", "")
-    address = request.form.get("address", "")
-    profession = request.form.get("profession", "")
+    # Handle JSON or Form Data (preferred JSON for new flow)
+    # But for backward compat/form submission we might get form data?
+    # The new JS will send JSON.
+    data = request.json if request.is_json else request.form
+
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").lower().strip()
+    password = data.get("password")
+    phone = data.get("phone")
+    bio = data.get("bio", "")
+    address = data.get("address", "")
+    profession = data.get("profession", "")
+    promo_code = (data.get("promo_code") or "").strip()
     
+    # Validation
     if not email or not password:
+        if request.is_json:
+             return jsonify({"ok": False, "error": "Email and password are required."}), 400
         flash("Email and password are required.")
         return redirect(url_for("signup_premium"))
 
     # Check existing
     existing = supabase.table("barbers").select("id").eq("email", email).execute().data
     if existing:
+        if request.is_json:
+             return jsonify({"ok": False, "error": "An account with this email already exists."}), 400
         flash("An account with this email already exists.")
         return redirect(url_for("login"))
 
-    # Create Account (Pending Payment)
+    # Create Account (Pending Payment or Premium if promo)
+    # We start with pending_premium
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
-        plan="pending_premium"  # Temporary state until webhook confirms
+        plan="pending_premium" 
     )
     
     if not barber:
-        flash("Signup failed. Please try again.")
+        msg = "Signup failed. Please try again."
+        if request.is_json:
+             return jsonify({"ok": False, "error": msg}), 500
+        flash(msg)
         return redirect(url_for("signup_premium"))
 
-    # Create Stripe Checkout session
+    # ------------------------------------------------------------
+    # PROMO CODE CHECK
+    # ------------------------------------------------------------
+    if promo_code:
+        redeemed = try_redeem_promo(email, promo_code, barber["id"])
+        
+        if redeemed:
+            # Upgrade user immediately
+            # Add timestamp only if used elsewhere (the task said: 
+            # "set premium_expires_at ONLY if your existing code already uses it")
+            # Existing code uses it for month calculation in add_premium_month. 
+            # Let's use add_premium_month to be consistent!
+            add_premium_month(barber["id"])
+            
+            # Also set used_promo_code
+            supabase.table("barbers").update({
+                "used_promo_code": promo_code
+            }).eq("id", barber["id"]).execute()
+            
+            if request.is_json:
+                return jsonify({"ok": True, "skipped_payment": True})
+            
+            # Fallback for non-JS (unlikely given instructions, but good practice)
+            return redirect(url_for("dashboard"))
+
+    # ------------------------------------------------------------
+    # STRIPE CHECKOUT (Default)
+    # ------------------------------------------------------------
     try:
         checkout = stripe.checkout.Session.create(
             mode="subscription",
             customer_email=email,
             line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-            success_url=url_for("login", _external=True), # Will check status on login or webhook updates it
+            success_url=url_for("login", _external=True),
             cancel_url=url_for("signup_premium", _external=True),
             metadata={
                 "source": "signup",
                 "plan": "premium",
-                "barber_id": barber["id"],  # Pass ID to link easily in webhook
+                "barber_id": barber["id"],
                 "email": email 
             }
         )
+        
+        if request.is_json:
+             return jsonify({"ok": True, "redirect_url": checkout.url})
+             
         return redirect(checkout.url, code=303)
         
     except Exception as e:
         print(f"Stripe Checkout Error: {e}")
-        flash("Account created, but payment initialization failed. Please log in and upgrade from dashboard.")
+        msg = "Account created, but payment initialization failed. Please log in and upgrade from dashboard."
+        if request.is_json:
+             return jsonify({"ok": True, "redirect_url": url_for("dashboard"), "message": msg}) # Treat as success-ish (account created)
+        
+        flash(msg)
         return redirect(url_for("dashboard"))
 
 @app.route("/signup/free", methods=["GET", "POST"])
