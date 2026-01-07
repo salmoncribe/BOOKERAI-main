@@ -256,7 +256,7 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
     return barber
 
 
-def try_redeem_promo(email, promo_code, user_id):
+def try_redeem_promo(email, promo_code, barber_id):
     """
     Attempts to redeem a promo code for premium access.
     Returns True if successful, False otherwise.
@@ -265,28 +265,27 @@ def try_redeem_promo(email, promo_code, user_id):
     email = (email or "").strip().lower()
     promo_code = (promo_code or "").strip().lower()
     
-    print(f"DEBUG: Redeeming promo. Email: {email}, PromoLen: {len(promo_code)}")
+    # LOG: Safe inputs
+    print(f"DEBUG: Processing promo redemption for email_len={len(email)}, promo_len={len(promo_code)}")
 
     if not supabase_admin:
         print("CRITICAL ERROR: Supabase Admin client not initialized. Cannot redeem promo.")
         return False
     
-    if not promo_code:
-        print("DEBUG: Promo code empty.")
+    if not promo_code or not email:
+        print("DEBUG: Promo code or email empty.")
         return False
 
     try:
-        # Atomic UPDATE: Set used_at/used_by ONLY IF matching row exists and is unused
-        # Filters:
-        # - email (case-insensitive via ilike or since we lower() in Python, we can use eq but ilike is safer if DB differs)
-        # - promo_code (case-insensitive)
-        # - is_active = true
-        # - used_at is null
+        # Atomic UPDATE: Set used_at ONLY IF matching row exists and is unused
+        # We DO NOT set used_by_user_id because it expects a 'user' ID, but we have a 'barber' ID.
+        # This caused the bug. We will store the barber ID in 'notes' instead.
         
-        # User requested atomic update.
+        # NOTE: used_at IS NULL check is crucial for safety.
+        
         res = supabase_admin.table("premium_promo_access").update({
             "used_at": datetime.utcnow().isoformat(),
-            "used_by_user_id": user_id
+            "notes": f"used_by_barber:{barber_id}"  # Store ID in notes to avoid FK issues
         })\
         .ilike("email", email)\
         .ilike("promo_code", promo_code)\
@@ -295,13 +294,13 @@ def try_redeem_promo(email, promo_code, user_id):
         .execute()
         
         count = len(res.data) if res.data else 0
-        print(f"DEBUG: Promo redemption result count: {count}")
+        print(f"DEBUG: Promo redemption update count: {count}")
         
         if count == 1:
             print("DEBUG: Promo redemption SUCCESS.")
             return True
             
-        print("DEBUG: Promo redemption FAILED (No matching inactive/unused row found).")
+        print("DEBUG: Promo redemption FAILED (No matching inactive/unused row found, or already used).")
         return False
 
     except Exception as e:
@@ -336,6 +335,8 @@ def signup_premium():
     address = data.get("address", "")
     profession = data.get("profession", "")
     promo_code = (data.get("promo_code") or "").strip()
+    
+    print(f"DEBUG: /signup/premium hit. Email len={len(email)}, Promo len={len(promo_code)}")
     
     # Validation
     if not email or not password:
@@ -376,20 +377,22 @@ def signup_premium():
     if promo_code:
         redeemed = try_redeem_promo(email, promo_code, user_id)
         
+        print(f"DEBUG: Promo attempt result: {redeemed}")
+
         if redeemed:
             # Success! Force Final Premium State
             # 1. Update Plan to 'premium' (NOT pending)
             # 2. Set used_promo_code
             
-            # Note: add_premium_month also extends time and sets plan='premium'
-            add_premium_month(user_id)
-            
+            now_plus_30 = (datetime.utcnow() + timedelta(days=30)).isoformat()
+
             supabase.table("barbers").update({
-                "plan": "premium", # redundancy for safety
-                "used_promo_code": promo_code
+                "plan": "premium", 
+                "used_promo_code": promo_code,
+                "premium_expires_at": now_plus_30
             }).eq("id", user_id).execute()
             
-            print(f"DEBUG: Promo redeemed for {email}. Skipping Stripe.")
+            print(f"DEBUG: Promo redeemed successfully for {email}. Skipping Stripe.")
             
             # RETURN EARLY - DO NOT RUN STRIPE LOGIC
             if request.is_json:
