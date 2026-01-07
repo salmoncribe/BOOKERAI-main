@@ -381,20 +381,30 @@ def signup_premium():
 
         if redeemed:
             # Success! Force Final Premium State
-            # 1. Update Plan to 'premium' (NOT pending)
-            # 2. Set used_promo_code
-            
+            barber_id = user_id
             now_plus_30 = (datetime.utcnow() + timedelta(days=30)).isoformat()
 
+            # 1. Explicit Update
             supabase.table("barbers").update({
                 "plan": "premium", 
                 "used_promo_code": promo_code,
                 "premium_expires_at": now_plus_30
-            }).eq("id", user_id).execute()
+            }).eq("id", barber_id).execute()
             
+            # 2. VERIFY UPDATE (Requested by User)
+            try:
+                check = supabase.table("barbers").select("plan, used_promo_code, premium_expires_at").eq("id", barber_id).execute().data
+                if check:
+                    row = check[0]
+                    print(f"[PROMO-UPGRADE] barber_id={barber_id} plan={row.get('plan')} expires={row.get('premium_expires_at')}")
+                else:
+                    print(f"[PROMO-UPGRADE] CRITICAL: Could not fetch barber {barber_id} after update!")
+            except Exception as e:
+                print(f"[PROMO-UPGRADE] Error verifying update: {e}")
+
             print(f"DEBUG: Promo redeemed successfully for {email}. Skipping Stripe.")
             
-            # RETURN EARLY - DO NOT RUN STRIPE LOGIC
+            # 3. RETURN EARLY
             if request.is_json:
                 return jsonify({"ok": True, "skipped_payment": True})
             
