@@ -407,7 +407,7 @@ def signup_premium():
                 },
                 "quantity": 1
             }],
-            success_url=url_for("login", _external=True),
+            success_url=url_for("premium_success", _external=True),
             cancel_url=url_for("signup_premium", _external=True),
             metadata={
                 "source": "signup",
@@ -425,7 +425,8 @@ def signup_premium():
         
     except Exception as e:
         print(f"Stripe Checkout Error: {e}")
-        msg = "Account created, but payment initialization failed. Please log in and upgrade from dashboard."
+        # Expose error to user clearly
+        msg = f"Payment initialization failed: {str(e)}"
         if request.is_json:
              return jsonify({"ok": True, "redirect_url": url_for("dashboard"), "message": msg}) 
         
@@ -759,7 +760,7 @@ def create_premium_checkout():
                 },
                 "quantity": 1
             }],
-            success_url=url_for("login", _external=True),
+            success_url=url_for("premium_success", _external=True),
             cancel_url=url_for("signup_premium", _external=True), # Cancel goes back to premium input
             metadata={
                 "source": "signup",
@@ -1287,11 +1288,19 @@ def subscribe():
 @app.get("/subscribe/success")
 @login_required
 def premium_success():
-    # ⚠️ IMPORTANT:
-    # Do NOT update plan or promo rewards here.
-    # Stripe webhook handles everything.
-    
-    # Render the success page instead of redirecting
+    # Optimistic Upgrade (User Requested "Default to Premium")
+    barber_id = session.get("barberId")
+    if barber_id:
+        now_plus_30 = (datetime.utcnow() + timedelta(days=30)).isoformat()
+        
+        supabase.table("barbers").update({
+            "plan": "premium",
+            "premium_expires_at": now_plus_30
+        }).eq("id", barber_id).execute()
+        
+        # Also ensure session state is updated if we cache it (we don't seems to)
+        
+    # Render the success page
     return render_template("premium_success.html")
 
 # ============================================================
