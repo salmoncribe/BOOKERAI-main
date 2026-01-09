@@ -47,6 +47,42 @@ header.site-header {
     min-height: 44px;
     /* Touch target fix */
     min-width: 44px;
+    /* Touch target fix */
+}
+
+.nav-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--white);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 10px;
+    margin-right: 5px;
+    transition: transform 0.2s;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.nav-back-btn:active {
+    transform: scale(0.9);
+}
+
+/* Hide back button on desktop if preferred, or keep it. 
+   User focused on mobile. Let's keep it visible but maybe smaller on desktop? 
+   Actually, usually hidden on desktop web apps unless it's a specific "Back to X" link.
+   I'll hide it on desktop by default and show on mobile.
+*/
+.nav-back-btn {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .nav-back-btn {
+        display: flex;
+    }
 }
 
 .nav-links {
@@ -94,6 +130,13 @@ header.site-header {
 .nav-link:hover {
     opacity: 0.85;
     transform: translateY(-1px);
+}
+
+.nav-link.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* 🍔 Hamburger Button */
@@ -437,6 +480,13 @@ footer.site-footer {
     /* Tappable Feedback */
     .nav-link:active {
         transform: scale(0.97);
+    }
+
+    .nav-link.active {
+        background: linear-gradient(90deg, rgba(14, 165, 233, 0.15), transparent);
+        border-right: 4px solid var(--sky-blue);
+        border-radius: 0;
+        color: var(--sky-blue);
     }
 
     /* Primary Links */

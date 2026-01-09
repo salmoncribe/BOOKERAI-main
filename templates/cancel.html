@@ -1,0 +1,204 @@
+{% extends "layout.html" %}
+{% block title %}Cancel Subscription — BookerAI{% endblock %}
+
+{% block head %}
+<style>
+    /* Page Container */
+    .cancel-page-wrapper {
+        min-height: 80vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+    }
+
+    /* Main Card */
+    .cancel-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        padding: 3rem;
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cancel-card h2 {
+        font-size: 1.8rem;
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+    }
+
+    .cancel-card p {
+        color: var(--muted);
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    /* Icons */
+    .status-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+    }
+
+    /* Premium State */
+    .premium-active {
+        background: linear-gradient(135deg, #f0faff, #e0f2fe);
+        border: 1px solid #bae6fd;
+    }
+
+    /* Free State & Shaking */
+    .free-state-container {
+        /* Base state */
+    }
+
+    /* Shake Animation */
+    .shake-anim {
+        animation: shake 0.6s cubic-bezier(.36, .07, .19, .97) both;
+        transform: translate3d(0, 0, 0);
+    }
+
+    @keyframes shake {
+
+        10%,
+        90% {
+            transform: translate3d(-1px, 0, 0);
+        }
+
+        20%,
+        80% {
+            transform: translate3d(2px, 0, 0);
+        }
+
+        30%,
+        50%,
+        70% {
+            transform: translate3d(-3px, 0, 0);
+        }
+
+        40%,
+        60% {
+            transform: translate3d(3px, 0, 0);
+        }
+    }
+
+    /* Upgrade Button Drop Animation */
+    .drop-btn-container {
+        opacity: 0;
+        transform: translateY(-20px);
+        animation: dropIn 0.6s ease-out 0.8s forwards;
+        /* Delay start until shake ends-ish */
+    }
+
+    @keyframes dropIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Buttons */
+    .btn-stripe {
+        background: #635bff;
+        color: white;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    .btn-stripe:hover {
+        background: #5449e6;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 91, 255, 0.3);
+    }
+
+    .btn-upgrade-pop {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        border: 2px solid #fff;
+        display: inline-block;
+        transition: transform 0.2s;
+    }
+
+    .btn-upgrade-pop:hover {
+        transform: scale(1.05);
+    }
+
+    .back-link {
+        display: block;
+        margin-top: 1.5rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cancel-page-wrapper">
+
+    <!-- Logic Branch -->
+    {% if plan == 'premium' %}
+    <!-- PREMIUM USER -->
+    <div class="cancel-card premium-active">
+        <div class="status-icon">💎</div>
+        <h2>Manage Subscription</h2>
+        <p>
+            You are currently subscribed to the <strong>Premium Plan</strong>.<br>
+            To cancel or update your payment method, please visit the secure billing portal.
+        </p>
+
+        <form action="{{ url_for('create_portal_session') }}" method="POST">
+            <button type="submit" class="btn-stripe">
+                <span>Manage Billing on Stripe</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+            </button>
+        </form>
+
+        <a href="{{ url_for('dashboard') }}" class="back-link">Return to Dashboard</a>
+    </div>
+
+    {% else %}
+    <!-- FREE USER (Shake + Upgrade) -->
+    <div class="cancel-card shake-anim">
+        <div class="status-icon">😕</div>
+        <h2>No Active Subscription</h2>
+        <p>
+            You do not have a subscription yet.<br>
+            Would you like to create one to unlock premium features?
+        </p>
+
+        <div class="drop-btn-container">
+            <a href="{{ url_for('subscribe') }}" class="btn-upgrade-pop">
+                Upgrade to Premium ✨
+            </a>
+        </div>
+
+        <a href="{{ url_for('dashboard') }}" class="back-link">Return to Dashboard</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

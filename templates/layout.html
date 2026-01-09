@@ -70,6 +70,28 @@
     ======================== -->
   <header class="site-header" role="banner">
     <div class="nav-wrap">
+      <!-- Back Button: HIDDEN on Dashboard/Home; AUTH PAGES force Home; OTHERS use Smart History -->
+      {% if request.endpoint not in ['dashboard', 'home', 'index'] %}
+      {% if request.endpoint in ['login', 'signup', 'signup_free', 'signup_premium', 'forgot_password'] %}
+      <button class="nav-back-btn" onclick="window.location.href='{{ url_for('home') }}'" aria-label="Go Home">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      {% else %}
+      <button class="nav-back-btn"
+        data-home="{{ url_for('dashboard') if session.get('barberId') else url_for('home') }}"
+        onclick="if(document.referrer && document.referrer.indexOf(location.host) !== -1) { history.back(); } else { window.location.href = this.dataset.home; }"
+        aria-label="Go Back">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      {% endif %}
+      {% endif %}
+
       <!-- Logo -->
       <a class="logo" href="javascript:void(0)" onclick="window.location.reload()" aria-label="BookerAI Home">
         <span class="logo-dot"></span>
@@ -106,23 +128,32 @@
 
           {% if session.get('barberId') %}
           <div class="nav-primary">
-            <a href="{{ url_for('dashboard') }}" class="nav-link primary-link">
+            <a href="{{ url_for('dashboard') }}"
+              class="nav-link primary-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
               <span class="icon">📊</span> Dashboard
             </a>
-            <a href="#" class="nav-link primary-link">
+            <a href="{{ url_for('profile', barber_id=session.get('barberId')) }}"
+              class="nav-link primary-link {% if request.endpoint == 'profile' %}active{% endif %}">
               <span class="icon">🌎</span> Public Profile
             </a>
-            <a href="{{ url_for('results', service='Barber') }}" class="nav-link primary-link">
+            <a href="{{ url_for('results', service='Barber') }}"
+              class="nav-link primary-link {% if request.endpoint in ['results', 'find_pro_route'] %}active{% endif %}">
               <span class="icon">🔍</span> Find a Pro
             </a>
           </div>
 
           <div class="nav-secondary">
-            <a href="{{ url_for('help_center') }}" class="nav-link secondary-link">Help</a>
+            <a href="{{ url_for('help_center') }}"
+              class="nav-link secondary-link {% if request.endpoint == 'help_center' %}active{% endif %}">Help</a>
+            <a href="{{ url_for('cancel_page') }}"
+              class="nav-link secondary-link {% if request.endpoint == 'cancel_page' %}active{% endif %}"
+              style="color: #ef4444; opacity: 0.8; font-size: 0.95rem; margin-top: 5px;">
+              Cancel Subscription
+            </a>
           </div>
 
           <div class="nav-special">
-            <a href="#" class="nav-link pulse-gold premium-btn">
+            <a href="{{ url_for('subscribe') }}" class="nav-link pulse-gold premium-btn">
               Upgrade to Premium <span class="gem">💎</span>
             </a>
           </div>
@@ -134,10 +165,37 @@
           {% else %}
           <!-- Guest Nav -->
           <div class="nav-guest">
-            <a href="{{ url_for('login') }}" class="nav-link">Login</a>
-            <a href="{{ url_for('signup') }}"
-              class="btn-primary gradient-btn text-white text-sm py-2 px-4 rounded-lg hover:shadow-lg transition-all"
-              style="margin-top: 1rem; display: inline-block;">Sign Up</a>
+            <div class="nav-primary">
+              <a href="{{ url_for('home') }}"
+                class="nav-link primary-link {% if request.endpoint in ['home', 'index'] %}active{% endif %}">
+                <span class="icon">🏠</span> Home
+              </a>
+              <a href="{{ url_for('results', service='Barber') }}"
+                class="nav-link primary-link {% if request.endpoint in ['results', 'find_pro_route'] %}active{% endif %}">
+                <span class="icon">🔍</span> Find a Pro
+              </a>
+              <a href="{{ url_for('demo') }}"
+                class="nav-link primary-link {% if request.endpoint == 'demo' %}active{% endif %}">
+                <span class="icon">🚀</span> Live Demo
+              </a>
+            </div>
+
+            <div class="nav-divider"></div>
+
+            <div class="nav-secondary">
+              <a href="{{ url_for('login') }}"
+                class="nav-link secondary-link {% if request.endpoint == 'login' %}active{% endif %}"
+                style="justify-content: flex-start; gap: 1rem;">
+                <span class="icon" style="display:inline-block; width:24px; text-align:center;">🔐</span> Log In
+              </a>
+            </div>
+
+            <div class="nav-special" style="margin-top: 1.5rem;">
+              <a href="{{ url_for('signup') }}" class="nav-link btn-primary gradient-btn text-white shadow-lg"
+                style="justify-content: center; border-radius: 12px; font-weight: 700; padding: 1rem; text-align: center;">
+                Get Started Free <span style="margin-left:8px">→</span>
+              </a>
+            </div>
           </div>
           {% endif %}
         </div>

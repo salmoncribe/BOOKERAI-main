@@ -12,7 +12,7 @@ load_dotenv()
 
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, session, jsonify, flash
+    url_for, session, jsonify, flash, make_response
 )
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -94,7 +94,11 @@ def login_required(fn):
     def w(*a, **kw):
         if "barberId" not in session:
             return redirect(url_for("login"))
-        return fn(*a, **kw)
+        resp = make_response(fn(*a, **kw))
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     return w
 def premium_required(fn):
     @wraps(fn)
@@ -109,7 +113,11 @@ def premium_required(fn):
         if plan != "premium":
             flash("That feature is Premium. Upgrade to unlock it.", "error")
             return redirect(url_for("dashboard"))
-        return fn(*a, **kw)
+        resp = make_response(fn(*a, **kw))
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     return w
 
 def generate_slots(start, end, step):
@@ -346,7 +354,6 @@ def signup_premium():
         return redirect(url_for("signup_premium"))
 
     # Check existing user
-    # Note: If user exists, we should probably redirect to login or handle it. Current logic redirects to login.
     existing = supabase.table("barbers").select("id").eq("email", email).execute().data
     if existing:
         if request.is_json:
@@ -378,11 +385,24 @@ def signup_premium():
     # Base Price: $20.00 (2000 cents)
     base_price = 2000
     final_price = base_price
+    discounts = []
     
     code_norm = promo_code.upper().strip()
     
     if code_norm == "TEST":
-        final_price = 0
+        # Create a 100% off coupon on the fly for TEST code
+        # This allows a $0 subscription checkout
+        try:
+            coupon = stripe.Coupon.create(
+                percent_off=100,
+                duration="once",
+                name="TEST-100-OFF"
+            )
+            discounts = [{"coupon": coupon.id}]
+        except Exception as e:
+            print(f"Error creating TEST coupon: {e}")
+            # Fallback (risky, might fail if Stripe strictness changes)
+            final_price = 0 
     elif code_norm == "LIVE25":
         final_price = 1500 # $15.00
         
@@ -390,10 +410,10 @@ def signup_premium():
         # Create Checkout Session with dynamic price
         # Note: 'price' arg is mutually exclusive with 'price_data'
         
-        checkout = stripe.checkout.Session.create(
-            mode="subscription",
-            customer_email=email,
-            line_items=[{
+        session_params = {
+            "mode": "subscription",
+            "customer_email": email,
+            "line_items": [{
                 "price_data": {
                     "currency": "usd",
                     "product_data": {
@@ -407,16 +427,21 @@ def signup_premium():
                 },
                 "quantity": 1
             }],
-            success_url=url_for("premium_success", _external=True),
-            cancel_url=url_for("signup_premium", _external=True),
-            metadata={
+            "success_url": url_for("premium_success", _external=True),
+            "cancel_url": url_for("dashboard", _external=True),  # If they cancel, go to dashboard (Free)
+            "metadata": {
                 "source": "signup",
                 "plan": "premium",
-                "barber_id": user_id,
+                "barber_id": barber["id"],
                 "email": email,
                 "promo_code": code_norm
             }
-        )
+        }
+        
+        if discounts:
+            session_params["discounts"] = discounts
+
+        checkout = stripe.checkout.Session.create(**session_params)
         
         if request.is_json:
              return jsonify({"ok": True, "redirect_url": checkout.url})
@@ -428,9 +453,15 @@ def signup_premium():
         # Expose error to user clearly
         msg = f"Payment initialization failed: {str(e)}"
         if request.is_json:
-             return jsonify({"ok": True, "redirect_url": url_for("dashboard"), "message": msg}) 
+             return jsonify({"ok": False, "error": msg}), 500
         
         flash(msg)
+        # Stay on signup page so they can try again or see error, 
+        # but account IS created. Redirecting to settings or billing might be better, 
+        # but user asked to push to free dash if unsuccessful. 
+        # Actually user said "push them to the free dash bouard" if unsuccessful.
+        # But if we push to free dash, they don't see the error easily.
+        # I will redirect to dashboard with the flash message.
         return redirect(url_for("dashboard"))
 
 @app.route("/signup/free", methods=["GET", "POST"])
@@ -1302,6 +1333,59 @@ def premium_success():
         
     # Render the success page
     return render_template("premium_success.html")
+
+# ============================================================
+# SUBSCRIPTION MANAGEMENT (CANCEL / PORTAL)
+# ============================================================
+@app.route("/cancel")
+@login_required
+def cancel_page():
+    barber_id = session["barberId"]
+    barber = supabase.table("barbers").select("plan").eq("id", barber_id).execute().data[0]
+    
+    # Normalize plan
+    plan = (barber.get("plan") or "free").lower()
+    
+    return render_template("cancel.html", plan=plan)
+
+@app.route("/api/create-portal-session", methods=["POST"])
+@login_required
+def create_portal_session():
+    # 1. Get User Email (Assuming we don't have cust_id logic perfect yet, try email lookup first?)
+    # Ideally we need the Customer ID. 
+    # Let's try to find a customer by email if we didn't store the ID.
+    # Note: This is "best effort" if ID is missing.
+    
+    email = session["user_email"]
+    
+    try:
+        # Search for customer by email
+        customers = stripe.Customer.list(email=email, limit=1)
+        customer_id = None
+        
+        if customers and customers.data:
+            customer_id = customers.data[0].id
+        
+        if not customer_id:
+             # Fallback: Redirect to generic Stripe Login if customer not found
+             # Or show flash error
+             flash("Could not locate your subscription record. Please contact support.", "error")
+             return redirect(url_for("cancel_page"))
+             
+        # Create Portal Session
+        # Return URL: Back to Cancel Page (or Dashboard)
+        return_url = url_for("cancel_page", _external=True)
+        
+        portal_session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+        return redirect(portal_session.url, code=303)
+        
+    except Exception as e:
+        print(f"Portal Error: {e}")
+        flash("Unable to open billing portal.", "error")
+        return redirect(url_for("cancel_page"))
 
 # ============================================================
 # BASIC PAGES / MARKETING
