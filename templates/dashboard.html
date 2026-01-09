@@ -4,58 +4,84 @@
 {% block content %}
 {% set public_link = url_for('book_view', barber_id=barber.id, _external=True) %}
 
-<section class="dashboard vibrant-auth {% if barber.plan == 'premium' %}premium-theme{% endif %}" id="dashboardRoot"
-  data-barber-id="{{ barber.id }}">
+<section class="dashboard vibrant-auth premium-theme" id="dashboardRoot" data-barber-id="{{ barber.id }}">
+
+  <!-- Premium Status Banner -->
+  <div class="upgrade-banner premium-status-banner"
+    style="background: linear-gradient(135deg, #f0faff, #e0f7ff); border-bottom: 1px solid #bae6fd; color: #0369a1;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+      <span class="pulsing-dot"
+        style="width:8px; height:8px; background:#0ea5e9; border-radius:50%; box-shadow: 0 0 0 2px rgba(14,165,233,0.3);"></span>
+      <strong>Premium Active</strong>
+      <span style="opacity:0.75;">— You are maximizing your potential.</span>
+    </div>
+  </div>
 
   <div class="animated-bg"></div>
 
-  <!-- Header Section -->
+  <!-- Header Section (Matched to Free Style) -->
   <div class="dash-head">
-    {% if barber.plan == 'premium' %}
-    <div class="premium-bubble" title="Premium Active"></div>
-    {% endif %}
-
-    <div style="display:flex;align-items:center;gap:1rem;">
-      <!-- Avatar Upload -->
+    <div style="display:flex; align-items:center; gap:1.5rem;">
+      <!-- Avatar Upload (Premium Feature) -->
       <form id="photoForm" action="{{ url_for('upload_photo') }}" method="POST" enctype="multipart/form-data"
-        style="display:inline-block;">
-        <label for="photoInput" style="cursor:pointer;display:inline-block;">
+        style="position:relative;">
+        <label for="photoInput" style="cursor:pointer; display:block; position:relative; transition:transform 0.2s;"
+          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           {% if barber.photo_url %}
-          <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;">
+          <div class="dash-avatar"
+            style="width:70px; height:70px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
             <img src="{{ barber.photo_url }}" alt="{{ barber.name }}"
-              style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-            <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;
-                          background:linear-gradient(135deg,var(--sky-blue),var(--teal));
-                          border-radius:50%;display:flex;align-items:center;justify-content:center;
-                          color:#fff;font-size:0.75rem;">
-              📷
-            </div>
+              style="width:100%; height:100%; object-fit:cover;">
           </div>
           {% else %}
-          <div style="width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-                        background:linear-gradient(135deg,var(--sky-blue),var(--teal));color:#fff;font-weight:600;
-                        font-size:1.25rem;flex-shrink:0;">
+          <div class="dash-avatar"
+            style="width:70px; height:70px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--sky-blue),var(--teal)); color:#fff; font-weight:700; font-size:1.5rem; border:3px solid #fff; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
             {{ (barber.name or 'B')[:1] | upper }}
           </div>
           {% endif %}
+
+          <!-- Camera Overlay Icon -->
+          <div
+            style="position:absolute; bottom:0; right:0; background:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border:1px solid #e0f2fe;">
+            <i data-lucide="camera" style="width:14px; height:14px; color:var(--sky-blue);"></i>
+          </div>
         </label>
-        <input id="photoInput" name="photo" type="file" accept="image/*" style="display:none;"
-          onchange="document.getElementById('photoForm').submit();">
+        <input id="photoInput" name="photo" type="file" accept="image/*" style="display:none;">
       </form>
 
-      <!-- Text -->
+      <!-- Welcome Text -->
       <div>
-        <h1 class="dash-title">
+        <h1 class="dash-title" style="margin-bottom:0.25rem;">
           Welcome, {{ barber.name|default('Barber') }}
         </h1>
-        <p class="muted small">Manage your hours and appointments below.</p>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="status-badge status-booked" style="font-size:0.75rem;">Premium Member</span>
+          <p class="muted small" style="margin:0;">Manage your empire.</p>
+        </div>
       </div>
+    </div>
+
+    <!-- Header Actions (Sync with Free) -->
+    <div class="dash-head-actions" style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+      <button class="nav-action-btn desktop-dash-btn copy-global-btn" data-copy-url="{{ public_link }}"
+        style="color:var(--text-dark); background:rgba(255,255,255,0.6); border:1px solid rgba(14,165,233,0.15);">
+        <i data-lucide="copy" style="width:16px; height:16px;"></i> Copy Link
+      </button>
+      <a href="{{ public_link }}" target="_blank" class="nav-action-btn desktop-dash-btn"
+        style="color:var(--text-dark); background:rgba(255,255,255,0.6); border:1px solid rgba(14,165,233,0.15); text-decoration:none;">
+        <i data-lucide="external-link" style="width:16px; height:16px;"></i> Public Page
+      </a>
+      <a href="{{ url_for('results', service='Barber') }}" class="nav-action-btn desktop-dash-btn"
+        style="color:var(--text-dark); background:rgba(255,255,255,0.6); border:1px solid rgba(14,165,233,0.15); text-decoration:none;">
+        Find a Pro
+      </a>
     </div>
   </div>
 
   <div class="dashboard-grid">
     <!-- Main Content -->
     <div class="main-content">
+
       <!-- Upcoming Appointments -->
       <div class="card appointments-card">
         <div class="appt-header"
@@ -63,6 +89,7 @@
           <h3>Upcoming Appointments</h3>
           <button class="btn btn-secondary small" onclick="openCalendar()">View Calendar</button>
         </div>
+
         {% if appointments %}
         <div class="table-scroll">
           <table class="table">
@@ -71,24 +98,36 @@
                 <th>Client</th>
                 <th>Phone</th>
                 <th>When</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {% for a in appointments %}
               <tr>
-                <td data-label="Client">{{ a.client_name or "Unknown" }}</td>
+                <td data-label="Client">
+                  <div style="font-weight:500;">{{ a.client_name or "Unknown" }}</div>
+                </td>
                 <td data-label="Phone">
                   <a href="tel:{{ a.client_phone }}">{{ a.client_phone }}</a>
                 </td>
-                <td data-label="When">{{ a.date }} {{ a.start_time }}</td>
+                <td data-label="When">
+                  <div style="font-weight:600;">{{ a.date }}</div>
+                  <div class="muted small">{{ a.start_time }}</div>
+                </td>
+                <td data-label="Status">
+                  <span class="status-badge status-{{ a.status }}">{{ a.status }}</span>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
         {% else %}
-        <p class="muted small">No upcoming appointments yet.</p>
+        <div style="text-align:center; padding: 2rem 1rem;">
+          <div style="font-size:2rem; margin-bottom:0.5rem;">📅</div>
+          <p class="muted">No upcoming appointments.</p>
+          <p class="small text-muted">Share your link to get booked!</p>
+        </div>
         {% endif %}
       </div>
 
@@ -102,7 +141,7 @@
         </div>
 
         <div style="text-align:center; margin-bottom:1rem;">
-          <button id="toggleHoursBtn" class="btn btn-secondary small">
+          <button id="toggleHoursBtn" class="edit-hours-btn">
             Edit Hours
           </button>
         </div>
@@ -127,7 +166,8 @@
                   <span>to</span>
                   <input type="time" class="close-time" value="17:00">
                 </div>
-                <div class="save-check">✅</div>
+                <!-- <div class="save-check">✅</div> -->
+                <div class="save-check"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
               </div>
             </div>
             {% endfor %}
@@ -138,42 +178,76 @@
 
     <!-- Sidebar -->
     <aside class="sidebar-sticky">
-      <!-- (Quick Actions moved to Nav) -->
-
 
       <!-- 🖼️ Media Upload Section -->
       <div class="card media-card">
-        <h3>Upload Media</h3>
-        <p class="muted small">Show off your work — upload photos or videos directly to your profile gallery.</p>
+        <h3>Profile Gallery</h3>
+        <p class="muted small">Upload photos or videos to showcase your skills.</p>
         <form id="mediaForm" action="{{ url_for('upload_media') }}" method="POST" enctype="multipart/form-data"
           style="margin-top:1rem;">
-          <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;"
-            onchange="document.getElementById('mediaForm').submit();">
-          <button type="button" class="gradient-btn small" style="width:100%;"
+          <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;">
+          <button type="button" class="gradient-btn small" style="width:100%; border-radius:12px;"
             onclick="document.getElementById('mediaInput').click();">
-            📤 Upload File
+            <i data-lucide="upload-cloud" style="width:16px; height:16px; margin-right:6px; vertical-align:middle;"></i>
+            Upload Media
           </button>
         </form>
         <div id="mediaStatus" class="muted small" style="margin-top:0.5rem;"></div>
-        <div id="mediaGallery" class="media-gallery" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;">
+
+        <!-- Placeholder Gallery Grid (if empty) -->
+        {% if not barber.media_urls %}
+        <div
+          style="margin-top:1rem; padding:1.5rem; background:#f8fafc; border-radius:12px; border:2px dashed #e2e8f0; text-align:center;">
+          <p class="muted small">No media yet. Upload your first cut!</p>
+        </div>
+        {% else %}
+        <div id="mediaGallery" class="media-gallery"
+          style="margin-top:1rem; display:grid; grid-template-columns:repeat(2, 1fr); gap:0.5rem;">
+          {% for med in barber.media_urls.split(',') %}
+          {% if med %}
+          <div style="aspect-ratio:1; overflow:hidden; border-radius:8px; border:1px solid #e2e8f0; position:relative;">
+            {% if '.mp4' in med or '.mov' in med or '.webm' in med %}
+            <video src="{{ med }}" style="width:100%; height:100%; object-fit:cover;" muted hover-play></video>
+            {% else %}
+            <a href="{{ med }}" target="_blank">
+              <img src="{{ med }}" style="width:100%; height:100%; object-fit:cover; transition:transform 0.3s;"
+                onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Promo Code Card (Added to Premium too) -->
+      <div class="card promo-card">
+        <h3>Your Promo Code</h3>
+        <p class="muted small">
+          Share your code to earn rewards.
+        </p>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem;">
+          <input type="text" value="{{ barber.promo_code }}" readonly onclick="this.select()"
+            style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc; background:#f1f5f9;">
+          <button type="button" class="copy-btn-modern" data-code="{{ barber.promo_code }}" onclick="copyPromo(this)"
+            style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.5rem; cursor:pointer;">
+            <i data-lucide="copy" style="width:16px;height:16px;"></i>
+          </button>
         </div>
       </div>
-  </div>
+
+    </aside>
   </div>
 
-  </div>
-
-  <!-- Calendar Modal -->
+  <!-- Calendar Modal (Same) -->
   <div id="calendarModal" class="calendar-modal">
     <div class="calendar-content">
       <div class="calendar-header">
         <h2>Schedule</h2>
         <button class="close-modal-btn" onclick="closeCalendar()">×</button>
       </div>
-      <div id="calendarGrid" class="cal-grid">
-        <!-- JS will populate -->
-      </div>
-      <!-- Detail Panel -->
+      <div id="calendarGrid" class="cal-grid"></div>
       <div id="calendarDetails" class="cal-details-panel">
         <p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>
       </div>
@@ -184,5 +258,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/lucide@latest"></script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

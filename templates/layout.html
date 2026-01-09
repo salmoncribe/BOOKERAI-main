@@ -60,6 +60,52 @@
       pointer-events: none !important;
     }
   </style>
+  <style>
+    /* Prevent FOUC if possible */
+    html {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+  <script>
+    // Theme Init (Immediate)
+    (function () {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute("data-theme");
+      const sun = document.querySelector(".sun-icon");
+      const moon = document.querySelector(".moon-icon");
+
+      if (current === "dark") {
+        html.removeAttribute("data-theme");
+        localStorage.setItem("theme", "light");
+        if (sun) sun.style.display = "none";
+        if (moon) moon.style.display = "block";
+      } else {
+        html.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+        if (sun) sun.style.display = "block";
+        if (moon) moon.style.display = "none";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Sync Icon State
+      const html = document.documentElement;
+      const sun = document.querySelector(".sun-icon");
+      const moon = document.querySelector(".moon-icon");
+      if (html.getAttribute("data-theme") === "dark") {
+        if (sun) sun.style.display = "block";
+        if (moon) moon.style.display = "none";
+      }
+    });
+  </script>
 
   {% block head %}{% endblock %}
 </head>
@@ -98,8 +144,30 @@
         <span>BookerAI</span>
       </a>
 
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" aria-label="Toggle Theme" onclick="toggleTheme()"
+        style="margin-left: auto; margin-right: 1rem; background:none; border:none; cursor:pointer; color: var(--white); display:flex; align-items:center;">
+        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+          <circle cx="12" cy="12" r="5" />
+          <path d="M12 1v2" />
+          <path d="M12 21v2" />
+          <path d="M4.22 4.22l1.42 1.42" />
+          <path d="M18.36 18.36l1.42 1.42" />
+          <path d="M1 12h2" />
+          <path d="M21 12h2" />
+          <path d="M4.22 19.78l1.42-1.42" />
+          <path d="M18.36 5.64l1.42-1.42" />
+        </svg>
+        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </button>
+
       <!-- Hamburger Button -->
-      <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <!-- Remove margin-left auto if it exists on hamburger since theme toggle took it, or keep layout flex -->
+      <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false" style="margin-left:0;">
         <span></span>
         <span></span>
         <span></span>

@@ -3,27 +3,72 @@
    ========================================================== */
 
 :root {
-    --sky-blue: #0ea5e9;
-    --teal: #14b8a6;
-    --bg-light: #f0faff;
-    --text-dark: #0f172a;
-    --muted: #64748b;
-    --text-light-muted: #94a3b8;
-    /* New lighter muted color */
-    --white: #ffffff;
+    /* =========================================
+       CORE PALETTE (Immutable)
+       ========================================= */
+    --p-sky-blue: #0ea5e9;
+    --p-teal: #14b8a6;
+    --p-white: #ffffff;
+
+    /* Layout */
     --header-height: 80px;
     --container-padding: clamp(1rem, 5vw, 2rem);
     --border-radius-btn: 12px;
+    --glass-blur: blur(12px);
 
-    /* Elite/Premium Theme Variables */
-    --bg-premium: #0f172a;
-    /* Deep Slate */
-    --text-premium: #f8fafc;
-    /* Off-white */
-    --card-premium: #1e293b;
-    /* Lighter Slate */
-    --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-    --glass-premium: rgba(30, 41, 59, 0.7);
+    /* =========================================
+       LIGHT THEME (Default)
+       ========================================= */
+
+    /* Backgrounds */
+    --bg-main: linear-gradient(145deg, #f8fcff 0%, #f1fbff 100%);
+    --bg-surface: rgba(255, 255, 255, 0.85);
+    --bg-header: linear-gradient(135deg, var(--p-sky-blue), var(--p-teal));
+    --bg-input: #ffffff;
+
+    /* Text */
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --text-header: #ffffff;
+
+    /* Borders */
+    --border-subtle: rgba(14, 165, 233, 0.15);
+
+    /* Accents */
+    --sky-blue: var(--p-sky-blue);
+    --teal: var(--p-teal);
+    --white: var(--p-white);
+
+    /* Shadows */
+    --shadow-card: 0 10px 25px -5px rgba(14, 165, 233, 0.1), 0 8px 10px -6px rgba(14, 165, 233, 0.05);
+}
+
+/* =========================================
+   DARK THEME (Midnight)
+   ========================================= */
+[data-theme="dark"] {
+    /* Backgrounds */
+    --bg-main: #0b1121;
+    /* Solid deep midnight */
+    --bg-surface: #1e293b;
+    /* Solid slate, no opacity */
+    --bg-header: #1e293b;
+    --bg-input: #0f172a;
+
+    /* Text */
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-header: #f1f5f9;
+
+    /* Borders */
+    --border-subtle: rgba(255, 255, 255, 0.12);
+
+    /* Accents */
+    --sky-blue: #38bdf8;
+    --teal: #2dd4bf;
+
+    /* Shadows */
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -50,7 +95,7 @@ body {
     overflow-x: hidden;
     position: relative;
     font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-    color: var(--text-dark);
+    color: var(--text-main);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;

@@ -9,8 +9,8 @@
     padding: 1.5rem 12px;
     /* Mobile safe padding */
     position: relative;
-    color: var(--text-dark);
-    background: linear-gradient(145deg, #f9feff 0%, #f1fbff 100%);
+    color: var(--text-main);
+    background: var(--bg-main);
     width: 100%;
     max-width: 100%;
     /* Prevent bleed */
@@ -66,7 +66,7 @@
     /* Bento Glassmorphism */
     border-radius: 24px;
     /* Updated radius */
-    background: rgba(255, 255, 255, 0.75);
+    background: var(--bg-surface);
     /* Updated opacity */
 
     /* Visual Polish: Inner Borders & Softer Shadows */
@@ -109,6 +109,11 @@
     pointer-events: none;
 }
 
+[data-theme="dark"] .dashboard .animated-bg {
+    display: none;
+    /* Hide glow on dark mode to prevent milkiness */
+}
+
 /* Common Button Active State */
 button:active,
 .btn:active,
@@ -123,8 +128,10 @@ button:active,
     justify-content: space-between;
     align-items: center;
     /* Glassmorphism for header too */
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
+    /* Glassmorphism for header too */
+    /* Glassmorphism for header too */
+    background: var(--bg-surface);
+    backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: blur(12px);
 
     padding: 1.8rem 2rem;
@@ -215,7 +222,7 @@ button:active,
 }
 
 .insight-card {
-    background: #fff;
+    background: var(--bg-surface);
     border-radius: 1rem;
     padding: 1.5rem 1.8rem;
     text-align: center;
@@ -253,7 +260,7 @@ button:active,
 
 /* Appointments Table */
 .appointments-card {
-    background: #fff;
+    background: var(--bg-surface);
     padding: 2rem;
     border-radius: 1rem;
     box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
@@ -263,12 +270,20 @@ button:active,
     max-height: 420px;
     overflow: hidden;
     position: relative;
+    transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .appointments-card {
+    background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    /* Sky blue tint */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 .appointments-card h3 {
     margin-bottom: 0;
     /* Let container handle gap */
-    color: var(--text-dark);
+    color: var(--text-main);
     font-weight: 700;
     flex-shrink: 0;
 }
@@ -312,7 +327,7 @@ button:active,
         -webkit-overflow-scrolling: touch;
         border-radius: 0.6rem;
         border: 1px solid rgba(14, 165, 233, 0.08);
-        background: #fcfeff;
+        background: var(--bg-surface-secondary);
         position: relative;
 
         /* Visual Hint for scrolls (subtle) */
@@ -350,8 +365,8 @@ button:active,
 
     /* Sticky Header */
     .table th {
-        background: #f9feff;
-        color: var(--muted);
+        background: var(--bg-surface);
+        color: var(--text-muted);
         font-weight: 600;
         font-size: 0.9rem;
         text-transform: uppercase;
@@ -364,7 +379,7 @@ button:active,
     }
 
     .table td {
-        color: var(--text-dark);
+        color: var(--text-main);
         font-size: 0.95rem;
         white-space: nowrap;
         /* Prevent wrapping for clean rows */
@@ -380,8 +395,8 @@ button:active,
 
             /* Mobile Scroll Hint Gradients */
             background:
-                linear-gradient(to right, #fcfeff 30%, rgba(255, 255, 255, 0)),
-                linear-gradient(to right, rgba(255, 255, 255, 0), #fcfeff 70%) 0 100%,
+                linear-gradient(to right, var(--bg-surface-secondary) 30%, rgba(255, 255, 255, 0)),
+                linear-gradient(to right, rgba(255, 255, 255, 0), var(--bg-surface-secondary) 70%) 0 100%,
                 radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0)),
                 radial-gradient(farthest-side at 100% 50%, rgba(14, 165, 233, 0.15), rgba(0, 0, 0, 0)) 100%;
             background-repeat: no-repeat;
@@ -453,7 +468,7 @@ button:active,
    HOURS EDITOR
    ---------------------------------------------------------- */
     .hours-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f0fbff 100%);
+        background: var(--bg-surface);
         padding: 2rem 1.5rem;
         border-radius: 1.25rem;
         box-shadow: 0 10px 35px rgba(14, 165, 233, 0.08);
@@ -461,6 +476,12 @@ button:active,
         position: relative;
         overflow: visible !important;
         max-width: 640px;
+    }
+
+    [data-theme="dark"] .hours-card {
+        background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
 
     .hours-card::before {
@@ -487,7 +508,7 @@ button:active,
     .hours-header h3 {
         font-size: 1.5rem;
         font-weight: 700;
-        color: var(--text-dark);
+        color: var(--text-main);
     }
 
     .copy-all {
@@ -539,7 +560,7 @@ button:active,
     .day-editor h4 {
         font-size: 1.05rem;
         margin-bottom: 1rem;
-        color: var(--text-dark);
+        color: var(--text-main);
         font-weight: 600;
     }
 
@@ -656,14 +677,14 @@ button:active,
    ---------------------------------------------------------- */
     .promo-card {
         position: relative;
-        background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(240, 250, 255, 0.9));
+        background: var(--bg-surface);
         border-radius: 1.25rem;
         padding: 2rem;
         margin-top: 2rem;
         box-shadow: 0 10px 35px rgba(14, 165, 233, 0.15),
             0 0 60px rgba(20, 184, 166, 0.1);
         overflow: hidden;
-        border: 1px solid rgba(14, 165, 233, 0.08);
+        border: 1px solid var(--border-subtle);
         /* Light border for contrast */
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         backdrop-filter: blur(10px);
@@ -700,14 +721,14 @@ button:active,
     }
 
     .promo-header h3 {
-        color: var(--text-dark);
+        color: var(--text-main);
         font-size: 1.5rem;
         font-weight: 700;
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
     }
 
     .promo-header p {
-        color: var(--muted);
+        color: var(--text-muted);
         font-size: 1rem;
         margin-top: 0.4rem;
     }
@@ -730,8 +751,8 @@ button:active,
         padding: 0.9rem 1.2rem;
         border-radius: 0.75rem;
         border: 1.5px solid rgba(14, 165, 233, 0.2);
-        background: #fff;
-        color: var(--text-dark);
+        background: var(--bg-input);
+        color: var(--text-main);
         font-weight: 600;
         font-size: 1rem;
         letter-spacing: 0.3px;
@@ -797,6 +818,47 @@ button:active,
     .toast.show {
         opacity: 1;
         transform: translateY(0);
+    }
+
+    /* Upload Loading Overlay */
+    .upload-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(5px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease;
+    }
+
+    .upload-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .spin-icon {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #e0f2fe;
+        border-top: 4px solid var(--sky-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     /* Upgrade Banner */

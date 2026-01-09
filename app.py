@@ -645,8 +645,13 @@ def upload_photo():
             # Update Database
             supabase.table("barbers").update({"photo_url": public_url}).eq("id", barber_id).execute()
             
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"ok": True, "url": public_url})
+
             flash("Profile photo updated!", "success")
         except Exception as e:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"ok": False, "error": str(e)}), 500
             flash(f"Upload failed: {str(e)}", "error")
 
     return redirect(url_for("dashboard"))
@@ -685,8 +690,13 @@ def upload_media():
             
             supabase.table("barbers").update({"media_urls": new_urls}).eq("id", barber_id).execute()
             
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"ok": True, "url": public_url})
+
             flash("Media uploaded!", "success")
         except Exception as e:
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify({"ok": False, "error": str(e)}), 500
             flash(f"Upload failed: {str(e)}", "error")
             
     return redirect(url_for("dashboard"))

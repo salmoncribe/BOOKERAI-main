@@ -357,4 +357,74 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Icons
   if (window.lucide) window.lucide.createIcons();
+
+  // ===============================
+  // ASYNC UPLOAD LOGIC
+  // ===============================
+
+  // 1. Create Overlay
+  const overlay = document.createElement("div");
+  overlay.className = "upload-overlay";
+  overlay.innerHTML = `
+    <div class="spin-icon"></div>
+    <h3>Uploading...</h3>
+    <p class="muted">Please wait while we process your media.</p>
+  `;
+  document.body.appendChild(overlay);
+
+  function handleUpload(inputId, endpoint, successMsg) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.addEventListener("change", () => {
+      if (!input.files || !input.files.length) return;
+
+      const formData = new FormData();
+      formData.append(inputId === "photoInput" ? "photo" : "file", input.files[0]);
+
+      // Show Overlay
+      overlay.classList.add("active");
+
+      fetch(endpoint, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      })
+        .then(r => r.json().catch(() => ({ ok: false, error: "Invalid response" }))) // Handle mixed response
+        .then(res => {
+          if (res.ok || res.success) {
+            showToast(successMsg || "Upload success!");
+            // Optimistic Update
+            if (inputId === "photoInput" && res.url) {
+              const imgs = document.querySelectorAll("img[alt='" + (document.querySelector(".dash-title")?.innerText.replace("Welcome, ", "") || "") + "']");
+              // Actually we can just find the big avatar image
+              // Or reload if complex. 
+              // Reloading is actually fine if it's fast, but let's try to set src
+              // The user wants it "asap".
+              const preview = document.querySelector("#photoForm img");
+              if (preview) preview.src = res.url;
+              else setTimeout(() => location.reload(), 500); // Reload fallback
+            } else {
+              setTimeout(() => location.reload(), 500); // Reload for gallery
+            }
+          } else {
+            showToast("Error: " + (res.error || "Upload failed"));
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          showToast("Upload failed. Please try again.");
+        })
+        .finally(() => {
+          overlay.classList.remove("active");
+          input.value = ""; // Reset
+        });
+    });
+  }
+
+  handleUpload("photoInput", "/upload-photo", "Profile photo updated!");
+  handleUpload("mediaInput", "/upload-media", "Media uploaded successfully!");
+
 });
