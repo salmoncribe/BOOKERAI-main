@@ -267,7 +267,9 @@
   async function renderTimes(iso) {
     slotGrid.innerHTML = "";
     hideEmpty();
-    showEmpty("Loading available times...", true); // Show loading state
+    hideEmpty();
+    // showEmpty("Loading available times...", true); -- REMOVED per user request
+
 
     pickedDateLabel.textContent = prettyDate(ISOToDate(iso));
     sumDate.textContent = prettyDate(ISOToDate(iso));

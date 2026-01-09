@@ -1,105 +1,179 @@
 {% extends "layout.html" %}
-{% block title %}Preview — BookerAI Premium{% endblock %}
+{% block title %}Demo — BookerAI{% endblock %}
 
 {% block content %}
-<!-- Replicating Dashboard.html Premium Theme exactly -->
-<section class="dashboard vibrant-auth premium-theme" id="dashboardRoot">
+<!-- MOCKED DATA FOR DEMO -->
+{% set demo_barber = {
+'id': 'demo_user',
+'name': 'Alexander',
+'photo_url': 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&h=150',
+'promo_code': 'ALEX2025'
+} %}
+
+<section class="dashboard" id="dashboardRoot" data-barber-id="demo">
+
+  <!-- Premium Status Banner -->
+  <div class="upgrade-banner premium-status-banner"
+    style="background: linear-gradient(135deg, #f0faff, #e0f7ff); border-bottom: 1px solid #bae6fd; color: #0369a1;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+      <span class="pulsing-dot"
+        style="width:8px; height:8px; background:#0ea5e9; border-radius:50%; box-shadow: 0 0 0 2px rgba(14,165,233,0.3);"></span>
+      <strong>Premium Active</strong>
+      <span style="opacity:0.75;">— You are maximizing your potential.</span>
+    </div>
+  </div>
 
   <div class="animated-bg"></div>
 
   <!-- Header Section -->
   <div class="dash-head">
-    <div class="premium-bubble" title="Premium Active"></div>
+    <div style="display:flex; align-items:center; gap:1.5rem;">
+      <!-- Avatar Upload (Premium Feature) -->
+      <form id="photoForm" onsubmit="return false;" style="position:relative;">
+        <label for="photoInput" style="cursor:pointer; display:block; position:relative; transition:transform 0.2s;"
+          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <div class="dash-avatar"
+            style="width:70px; height:70px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
+            <img src="{{ demo_barber.photo_url }}" alt="{{ demo_barber.name }}"
+              style="width:100%; height:100%; object-fit:cover;">
+          </div>
+          <!-- Camera Overlay Icon -->
+          <div
+            style="position:absolute; bottom:0; right:0; background:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border:1px solid #e0f2fe;">
+            <i data-lucide="camera" style="width:14px; height:14px; color:var(--sky-blue);"></i>
+          </div>
+        </label>
+        <input id="photoInput" type="file" accept="image/*" style="display:none;" onchange="fakeUpload('photo')">
+      </form>
 
-    <div style="display:flex;align-items:center;gap:1rem;">
-      <!-- Avatar (Static for Demo) -->
-      <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;">
-        <!-- Using Unsplash for realistic demo avatar -->
-        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&h=150"
-          alt="Alexander" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
-        <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;
-                      background:linear-gradient(135deg,var(--sky-blue),var(--teal));
-                      border-radius:50%;display:flex;align-items:center;justify-content:center;
-                      color:#fff;font-size:0.75rem;">
-          📷
-        </div>
-      </div>
-
-      <!-- Text -->
+      <!-- Welcome Text -->
       <div>
-        <h1 class="dash-title">
-          Welcome, Alexander
+        <h1 class="dash-title" style="margin-bottom:0.25rem;">
+          Welcome, {{ demo_barber.name }}
         </h1>
-        <p class="muted small">Manage your hours and appointments below.</p>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span class="status-badge status-booked" style="font-size:0.75rem;">Premium Member</span>
+          <p class="muted small" style="margin:0;">Manage your empire.</p>
+        </div>
       </div>
     </div>
 
     <!-- Header Actions -->
-    <div class="dash-head-actions" style="margin-left:auto; display:flex; gap:0.75rem;">
-      <button class="nav-action-btn desktop-dash-btn" onclick="alert('This would download your report!')"
-        style="color:var(--text-premium); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
-        <i data-lucide="download" style="width:16px;height:16px;"></i> Reports
+    <div class="dash-head-actions" style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+      <button class="gradient-btn btn-primary" onclick="openAddAppt()"
+        style="display:flex; align-items:center; gap:0.5rem; margin-right:auto;">
+        <i data-lucide="plus" style="width:16px; height:16px;"></i>
+        Add Appt
       </button>
-      <button class="nav-action-btn desktop-dash-btn" onclick="alert('This would open your settings!')"
-        style="color:var(--text-premium); background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
-        <i data-lucide="settings" style="width:16px;height:16px;"></i> Settings
+
+      <button class="btn btn-secondary nav-action-btn desktop-dash-btn copy-global-btn"
+        data-copy-url="https://bookerai.com/b/alexander"
+        onclick="copyToClipboard('https://bookerai.com/b/alexander').then(()=>showToast('Link copied!'))">
+        <i data-lucide="copy" style="width:16px; height:16px; margin-right:6px;"></i> Copy Link
       </button>
+      <a href="#" onclick="showToast('Opens your public booking page')"
+        class="btn btn-secondary nav-action-btn desktop-dash-btn">
+        <i data-lucide="external-link" style="width:16px; height:16px; margin-right:6px;"></i> Public Page
+      </a>
+      <a href="#" onclick="showToast('Search for pros in your area')"
+        class="btn btn-secondary nav-action-btn desktop-dash-btn">
+        Find a Pro
+      </a>
     </div>
   </div>
 
   <div class="dashboard-grid">
     <!-- Main Content -->
     <div class="main-content">
+
       <!-- Upcoming Appointments -->
       <div class="card appointments-card">
         <div class="appt-header"
           style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
           <h3>Upcoming Appointments</h3>
-          <button class="btn btn-secondary small" onclick="openDemoCalendar()">View Calendar</button>
+          <button class="btn btn-secondary small" onclick="openCalendar()">View Calendar</button>
         </div>
 
         <div class="table-scroll">
-          <table class="table">
+          <table class="table" id="apptTable">
             <thead>
               <tr>
                 <th>Client</th>
                 <th>Phone</th>
                 <th>When</th>
+                <th>Status</th>
+                <th style="width:120px;"></th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td data-label="Client">Michael Rossi</td>
-                <td data-label="Phone">
-                  <a href="#">555-0123</a>
+              <!-- Row 1 -->
+              <tr id="row-1">
+                <td data-label="Client">
+                  <div style="font-weight:500;">Michael Rossi</div>
                 </td>
-                <td data-label="When" style="font-weight:600; color:var(--sky-blue);">Today 9:00 AM</td>
+                <td data-label="Phone">
+                  <a href="#">(555) 012-3456</a>
+                </td>
+                <td data-label="When">
+                  <div style="font-weight:600;">Today</div>
+                  <div class="muted small">09:00 AM</div>
+                </td>
+                <td data-label="Status">
+                  <span class="status-badge status-booked">booked</span>
+                </td>
+                <td data-label="Actions" style="text-align:right;">
+                  <button class="cancel-btn" onclick="cancelAppointment('row-1', this)" title="Cancel Appointment">
+                    Cancel
+                  </button>
+                </td>
               </tr>
-              <tr>
-                <td data-label="Client">David Chen</td>
-                <td data-label="Phone">
-                  <a href="#">555-0198</a>
+              <!-- Row 2 -->
+              <tr id="row-2">
+                <td data-label="Client">
+                  <div style="font-weight:500;">David Chen</div>
                 </td>
-                <td data-label="When">Today 10:15 AM</td>
+                <td data-label="Phone">
+                  <a href="#">(555) 012-9876</a>
+                </td>
+                <td data-label="When">
+                  <div style="font-weight:600;">Today</div>
+                  <div class="muted small">10:15 AM</div>
+                </td>
+                <td data-label="Status">
+                  <span class="status-badge status-confirmed">confirmed</span>
+                </td>
+                <td data-label="Actions" style="text-align:right;">
+                  <!-- Confirmed often can't be cancelled easily or follows same logic? Dashboard.html allows cancelling 'booked'. -->
+                  <!-- Usually confirmed implies automated confirmation. I'll allow cancel. -->
+                  <button class="cancel-btn" onclick="cancelAppointment('row-2', this)" title="Cancel Appointment">
+                    Cancel
+                  </button>
+                </td>
               </tr>
-              <tr>
-                <td data-label="Client">Sarah Williams</td>
-                <td data-label="Phone">
-                  <a href="#">555-2468</a>
+              <!-- Row 3 -->
+              <tr id="row-3">
+                <td data-label="Client">
+                  <div style="font-weight:500;">Sarah Williams</div>
                 </td>
-                <td data-label="When">Tomorrow 2:00 PM</td>
-              </tr>
-              <tr>
-                <td data-label="Client">Marcus Johnson</td>
                 <td data-label="Phone">
-                  <a href="#">555-3344</a>
+                  <a href="#">(555) 123-4567</a>
                 </td>
-                <td data-label="When">Fri Oct 24 11:30 AM</td>
+                <td data-label="When">
+                  <div style="font-weight:600;">Tomorrow</div>
+                  <div class="muted small">02:00 PM</div>
+                </td>
+                <td data-label="Status">
+                  <span class="status-badge status-booked">booked</span>
+                </td>
+                <td data-label="Actions" style="text-align:right;">
+                  <button class="cancel-btn" onclick="cancelAppointment('row-3', this)" title="Cancel Appointment">
+                    Cancel
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <!-- No bottom button - Removed as per premium guidelines -->
       </div>
 
       <!-- Business Hours -->
@@ -112,44 +186,54 @@
         </div>
 
         <div style="text-align:center; margin-bottom:1rem;">
-          <button class="btn btn-secondary small" onclick="alert('Hours editor is interactive in the full version!')">
+          <button id="toggleHoursBtn" class="edit-hours-btn">
             Edit Hours
           </button>
         </div>
 
-        <!-- Static Hours List for Demo -->
-        <div class="hours-list">
-          <!-- Mon - Fri -->
-          {% for d in ["Mon", "Tue", "Wed", "Thu", "Fri"] %}
-          <div class="hours-row" style="opacity: 1;">
-            <div class="day-label">{{ d }}</div>
-            <div class="day-actions">
-              <label class="toggle-switch">
-                <input type="checkbox" checked disabled>
-                <span class="slider"></span>
-              </label>
-              <div class="time-range">
-                <span style="font-size:0.9rem; font-weight:600; color:var(--text-premium);">09:00 to 17:00</span>
-              </div>
-              <div class="save-check" style="opacity:0">✅</div>
-            </div>
+        <!-- Collapsible Editor -->
+        <div id="hoursCollapse" class="hours-collapse">
+          <div style="text-align:center; margin-bottom:1rem;">
+            <button id="copyMonday" class="copy-all">Copy Monday → All Days</button>
           </div>
-          {% endfor %}
-          <!-- Weekends Closed -->
-          {% for d in ["Sat", "Sun"] %}
-          <div class="hours-row closed" style="opacity: 1;">
-            <div class="day-label">{{ d }}</div>
-            <div class="day-actions">
-              <label class="toggle-switch">
-                <input type="checkbox" disabled>
-                <span class="slider"></span>
-              </label>
-              <div class="time-range" style="opacity:0.5">
-                <span style="font-size:0.9rem; font-weight:600;">09:00 to 17:00</span>
+
+          <div class="hours-list">
+            {% for d in ["mon","tue","wed","thu","fri"] %}
+            <div class="hours-row" data-day="{{ d }}">
+              <div class="day-label">{{ d|capitalize }}</div>
+              <div class="day-actions">
+                <label class="toggle-switch">
+                  <input type="checkbox" class="day-toggle-input" checked onchange="fakeSave(this)">
+                  <span class="slider"></span>
+                </label>
+                <div class="time-range">
+                  <input type="time" class="open-time" value="09:00" onchange="fakeSave(this)">
+                  <span>to</span>
+                  <input type="time" class="close-time" value="17:00" onchange="fakeSave(this)">
+                </div>
+                <div class="save-check"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
               </div>
             </div>
+            {% endfor %}
+            <!-- Weekends Closed -->
+            {% for d in ["sat","sun"] %}
+            <div class="hours-row closed" data-day="{{ d }}">
+              <div class="day-label">{{ d|capitalize }}</div>
+              <div class="day-actions">
+                <label class="toggle-switch">
+                  <input type="checkbox" class="day-toggle-input" onchange="fakeSave(this)">
+                  <span class="slider"></span>
+                </label>
+                <div class="time-range">
+                  <input type="time" class="open-time" value="09:00" onchange="fakeSave(this)">
+                  <span>to</span>
+                  <input type="time" class="close-time" value="17:00" onchange="fakeSave(this)">
+                </div>
+                <div class="save-check"><i data-lucide="check" style="width:16px;height:16px;"></i></div>
+              </div>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
         </div>
       </div>
     </div>
@@ -157,51 +241,50 @@
     <!-- Sidebar -->
     <aside class="sidebar-sticky">
 
-      <!-- Media Upload Section (Mock) -->
+      <!-- Media Upload Section -->
       <div class="card media-card">
-        <h3>Profile Photos & Videos</h3>
-        <p class="muted small">Show off your work — upload photos or videos directly to your profile gallery.</p>
-        <div style="margin-top:1rem;">
-          <button type="button" class="gradient-btn small" style="width:100%;"
-            onclick="alert('File upload available in full version!')">
-            📤 Upload File
+        <h3>Profile Gallery</h3>
+        <p class="muted small">Upload photos or videos to showcase your skills.</p>
+        <form id="mediaForm" method="POST" enctype="multipart/form-data" style="margin-top:1rem;"
+          onsubmit="return false;">
+          <input type="file" id="mediaInput" name="file" accept="image/*,video/*" style="display:none;"
+            onchange="fakeUpload('media')">
+          <button type="button" class="gradient-btn small" style="width:100%; border-radius:12px;"
+            onclick="document.getElementById('mediaInput').click();">
+            <i data-lucide="upload-cloud" style="width:16px; height:16px; margin-right:6px; vertical-align:middle;"></i>
+            Upload Media
           </button>
-        </div>
-        <div class="media-gallery" style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:0.75rem;">
-          <!-- Mock Gallery -->
-          <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=100&h=100"
-            style="width:30%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
-          <img src="https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=100&h=100"
-            style="width:30%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
-          <img src="https://images.unsplash.com/photo-1503951914875-befbb7135952?auto=format&fit=crop&w=100&h=100"
-            style="width:30%; aspect-ratio:1; object-fit:cover; border-radius:8px;">
+        </form>
+
+        <div id="mediaGallery" class="media-gallery"
+          style="margin-top:1rem; display:grid; grid-template-columns:repeat(2, 1fr); gap:0.5rem;">
+          <!-- Mock Images -->
+          <div style="aspect-ratio:1; overflow:hidden; border-radius:8px; border:1px solid #e2e8f0; position:relative;">
+            <img src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=200&h=200"
+              style="width:100%; height:100%; object-fit:cover;">
+          </div>
+          <div style="aspect-ratio:1; overflow:hidden; border-radius:8px; border:1px solid #e2e8f0; position:relative;">
+            <img src="https://images.unsplash.com/photo-1503951914875-befbb7135952?auto=format&fit=crop&w=200&h=200"
+              style="width:100%; height:100%; object-fit:cover;">
+          </div>
         </div>
       </div>
 
-      <!-- Promo Card (Mock) -->
+      <!-- Promo Code Card -->
       <div class="card promo-card">
         <h3>Your Promo Code</h3>
         <p class="muted small">
-          Share this — when someone upgrades, you both get a free month.
+          Share your code to earn rewards.
         </p>
         <div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem;">
-          <input type="text" value="ALEX2025" readonly
-            style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc; background: rgba(255,255,255,0.1); color:white;">
-          <button type="button" class="copy-btn-modern" onclick="alert('Copied!')">
-            <span>Copy</span>
+          <input type="text" value="{{ demo_barber.promo_code }}" readonly onclick="this.select()"
+            style="width:100%;padding:0.5rem;border-radius:0.5rem;border:1px solid #ccc; background:#f1f5f9;">
+          <button type="button" class="copy-btn-modern" data-code="{{ demo_barber.promo_code }}"
+            onclick="copyPromo(this)"
+            style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:0.5rem; cursor:pointer;">
+            <i data-lucide="copy" style="width:16px;height:16px;"></i>
           </button>
         </div>
-      </div>
-
-      <!-- Sticky CTA -->
-      <div class="card"
-        style="background:linear-gradient(135deg,#fbbf24,#d97706); border:none; color:white; text-align:center;">
-        <h3 style="color:white; margin-bottom:0.5rem;">Start Your Free Trial</h3>
-        <p style="font-size:0.9rem; opacity:0.9; margin-bottom:1rem;">Like what you see? Get your own premium dashboard
-          today.</p>
-        <a href="{{ url_for('signup') }}" class="btn"
-          style="background:white; color:#d97706; border:none; font-weight:700; display:block; padding:0.8rem;">Create
-          Account</a>
       </div>
 
     </aside>
@@ -214,58 +297,157 @@
         <h2>Schedule</h2>
         <button class="close-modal-btn" onclick="closeCalendar()">×</button>
       </div>
-      <div id="calendarGrid" class="cal-grid">
-        <!-- JS will populate -->
-      </div>
-      <!-- Detail Panel -->
+      <div id="calendarGrid" class="cal-grid"></div>
       <div id="calendarDetails" class="cal-details-panel">
         <p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>
       </div>
     </div>
   </div>
 
+  <!-- Add Appointment Modal -->
+  <div id="addApptModal" class="calendar-modal" style="display:none; align-items:center; justify-content:center;">
+    <div class="calendar-content" style="max-width:400px; width:100%; margin:auto;">
+      <div class="calendar-header">
+        <h2>Add Appointment</h2>
+        <button class="close-modal-btn" onclick="closeAddAppt()">×</button>
+      </div>
+      <form id="addApptForm" onsubmit="handleFakeBooking(event)"
+        style="display:flex; flex-direction:column; gap:1.25rem; padding-top:1rem;">
+        <div>
+          <label
+            style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Client
+            Name</label>
+          <input type="text" name="client_name" required placeholder="e.g. John Doe"
+            style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main);">
+        </div>
+        <div>
+          <label
+            style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Phone
+            Number</label>
+          <input type="tel" name="client_phone" required placeholder="(555) 123-4567"
+            style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main);">
+        </div>
+        <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:1rem;">
+          <div>
+            <label
+              style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Date</label>
+            <input type="date" name="date" required
+              style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main); font-family:inherit;">
+          </div>
+          <div>
+            <label
+              style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Time</label>
+            <input type="time" name="start_time" required
+              style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main); font-family:inherit;">
+          </div>
+        </div>
+        <button type="submit" class="gradient-btn btn-primary"
+          style="width:100%; margin-top:0.5rem; justify-content:center;">
+          Confirm Booking
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://unpkg.com/lucide@latest"></script>
-<!-- Include base dashboard js for toggle logic, but we will override calendar -->
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-
 <script>
-  // Mock Data for Demo Calendar
+  /*********************************
+   * MOCKED DASHBOARD LOGIC FOR DEMO
+   *********************************/
+
+  // 1. Toast
+  const toastEl = document.getElementById("toast");
+  function showToast(msg) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    setTimeout(() => toastEl.classList.remove("show"), 2500);
+  }
+
+  // 2. Clipboard
+  window.copyToClipboard = async function (text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (e) { }
+    }
+    return false; // stub fallback
+  };
+
+  window.copyPromo = async function (btn) {
+    showToast("Promo code copied!");
+  }
+
+  // 3. Fake Upload
+  window.fakeUpload = function (type) {
+    showToast("Uploading (Simulated)...");
+    setTimeout(() => {
+      showToast(type === 'photo' ? "Profile updated!" : "Media added!");
+    }, 1500);
+  }
+
+  // 4. Hours Edit
+  const toggleBtn = document.getElementById("toggleHoursBtn");
+  const hoursCollapse = document.getElementById("hoursCollapse");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      if (hoursCollapse.classList.contains("active")) {
+        hoursCollapse.classList.remove("active");
+        hoursCollapse.style.maxHeight = "0";
+        toggleBtn.textContent = "Edit Hours";
+      } else {
+        hoursCollapse.classList.add("active");
+        hoursCollapse.style.maxHeight = hoursCollapse.scrollHeight + "px";
+        toggleBtn.textContent = "Hide Hours";
+      }
+    });
+  }
+
+  window.fakeSave = function (el) {
+    const row = el.closest('.hours-row');
+    // Visual feedback
+    if (row) {
+      if (el.type === 'checkbox') {
+        if (!el.checked) row.classList.add('closed');
+        else row.classList.remove('closed');
+      }
+      const check = row.querySelector(".save-check");
+      if (check) {
+        check.style.opacity = "1";
+        setTimeout(() => check.style.opacity = "0", 1500);
+      }
+    }
+  }
+
+  document.getElementById("copyMonday")?.addEventListener("click", () => {
+    showToast("Copied Monday Settings!");
+  });
+
+  // 5. Calendar (Mock Data)
   const DEMO_APPOINTMENTS = [
-    { date: new Date().toISOString().split('T')[0], start_time: "09:00", client_name: "Michael Rossi", service: "Fade & Beard", status: "confirmed" },
+    { date: new Date().toISOString().split('T')[0], start_time: "09:00", client_name: "Michael Rossi", service: "Fade", status: "booked" },
     { date: new Date().toISOString().split('T')[0], start_time: "10:15", client_name: "David Chen", service: "Classic Cut", status: "confirmed" },
     { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], start_time: "14:00", client_name: "Sarah Williams", service: "Color", status: "booked" },
   ];
 
-  window.openDemoCalendar = function () {
-    const modal = document.getElementById("calendarModal");
-    if (modal) {
-      modal.classList.add("active");
-      renderDemoCalendar();
-    }
+  window.openCalendar = function () {
+    document.getElementById("calendarModal").classList.add("active");
+    renderCalendar();
   }
-
   window.closeCalendar = function () {
-    const modal = document.getElementById("calendarModal");
-    if (modal) modal.classList.remove("active");
-    const details = document.getElementById("calendarDetails");
-    if (details) details.innerHTML = '<p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>';
+    document.getElementById("calendarModal").classList.remove("active");
   }
 
-  function renderDemoCalendar() {
+  function renderCalendar() {
     const grid = document.getElementById("calendarGrid");
-    if (!grid) return;
     grid.innerHTML = "";
-
+    // Simplified: Just current month
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1).getDay();
-
     const days = ["S", "M", "T", "W", "T", "F", "S"];
     days.forEach(d => {
       const el = document.createElement("div");
@@ -273,75 +455,86 @@
       el.textContent = d;
       grid.appendChild(el);
     });
-
-    for (let i = 0; i < firstDay; i++) {
-      const el = document.createElement("div");
-      el.className = "cal-day empty";
-      grid.appendChild(el);
-    }
-
-    const today = now.getDate();
-    for (let i = 1; i <= daysInMonth; i++) {
+    // Blanks & Days (simplified logic for demo speed)
+    for (let i = 0; i < 35; i++) {
       const el = document.createElement("div");
       el.className = "cal-day";
-      if (i === today) el.classList.add("today");
-
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      const dayAppts = DEMO_APPOINTMENTS.filter(a => a.date === dateStr);
-
-      if (dayAppts.length > 0) {
+      if (i === now.getDate()) { el.classList.add("today"); }
+      if (i === now.getDate() || i === now.getDate() + 1) {
         el.classList.add("has-event");
-        const dot = document.createElement("div");
-        dot.className = "cal-dot";
-        el.appendChild(dot);
+        el.innerHTML = i + '<div class="cal-dot"></div>';
+      } else {
+        el.textContent = (i > 0 && i < 32) ? i : "";
+        if (el.textContent === "") el.className = "cal-day empty";
       }
-
-      el.textContent = i;
-      el.onclick = () => {
-        document.querySelectorAll(".cal-day").forEach(c => c.classList.remove("selected"));
-        el.classList.add("selected");
-        renderDemoDetails(dateStr, dayAppts);
-      };
+      if (!el.classList.contains("empty")) {
+        el.onclick = () => {
+          document.querySelectorAll(".cal-day").forEach(c => c.classList.remove("selected"));
+          el.classList.add("selected");
+          // Show details
+          const panel = document.getElementById("calendarDetails");
+          panel.innerHTML = `<h4 class="cal-details-header">Appointments</h4>
+                  <div class="cal-appt-list">
+                      <div class="cal-appt-item">
+                          <div class="cal-appt-time">09:00</div>
+                          <div class="cal-appt-info"><div class="cal-client-name">Demo Client</div></div>
+                          <div class="cal-appt-status status-booked">booked</div>
+                      </div>
+                  </div>`;
+        };
+      }
       grid.appendChild(el);
     }
   }
 
-  function renderDemoDetails(dateStr, appts) {
-    const panel = document.getElementById("calendarDetails");
-    if (!panel) return;
-    panel.innerHTML = "";
-
-    const dateHeader = document.createElement("h4");
-    dateHeader.className = "cal-details-header";
-    const dateObj = new Date(dateStr + "T12:00:00");
-    dateHeader.textContent = dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-    panel.appendChild(dateHeader);
-
-    if (appts.length === 0) {
-      const emptyState = document.createElement("div");
-      emptyState.className = "cal-empty-state";
-      emptyState.innerHTML = `<p>No appointments yet for this day 😊</p>`;
-      panel.appendChild(emptyState);
-      return;
-    }
-
-    const list = document.createElement("div");
-    list.className = "cal-appt-list";
-
-    appts.forEach(a => {
-      const item = document.createElement("div");
-      item.className = "cal-appt-item";
-      item.innerHTML = `
-            <div class="cal-appt-time">${a.start_time}</div>
-            <div class="cal-appt-info">
-            <div class="cal-client-name">${a.client_name}</div>
-            <div class="cal-service">${a.service}</div>
-            </div>
-            <div class="cal-appt-status status-${a.status}">${a.status}</div>
-        `;
-      list.appendChild(item);
-    });
-    panel.appendChild(list);
+  // 6. Add/Cancel
+  window.openAddAppt = function () {
+    const modal = document.getElementById("addApptModal");
+    modal.style.display = "flex";
+    setTimeout(() => modal.classList.add("active"), 10);
   }
+  window.closeAddAppt = function () {
+    const modal = document.getElementById("addApptModal");
+    modal.classList.remove("active");
+    setTimeout(() => modal.style.display = "none", 300);
+  }
+
+  window.handleFakeBooking = function (e) {
+    e.preventDefault();
+    showToast("Appointment Added! (Demo)");
+    closeAddAppt();
+    // Add row to table purely for effect
+    const tbody = document.querySelector("#apptTable tbody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td data-label="Client"><div style="font-weight:500;">New Client</div></td>
+        <td data-label="Phone"><a href="#">(555) 000-0000</a></td>
+        <td data-label="When"><div style="font-weight:600;">Just Now</div></td>
+        <td data-label="Status"><span class="status-badge status-booked">booked</span></td>
+        <td data-label="Actions" style="text-align:right;">
+             <button class="cancel-btn" onclick="cancelAppointment('new', this)">Cancel</button>
+        </td>
+      `;
+    tbody.prepend(tr);
+  }
+
+  window.cancelAppointment = function (id, btn) {
+    if (btn.innerText === "Cancel") {
+      btn.innerText = "Confirm?";
+      btn.classList.add("confirm-state");
+    } else {
+      // Remove row
+      btn.innerText = "Cancelled";
+      setTimeout(() => {
+        const row = btn.closest("tr");
+        row.style.opacity = "0";
+        setTimeout(() => row.remove(), 500);
+        showToast("Appointment Cancelled");
+      }, 500);
+    }
+  }
+
+  // Render Icons
+  if (window.lucide) window.lucide.createIcons();
 </script>
 {% endblock %}

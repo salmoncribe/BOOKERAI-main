@@ -427,4 +427,147 @@ document.addEventListener("DOMContentLoaded", () => {
   handleUpload("photoInput", "/upload-photo", "Profile photo updated!");
   handleUpload("mediaInput", "/upload-media", "Media uploaded successfully!");
 
+  // ===============================
+  // ADD APPOINTMENT MODAL
+  // ===============================
+  const addApptModal = document.getElementById("addApptModal");
+  window.openAddAppt = function () {
+    if (addApptModal) {
+      addApptModal.style.display = "flex";
+      setTimeout(() => addApptModal.classList.add("active"), 10);
+
+      // Smart Pre-fill
+      const dateInput = addApptModal.querySelector('input[name="date"]');
+      const timeInput = addApptModal.querySelector('input[name="start_time"]');
+
+      if (dateInput && !dateInput.value) {
+        // Default to today
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+      }
+
+      if (timeInput && !timeInput.value) {
+        // Default to next hour or clean slot (e.g. 14:00)
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 30); // buffer
+        now.setMinutes(0, 0, 0); // snap to hour
+        // Format HH:MM
+        const timeStr = now.toTimeString().slice(0, 5);
+        timeInput.value = timeStr;
+      }
+
+      // Auto-focus first field
+      setTimeout(() => {
+        const firstInput = addApptModal.querySelector('input[name="client_name"]');
+        if (firstInput) firstInput.focus();
+      }, 100);
+    }
+  };
+
+  window.closeAddAppt = function () {
+    if (addApptModal) {
+      addApptModal.classList.remove("active");
+      setTimeout(() => addApptModal.style.display = "none", 300); // Wait for transition
+    }
+  };
+
+  const addApptForm = document.getElementById("addApptForm");
+  if (addApptForm) {
+    addApptForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const btn = addApptForm.querySelector("button[type='submit']");
+      const originalText = btn.textContent;
+      btn.textContent = "Booking...";
+      btn.disabled = true;
+
+      const formData = new FormData(addApptForm);
+      const data = Object.fromEntries(formData.entries());
+
+      // Add barber ID
+      if (barberId) data.barber_id = barberId;
+
+      fetch("/api/appointments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+        .then(r => r.json())
+        .then(res => {
+          if (res.error) {
+            showToast("Error: " + res.error);
+          } else {
+            showToast("Appointment Added! 🎉");
+            closeAddAppt();
+            addApptForm.reset();
+            // Refresh appointments (Reload for simplest feedback or fetch?)
+            // "Show the days" and "Nice and usable"
+            setTimeout(() => location.reload(), 800);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          showToast("Failed to book. Try again.");
+        })
+        .finally(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        });
+    });
+  }
+
+  // Cancel Appointment Logic
+  window.cancelAppointment = function (apptId, btn) {
+    if (!apptId || !btn) return;
+
+    // Check current state
+    if (btn.dataset.confirming === "true") {
+      // CONFIRMED ACTION
+      btn.textContent = "Cancelling...";
+      btn.disabled = true;
+
+      fetch("/api/appointments/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: JSON.stringify({ appointment_id: apptId })
+      })
+        .then(r => r.json())
+        .then(res => {
+          if (res.success) {
+            showToast("Appointment cancelled.");
+            setTimeout(() => location.reload(), 500);
+          } else {
+            showToast("Error: " + (res.error || "Could not cancel"));
+            resetBtn(btn);
+          }
+        })
+        .catch(err => {
+          console.error("Cancel failed", err);
+          showToast("Cancellation failed due to network error.");
+          resetBtn(btn);
+        });
+
+    } else {
+      // FIRST CLICK -> ASK CONFIRMATION
+      btn.dataset.confirming = "true";
+      btn.textContent = "Are you sure?";
+      btn.classList.add("confirm-state");
+
+      // Auto-revert after 3 seconds
+      setTimeout(() => {
+        if (btn.dataset.confirming === "true") {
+          resetBtn(btn);
+        }
+      }, 3000);
+    }
+  };
+
+  function resetBtn(btn) {
+    btn.dataset.confirming = "false";
+    btn.textContent = "Cancel";
+    btn.classList.remove("confirm-state");
+    btn.disabled = false;
+  }
 });

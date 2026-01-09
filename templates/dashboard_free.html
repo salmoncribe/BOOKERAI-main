@@ -68,11 +68,13 @@
                 <th>Phone</th>
                 <th>When</th>
                 <th>Status</th>
+                <th style="width:120px;"></th>
               </tr>
             </thead>
             <tbody>
               {% for a in appointments %}
               <tr>
+
                 <td>{{ a.client_name or "Unknown" }}</td>
                 <td>
                   <a href="tel:{{ a.client_phone }}">{{ a.client_phone }}</a>
@@ -83,6 +85,13 @@
                 </td>
                 <td>
                   <span class="status-badge status-{{ a.status }}">{{ a.status }}</span>
+                </td>
+                <td style="text-align:right;">
+                  {% if a.status == 'booked' %}
+                  <button class="cancel-btn" onclick="cancelAppointment('{{ a.id }}', this)" title="Cancel Appointment">
+                    Cancel
+                  </button>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}

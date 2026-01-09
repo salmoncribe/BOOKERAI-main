@@ -1305,7 +1305,44 @@ def loc_delete():
         .eq("id", loc_id).eq("barber_id", barber_id).execute()
 
     flash("Location removed")
+    flash("Location removed")
     return redirect(url_for("loc_page"))
+
+@app.post("/api/appointments/cancel")
+@login_required
+def cancel_appointment():
+    barber_id = session.get("barberId")
+    appt_id = request.form.get("appointment_id") or request.json.get("appointment_id")
+    
+    if not appt_id:
+        return jsonify({"success": False, "error": "Appointment ID required"}), 400
+    
+    # Verify ownership
+    existing = supabase.table("appointments").select("id, date, start_time")\
+        .eq("id", appt_id)\
+        .eq("barber_id", barber_id)\
+        .execute().data
+        
+    if not existing:
+        return jsonify({"success": False, "error": "Appointment not found or unauthorized"}), 403
+        
+    appt = existing[0]
+
+    # Free up the slot in availability cache
+    try:
+        # We can either update the schedule table or just invalidate cache.
+        # Since we use cache, invalidation is key.
+        availability_service.invalidate_day(barber_id, appt["date"])
+    except Exception as e:
+        print(f"Cache invalidation error: {e}")
+
+    # Mark as cancelled
+    res = supabase.table("appointments").update({"status": "cancelled"}).eq("id", appt_id).execute()
+    
+    if hasattr(res, 'error') and res.error:
+        return jsonify({"success": False, "error": str(res.error)}), 500
+
+    return jsonify({"success": True})
 
 # ============================================================
 # PREMIUM (STRIPE)

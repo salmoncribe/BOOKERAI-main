@@ -4,7 +4,7 @@
 {% block content %}
 {% set public_link = url_for('book_view', barber_id=barber.id, _external=True) %}
 
-<section class="dashboard vibrant-auth premium-theme" id="dashboardRoot" data-barber-id="{{ barber.id }}">
+<section class="dashboard" id="dashboardRoot" data-barber-id="{{ barber.id }}">
 
   <!-- Premium Status Banner -->
   <div class="upgrade-banner premium-status-banner"
@@ -63,16 +63,20 @@
 
     <!-- Header Actions (Sync with Free) -->
     <div class="dash-head-actions" style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-      <button class="nav-action-btn desktop-dash-btn copy-global-btn" data-copy-url="{{ public_link }}"
-        style="color:var(--text-dark); background:rgba(255,255,255,0.6); border:1px solid rgba(14,165,233,0.15);">
-        <i data-lucide="copy" style="width:16px; height:16px;"></i> Copy Link
+      <button class="gradient-btn btn-primary" onclick="openAddAppt()"
+        style="display:flex; align-items:center; gap:0.5rem; margin-right:auto;">
+        <i data-lucide="plus" style="width:16px; height:16px;"></i>
+        Add Appt
       </button>
-      <a href="{{ public_link }}" target="_blank" class="nav-action-btn desktop-dash-btn"
-        style="color:var(--text-dark); background:rgba(255,255,255,0.6); border:1px solid rgba(14,165,233,0.15); text-decoration:none;">
-        <i data-lucide="external-link" style="width:16px; height:16px;"></i> Public Page
+
+      <button class="btn btn-secondary nav-action-btn desktop-dash-btn copy-global-btn"
+        data-copy-url="{{ public_link }}">
+        <i data-lucide="copy" style="width:16px; height:16px; margin-right:6px;"></i> Copy Link
+      </button>
+      <a href="{{ public_link }}" target="_blank" class="btn btn-secondary nav-action-btn desktop-dash-btn">
+        <i data-lucide="external-link" style="width:16px; height:16px; margin-right:6px;"></i> Public Page
       </a>
-      <a href="{{ url_for('results', service='Barber') }}" class="nav-action-btn desktop-dash-btn"
-        style="color:var(--text-dark); background:rgba(255,255,255,0.6); border:1px solid rgba(14,165,233,0.15); text-decoration:none;">
+      <a href="{{ url_for('results', service='Barber') }}" class="btn btn-secondary nav-action-btn desktop-dash-btn">
         Find a Pro
       </a>
     </div>
@@ -99,11 +103,13 @@
                 <th>Phone</th>
                 <th>When</th>
                 <th>Status</th>
+                <th style="width:120px;"></th>
               </tr>
             </thead>
             <tbody>
               {% for a in appointments %}
               <tr>
+
                 <td data-label="Client">
                   <div style="font-weight:500;">{{ a.client_name or "Unknown" }}</div>
                 </td>
@@ -116,6 +122,13 @@
                 </td>
                 <td data-label="Status">
                   <span class="status-badge status-{{ a.status }}">{{ a.status }}</span>
+                </td>
+                <td data-label="Actions" style="text-align:right;">
+                  {% if a.status == 'booked' %}
+                  <button class="cancel-btn" onclick="cancelAppointment('{{ a.id }}', this)" title="Cancel Appointment">
+                    Cancel
+                  </button>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}
@@ -251,6 +264,50 @@
       <div id="calendarDetails" class="cal-details-panel">
         <p class="muted small text-center" style="margin-top:1rem;">Select a day to view appointments</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Add Appointment Modal -->
+  <div id="addApptModal" class="calendar-modal" style="display:none; align-items:center; justify-content:center;">
+    <div class="calendar-content" style="max-width:400px; width:100%; margin:auto;">
+      <div class="calendar-header">
+        <h2>Add Appointment</h2>
+        <button class="close-modal-btn" onclick="closeAddAppt()">×</button>
+      </div>
+      <form id="addApptForm" style="display:flex; flex-direction:column; gap:1.25rem; padding-top:1rem;">
+        <div>
+          <label
+            style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Client
+            Name</label>
+          <input type="text" name="client_name" required placeholder="e.g. Michael Tadlock"
+            style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main);">
+        </div>
+        <div>
+          <label
+            style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Phone
+            Number</label>
+          <input type="tel" name="client_phone" required placeholder="(555) 123-4567"
+            style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main);">
+        </div>
+        <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:1rem;">
+          <div>
+            <label
+              style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Date</label>
+            <input type="date" name="date" required
+              style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main); font-family:inherit;">
+          </div>
+          <div>
+            <label
+              style="font-size:0.9rem; font-weight:600; color:var(--text-main); margin-bottom:0.4rem; display:block;">Time</label>
+            <input type="time" name="start_time" required
+              style="width:100%; padding:0.8rem; border-radius:10px; border:1px solid var(--border-subtle); background:var(--bg-input); color:var(--text-main); font-family:inherit;">
+          </div>
+        </div>
+        <button type="submit" class="gradient-btn btn-primary"
+          style="width:100%; margin-top:0.5rem; justify-content:center;">
+          Confirm Booking
+        </button>
+      </form>
     </div>
   </div>
 

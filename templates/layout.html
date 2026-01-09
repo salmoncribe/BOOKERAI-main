@@ -70,11 +70,19 @@
   <script>
     // Theme Init (Immediate)
     (function () {
-      const saved = localStorage.getItem("theme");
-      if (saved === "dark") {
-        document.documentElement.setAttribute("data-theme", "dark");
-      }
-    })();
+      // STRICT: Only allow dark mode if explicitly permitted (Premium Logged In)
+      // We inject a Python boolean here. If 'barber' is not defined (logged out) or not premium, this is false.
+      const allowDarkMode = {{ 'true' if (barber is defined and barber.plan == 'premium') else 'false'
+    }};
+    const saved = localStorage.getItem("theme");
+
+    if (allowDarkMode && saved === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      // Enforce light mode on unauthorized pages (Home, Login, Free Dash)
+      document.documentElement.removeAttribute("data-theme");
+    }
+    }) ();
 
     function toggleTheme() {
       const html = document.documentElement;
@@ -145,8 +153,10 @@
       </a>
 
       <!-- Theme Toggle -->
+      <!-- Theme Toggle: ONLY for Premium Users -->
+      {% if barber is defined and barber.plan == 'premium' %}
       <button class="theme-toggle" aria-label="Toggle Theme" onclick="toggleTheme()"
-        style="margin-left: auto; margin-right: 1rem; background:none; border:none; cursor:pointer; color: var(--white); display:flex; align-items:center;">
+        style="margin-left: auto; margin-right: 1rem; background:none; border:none; cursor:pointer; color: var(--text-main); display:flex; align-items:center;">
         <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
           <circle cx="12" cy="12" r="5" />
@@ -164,6 +174,10 @@
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>
       </button>
+      {% else %}
+      <!-- Spacer if no toggle, pushes nav right -->
+      <div style="margin-left: auto;"></div>
+      {% endif %}
 
       <!-- Hamburger Button -->
       <!-- Remove margin-left auto if it exists on hamburger since theme toggle took it, or keep layout flex -->
@@ -275,7 +289,8 @@
          MAIN APP WRAPPER (.v2)
     ======================== -->
   <div class="v2">
-    <main id="main" class="site-main" role="main" tabindex="-1" style="max-width:1200px;margin:auto;padding:2rem 1rem;">
+    <main id="main" class="site-main" role="main" tabindex="-1"
+      style="max-width:1200px;margin:auto;padding:0;width:100%;">
       {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
       <div class="flash-stack" role="status" aria-live="polite">
