@@ -7,9 +7,14 @@
 
   <!-- Upgrade Banner -->
   <div class="upgrade-banner">
+    {% if barber.plan == 'pending_premium' %}
+    <strong>Setup Incomplete:</strong> Your Premium account is waiting. <a href="{{ url_for('subscribe') }}"
+      style="text-decoration:underline; font-weight:700;">Complete Payment →</a>
+    {% else %}
     You’re live on BookerAI <i data-lucide="rocket" style="width:18px;height:18px;vertical-align:middle;"></i>
     Unlock analytics, profile boosts, and automation with <strong>Premium</strong>.
     <a href="{{ url_for('demo') }}">See what’s possible</a>
+    {% endif %}
   </div>
 
   <!-- Header -->
