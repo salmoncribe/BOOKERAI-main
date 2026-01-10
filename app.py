@@ -334,6 +334,7 @@ def signup_premium():
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").lower().strip()
     password = data.get("password")
+    confirm_password = data.get("confirm_password")
     phone = data.get("phone")
     bio = data.get("bio", "")
     address = data.get("address", "")
@@ -344,9 +345,21 @@ def signup_premium():
     
     # Validation
     if not email or not password:
-        if request.is_json:
-             return jsonify({"ok": False, "error": "Email and password are required."}), 400
-        flash("Email and password are required.")
+        msg = "Email and password are required."
+        if request.is_json: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
+        return redirect(url_for("signup_premium"))
+
+    if password != confirm_password:
+        msg = "Passwords do not match."
+        if request.is_json: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
+        return redirect(url_for("signup_premium"))
+
+    if len(password) < 8:
+        msg = "Password must be at least 8 characters long."
+        if request.is_json: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
         return redirect(url_for("signup_premium"))
 
     # Check existing user
@@ -488,8 +501,19 @@ def signup_free():
     # ------------------------------------------------------------
     # REQUIRED
     # ------------------------------------------------------------
+    password = request.form.get("password")
+    confirm_password = request.form.get("confirm_password")
+
     if not email or not password:
         flash("Email and password are required.")
+        return redirect(url_for("signup_free"))
+
+    if password != confirm_password:
+        flash("Passwords do not match.")
+        return redirect(url_for("signup_free"))
+    
+    if len(password) < 8:
+        flash("Password must be at least 8 characters long.")
         return redirect(url_for("signup_free"))
 
     # Check for existing email in OUR system
