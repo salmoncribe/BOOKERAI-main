@@ -74,17 +74,16 @@
     (function () {
       // STRICT: Only allow dark mode if explicitly permitted (Premium Logged In)
       // We inject a Python boolean here. If 'barber' is not defined (logged out) or not premium, this is false.
-      const allowDarkMode = {{ 'true' if (barber is defined and barber.plan == 'premium') else 'false'
-    }};
-    const saved = localStorage.getItem("theme");
+      const allowDarkMode = "{{ 'true' if (barber is defined and barber.plan == 'premium') else 'false' }}" === "true";
+      const saved = localStorage.getItem("theme");
 
-    if (allowDarkMode && saved === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      // Enforce light mode on unauthorized pages (Home, Login, Free Dash)
-      document.documentElement.removeAttribute("data-theme");
-    }
-    }) ();
+      if (allowDarkMode && saved === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+      } else {
+        // Enforce light mode on unauthorized pages (Home, Login, Free Dash)
+        document.documentElement.removeAttribute("data-theme");
+      }
+    })();
 
     function toggleTheme() {
       const html = document.documentElement;
