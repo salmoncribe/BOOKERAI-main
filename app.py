@@ -208,7 +208,7 @@ def generate_promo_code(name):
     return f"{base}{suffix}"
 
 
-def create_barber_and_login(name, email, password, phone, bio, address, profession, plan, promo_code=None):
+def create_barber_and_login(name, email, password, phone, bio, address, profession, plan, promo_code=None, used_promo_code=None):
     """
     Shared logic to create a barber account and log them into the session.
     """
@@ -229,11 +229,6 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
                 break
     
     # Insert Barber
-    # Note: 'plan' logic is passed in. 
-    # For Premium: we might pass 'pending_payment' or just 'premium' but rely on stripe redirect.
-    # The requirement says: status="pending_payment" (or equivalent column if exists).
-    # Since I didn't see a status column, I will use plan="pending_premium" as discussed.
-    
     res = supabase.table("barbers").insert({
         "name": name,
         "email": email,
@@ -246,6 +241,7 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
         "plan": plan, 
         "role": "barber",
         "promo_code": promo_code,
+        "used_promo_code": used_promo_code,
     }).execute()
 
     if not res.data:
@@ -366,7 +362,8 @@ def signup_premium():
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
-        plan="pending_premium" 
+        plan="pending_premium",
+        used_promo_code=promo_code.upper().strip() if promo_code else None
     )
     
     if not barber:
@@ -401,10 +398,17 @@ def signup_premium():
             discounts = [{"coupon": coupon.id}]
         except Exception as e:
             print(f"Error creating TEST coupon: {e}")
-            # Fallback (risky, might fail if Stripe strictness changes)
             final_price = 0 
     elif code_norm == "LIVE25":
         final_price = 1500 # $15.00
+    elif code_norm:
+        # Check for valid Referral Code (25% OFF)
+        try:
+            referrer = supabase.table("barbers").select("id").eq("promo_code", code_norm).execute().data
+            if referrer:
+                 final_price = 1500 # 25% OFF ($15.00)
+        except Exception as e:
+            print(f"Referral lookup error: {e}")
         
     try:
         # Create Checkout Session with dynamic price
@@ -742,6 +746,15 @@ def override():
 
 
 
+def add_calendar_months(source_date, months):
+    month = source_date.month - 1 + months
+    year = source_date.year + month // 12
+    month = month % 12 + 1
+    day = min(source_date.day, [31,
+        29 if year % 4 == 0 and not year % 100 == 0 or year % 400 == 0 else 28,
+        31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
+    return source_date.replace(year=year, month=month, day=day)
+
 def add_premium_month(barber_id):
     barber = supabase.table("barbers")\
         .select("premium_expires_at")\
@@ -752,11 +765,14 @@ def add_premium_month(barber_id):
     if barber["premium_expires_at"]:
         try:
             current = datetime.fromisoformat(barber["premium_expires_at"])
-            new_expiry = max(current, now) + timedelta(days=30)
+            # If current expiry is in the future, add to IT.
+            # If it's in the past, start from NOW.
+            base_date = max(current, now)
+            new_expiry = add_calendar_months(base_date, 1)
         except:
-            new_expiry = now + timedelta(days=30)
+             new_expiry = add_calendar_months(now, 1)
     else:
-        new_expiry = now + timedelta(days=30)
+        new_expiry = add_calendar_months(now, 1)
 
     supabase.table("barbers").update({
         "plan": "premium",
@@ -783,6 +799,14 @@ def create_premium_checkout():
             final_price = 0
         elif code_norm == "LIVE25":
             final_price = 1500
+        elif code_norm:
+            # Check Referral
+            try:
+                referrer = supabase.table("barbers").select("id").eq("promo_code", code_norm).execute().data
+                if referrer:
+                    final_price = 1500
+            except:
+                pass
 
         checkout = stripe.checkout.Session.create(
             mode="subscription",
@@ -860,6 +884,17 @@ def stripe_webhook():
             
              add_premium_month(target_barber_id)
              ensure_default_weekly_hours(target_barber_id) # Just in case
+
+             # CREDIT REFERRER
+             try:
+                 used_code = metadata.get("promo_code")
+                 if used_code and used_code not in ["TEST", "LIVE25"]:
+                     referrer_res = supabase.table("barbers").select("id").eq("promo_code", used_code).execute().data
+                     if referrer_res:
+                         print(f"Crediting referrer {referrer_res[0]['id']} for new user {target_barber_id}")
+                         add_premium_month(referrer_res[0]["id"])
+             except Exception as e:
+                 print(f"Error crediting referrer: {e}")
              
              return "OK", 200
              

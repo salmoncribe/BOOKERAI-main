@@ -362,15 +362,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // ASYNC UPLOAD LOGIC
   // ===============================
 
-  // 1. Create Overlay
-  const overlay = document.createElement("div");
-  overlay.className = "upload-overlay";
-  overlay.innerHTML = `
-    <div class="spin-icon"></div>
-    <h3>Uploading...</h3>
-    <p class="muted">Please wait while we process your media.</p>
-  `;
-  document.body.appendChild(overlay);
+  // ===============================
+  // ASYNC UPLOAD LOGIC (Optimistic)
+  // ===============================
+
+  // Global upload state to prevent accidental refresh
+  window.uploadsInProgress = 0;
+
+  window.addEventListener("beforeunload", (e) => {
+    if (window.uploadsInProgress > 0) {
+      e.preventDefault();
+      e.returnValue = "Uploads are still in progress. Are you sure you want to leave?";
+    }
+  });
 
   function handleUpload(inputId, endpoint, successMsg) {
     const input = document.getElementById(inputId);
@@ -379,12 +383,98 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("change", () => {
       if (!input.files || !input.files.length) return;
 
+      const file = input.files[0];
       const formData = new FormData();
-      formData.append(inputId === "photoInput" ? "photo" : "file", input.files[0]);
+      formData.append(inputId === "photoInput" ? "photo" : "file", file);
 
-      // Show Overlay
-      overlay.classList.add("active");
+      // 1. OPTIMISTIC RENDER
+      const isPhoto = (inputId === "photoInput");
+      const objectUrl = URL.createObjectURL(file);
+      let tempParams = null; // To revert if needed
 
+      // Increment global counter
+      window.uploadsInProgress++;
+
+      if (isPhoto) {
+        // Update Avatar Immediately
+        const avatars = document.querySelectorAll(".dash-avatar img");
+        avatars.forEach(img => {
+          if (!img.dataset.origSrc) img.dataset.origSrc = img.src; // Backup
+          img.src = objectUrl;
+          // Add a subtle loading border or opacity to indicate syncing
+          img.style.opacity = "0.7";
+          img.parentElement.style.borderColor = "#fbbf24"; // Amber for pending
+        });
+      } else {
+        // Add to Gallery Immediately
+        // Check if gallery exists, if not replace placeholder
+        let gallery = document.getElementById("mediaGallery");
+        if (!gallery) {
+          // Find the placeholder and replace/hide it
+          const card = document.querySelector(".media-card");
+          const placeholder = card ? card.querySelector("div[style*='dashed']") : null;
+          if (placeholder) placeholder.style.display = 'none';
+
+          // Create gallery if it implies it should be there but isn't
+          if (!gallery) {
+            gallery = document.createElement("div");
+            gallery.id = "mediaGallery";
+            gallery.className = "media-gallery";
+            gallery.style.marginTop = "1rem";
+            gallery.style.display = "grid";
+            gallery.style.gridTemplateColumns = "repeat(2, 1fr)";
+            gallery.style.gap = "0.5rem";
+            if (card) {
+              card.appendChild(gallery);
+            }
+          }
+        }
+
+        // Create Element
+        const wrapper = document.createElement("div");
+        wrapper.style.aspectRatio = "1";
+        wrapper.style.overflow = "hidden";
+        wrapper.style.borderRadius = "8px";
+        wrapper.style.border = "2px solid #fbbf24"; // Pending color
+        wrapper.style.position = "relative";
+
+        // Element Content
+        let contentEl;
+        if (file.type.startsWith("video/")) {
+          contentEl = document.createElement("video");
+          contentEl.src = objectUrl;
+          contentEl.muted = true;
+          contentEl.autoplay = true;
+          contentEl.loop = true;
+        } else {
+          contentEl = document.createElement("img");
+          contentEl.src = objectUrl;
+        }
+        contentEl.style.width = "100%";
+        contentEl.style.height = "100%";
+        contentEl.style.objectFit = "cover";
+        contentEl.style.opacity = "0.6"; // Pending state
+
+        // Overlay Spinner
+        const spinner = document.createElement("div");
+        spinner.className = "spin-icon";
+        spinner.style.position = "absolute";
+        spinner.style.top = "50%";
+        spinner.style.left = "50%";
+        spinner.style.transform = "translate(-50%, -50%)";
+        spinner.style.width = "24px";
+        spinner.style.height = "24px";
+        spinner.style.borderWidth = "3px";
+
+        wrapper.appendChild(contentEl);
+        wrapper.appendChild(spinner);
+
+        // Prepend to gallery
+        gallery.prepend(wrapper);
+        tempParams = { wrapper };
+      }
+
+      // 2. BACKGROUND UPLOAD
       fetch(endpoint, {
         method: "POST",
         body: formData,
@@ -392,34 +482,73 @@ document.addEventListener("DOMContentLoaded", () => {
           "X-Requested-With": "XMLHttpRequest"
         }
       })
-        .then(r => r.json().catch(() => ({ ok: false, error: "Invalid response" }))) // Handle mixed response
+        .then(r => r.json().catch(() => ({ ok: false, error: "Invalid response" })))
         .then(res => {
           if (res.ok || res.success) {
             showToast(successMsg || "Upload success!");
-            // Optimistic Update
-            if (inputId === "photoInput" && res.url) {
-              const imgs = document.querySelectorAll("img[alt='" + (document.querySelector(".dash-title")?.innerText.replace("Welcome, ", "") || "") + "']");
-              // Actually we can just find the big avatar image
-              // Or reload if complex. 
-              // Reloading is actually fine if it's fast, but let's try to set src
-              // The user wants it "asap".
-              const preview = document.querySelector("#photoForm img");
-              if (preview) preview.src = res.url;
-              else setTimeout(() => location.reload(), 500); // Reload fallback
-            } else {
-              setTimeout(() => location.reload(), 500); // Reload for gallery
+
+            // Swap to real URL and revoke Blob to free memory
+            if (res.url) {
+              if (isPhoto) {
+                const avatars = document.querySelectorAll(".dash-avatar img");
+                avatars.forEach(img => {
+                  img.src = res.url;
+                });
+              } else {
+                if (tempParams && tempParams.wrapper) {
+                  const media = tempParams.wrapper.querySelector("img, video");
+                  if (media) media.src = res.url;
+                }
+              }
+              // Small delay to let image swap before revoking (though usually safe immediately)
+              setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
             }
+
+            if (isPhoto) {
+              // Finalize Avatar
+              const avatars = document.querySelectorAll(".dash-avatar img");
+              avatars.forEach(img => {
+                img.style.opacity = "1";
+                img.parentElement.style.borderColor = "#fff"; // Back to normal
+              });
+            } else {
+              // Finalize Gallery
+              if (tempParams && tempParams.wrapper) {
+                const w = tempParams.wrapper;
+                w.style.border = "1px solid #e2e8f0";
+                w.querySelector(".spin-icon")?.remove();
+                const media = w.querySelector("img, video");
+                if (media) media.style.opacity = "1";
+              }
+            }
+
           } else {
-            showToast("Error: " + (res.error || "Upload failed"));
+            throw new Error(res.error || "Upload failed");
           }
         })
         .catch(err => {
           console.error(err);
-          showToast("Upload failed. Please try again.");
+          showToast("Upload failed: " + err.message);
+
+          // Revert Optimistic UI
+          if (isPhoto) {
+            const avatars = document.querySelectorAll(".dash-avatar img");
+            avatars.forEach(img => {
+              if (img.dataset.origSrc) img.src = img.dataset.origSrc;
+              img.style.opacity = "1";
+              img.parentElement.style.borderColor = "#fff";
+            });
+          } else {
+            // Remove the failed gallery item
+            if (tempParams && tempParams.wrapper) {
+              tempParams.wrapper.remove();
+              // Restoring placeholder if empty is tricky but minor
+            }
+          }
         })
         .finally(() => {
-          overlay.classList.remove("active");
-          input.value = ""; // Reset
+          window.uploadsInProgress--;
+          input.value = ""; // Reset input
         });
     });
   }
