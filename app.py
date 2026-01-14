@@ -648,6 +648,39 @@ def dashboard():
     if barber.get("plan") == "premium":
         return render_template("dashboard.html", barber=barber, appointments=appts, features=features)
 
+
+@app.post("/api/barber/update")
+@login_required
+def update_barber_profile():
+    barber_id = session["barberId"]
+    
+    # Support both JSON and Form
+    if request.is_json:
+        data = request.json
+    else:
+        data = request.form
+
+    name = data.get("name")
+    phone = data.get("phone")
+    address = data.get("address")
+
+    updates = {}
+    if name: updates["name"] = name
+    if phone: updates["phone"] = phone
+    if address: updates["address"] = address
+
+    if updates:
+        supabase.table("barbers").update(updates).eq("id", barber_id).execute()
+        # Update session if name changed
+        if "name" in updates:
+            session["barber_name"] = updates["name"]
+
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify({"success": True})
+    
+    flash("Profile updated")
+    return redirect(url_for("settings"))
+
     return render_template("dashboard_free.html", barber=barber, appointments=appts, features=features)
 
 
