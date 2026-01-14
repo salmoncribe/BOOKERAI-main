@@ -496,6 +496,7 @@ def signup_free():
     bio = request.form.get("bio", "")
     address = request.form.get("address", "")
     profession = request.form.get("profession", "")
+    promo_code = (request.form.get("promo_code") or "").strip()
     # plan is always "free" here
     
     # ------------------------------------------------------------
@@ -534,12 +535,18 @@ def signup_free():
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
-        plan="free"
+        plan="free",
+        used_promo_code=promo_code.upper() if promo_code else None
     )
 
     if not barber:
         flash("Signup failed. Please try again.")
+        if request.is_json or request.headers.get("Accept") == "application/json":
+             return jsonify({"ok": False, "error": "Signup failed"}), 500
         return redirect(url_for("signup_free"))
+
+    if request.is_json or request.headers.get("Accept") == "application/json":
+         return jsonify({"ok": True, "barber": barber})
 
     return redirect(url_for("dashboard"))
 
@@ -565,11 +572,16 @@ def login():
 
     if not check_password_hash(barber["password_hash"], password):
         flash("Invalid login")
+        if request.is_json or request.headers.get("Accept") == "application/json":
+             return jsonify({"ok": False, "error": "Invalid login"}), 401
         return redirect(url_for("login"))
 
     session["barberId"] = barber["id"]
     session["user_email"] = barber["email"]
     session["barber_name"] = barber["name"]
+
+    if request.is_json or request.headers.get("Accept") == "application/json":
+         return jsonify({"ok": True, "barber": barber})
 
     return redirect(url_for("dashboard"))
 
@@ -626,6 +638,13 @@ def dashboard():
     ensure_default_weekly_hours(barber_id)
 
     # Choose which template to render
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify({
+            "barber": barber,
+            "appointments": appts,
+            "features": features
+        })
+
     if barber.get("plan") == "premium":
         return render_template("dashboard.html", barber=barber, appointments=appts, features=features)
 
@@ -1542,6 +1561,9 @@ def profile(barber_id):
     weekly = supabase.table("barber_weekly_hours")\
         .select("*").eq("barber_id", barber_id).execute().data
 
+    if request.is_json or request.headers.get("Accept") == "application/json":
+         return jsonify({"barber": barber[0], "weekly": weekly})
+
     return render_template("barber_profile.html", barber=barber[0], weekly=weekly)
 
 # ============================================================
@@ -1555,11 +1577,18 @@ def find_pro():
         return render_template("find_pro.html")
 
     # POST – handle search
-    city = (request.form.get("city") or "").strip()
-    service = (request.form.get("service") or "").strip()
+    if request.is_json:
+        data = request.json or {}
+        city = (data.get("city") or "").strip()
+        service = (data.get("service") or "").strip()
+    else:
+        city = (request.form.get("city") or "").strip()
+        service = (request.form.get("service") or "").strip()
 
     # basic guard: if empty, re-show form with flash or simple message
     if not city:
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": "City is required"}), 400
         flash("Please enter a city or location.", "error")
         return render_template("find_pro.html")
 
@@ -1593,6 +1622,9 @@ def find_pro():
             "location": b.get("address") or b.get("location") or "",
             "media_url": b.get("media_url"),
         })
+
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify(barbers)
 
     return render_template(
         "results.html",
