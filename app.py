@@ -208,7 +208,7 @@ def generate_promo_code(name):
     return f"{base}{suffix}"
 
 
-def create_barber_and_login(name, email, password, phone, bio, address, profession, plan, promo_code=None, used_promo_code=None):
+def create_barber_and_login(name, email, password, phone, bio, address, profession, plan, promo_code=None, used_promo_code=None, consent_accepted=False, consent_version=None):
     """
     Shared logic to create a barber account and log them into the session.
     """
@@ -229,7 +229,7 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
                 break
     
     # Insert Barber
-    res = supabase.table("barbers").insert({
+    payload = {
         "name": name,
         "email": email,
         "phone": phone,
@@ -242,7 +242,15 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
         "role": "barber",
         "promo_code": promo_code,
         "used_promo_code": used_promo_code,
-    }).execute()
+    }
+
+    if consent_accepted:
+        # Note: These columns must exist in Supabase 'barbers' table
+        payload["consent_accepted"] = True
+        payload["consent_version"] = consent_version
+        payload["consent_timestamp"] = datetime.utcnow().isoformat()
+
+    res = supabase.table("barbers").insert(payload).execute()
 
     if not res.data:
         return None
@@ -372,11 +380,17 @@ def signup_premium():
 
     # Create Account (Pending Payment or Premium if promo)
     # We will start with pending_premium and upgrade immediately if promo works.
+    
+    consent_accepted = str(data.get("consent_accepted", "")).lower() in ["true", "1", "on", "yes"]
+    consent_version = data.get("consent_version")
+
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
         plan="pending_premium",
-        used_promo_code=promo_code.upper().strip() if promo_code else None
+        used_promo_code=promo_code.upper().strip() if promo_code else None,
+        consent_accepted=consent_accepted,
+        consent_version=consent_version
     )
     
     if not barber:
@@ -532,11 +546,17 @@ def signup_free():
     # ------------------------------------------------------------
     # FREE SIGNUP → CREATE ACCOUNT IMMEDIATELY
     # ------------------------------------------------------------
+    consent_accepted_raw = request.form.get("consent_accepted")
+    consent_accepted = str(consent_accepted_raw or "").lower() in ["true", "1", "on", "yes"]
+    consent_version = request.form.get("consent_version")
+
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
         plan="free",
-        used_promo_code=promo_code.upper() if promo_code else None
+        used_promo_code=promo_code.upper() if promo_code else None,
+        consent_accepted=consent_accepted,
+        consent_version=consent_version
     )
 
     if not barber:
@@ -592,6 +612,14 @@ def settings():
         return redirect(url_for('login'))
     return render_template('settings.html')
 
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
 @app.route('/help')
 def help_center():
     if 'barberId' not in session:
@@ -603,6 +631,19 @@ def logout():
     session.clear()
     flash("Logged out")
     return redirect(url_for("login"))
+
+@app.post("/api/barber/delete")
+@login_required
+def delete_account():
+    barber_id = session["barberId"]
+    try:
+        # Hard delete from Supabase
+        supabase.table("barbers").delete().eq("id", barber_id).execute()
+        session.clear()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Delete error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 
@@ -663,11 +704,17 @@ def update_barber_profile():
     name = data.get("name")
     phone = data.get("phone")
     address = data.get("address")
+    slot_duration = data.get("slot_duration")
 
     updates = {}
     if name: updates["name"] = name
     if phone: updates["phone"] = phone
     if address: updates["address"] = address
+    if slot_duration is not None:
+        try:
+            updates["slot_duration"] = int(slot_duration)
+        except ValueError:
+            pass # Ignore invalid format
 
     if updates:
         supabase.table("barbers").update(updates).eq("id", barber_id).execute()
@@ -1653,7 +1700,7 @@ def find_pro():
             "profession": b.get("profession"),
             # results.html uses b.location → map from address (or your city field)
             "location": b.get("address") or b.get("location") or "",
-            "media_url": b.get("media_url"),
+            "media_url": b.get("photo_url") or b.get("media_url"),
         })
 
     if request.is_json or request.headers.get("Accept") == "application/json":
