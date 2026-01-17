@@ -793,18 +793,54 @@ def delete_account():
             except Exception as stripe_error:
                 print(f"Error cancelling Stripe subscription: {stripe_error}")
                 # Continue with account deletion even if Stripe cancellation fails
-                # User should still be able to delete their account
         
-        # Delete from database
-        supabase.table("barbers").delete().eq("id", barber_id).execute()
+        # Delete all related data (cascade delete)
+        print(f"Starting cascade delete for barber_id: {barber_id}")
+        
+        try:
+            # Delete appointments
+            appt_result = supabase.table("appointments").delete().eq("barber_id", barber_id).execute()
+            print(f"Deleted appointments: {len(appt_result.data) if appt_result.data else 0}")
+        except Exception as e:
+            print(f"Error deleting appointments: {e}")
+        
+        try:
+            # Delete weekly hours
+            hours_result = supabase.table("barber_weekly_hours").delete().eq("barber_id", barber_id).execute()
+            print(f"Deleted weekly hours: {len(hours_result.data) if hours_result.data else 0}")
+        except Exception as e:
+            print(f"Error deleting weekly hours: {e}")
+        
+        try:
+            # Delete schedule overrides
+            override_result = supabase.table("schedule_overrides").delete().eq("barber_id", barber_id).execute()
+            print(f"Deleted schedule overrides: {len(override_result.data) if override_result.data else 0}")
+        except Exception as e:
+            print(f"Error deleting schedule overrides: {e}")
+        
+        try:
+            # Delete gallery photos
+            gallery_result = supabase.table("gallery").delete().eq("barber_id", barber_id).execute()
+            print(f"Deleted gallery photos: {len(gallery_result.data) if gallery_result.data else 0}")
+        except Exception as e:
+            print(f"Error deleting gallery: {e}")
+        
+        # Finally, delete the barber account
+        barber_result = supabase.table("barbers").delete().eq("id", barber_id).execute()
+        if not barber_result.data:
+            print(f"Warning: Barber deletion returned no data for {barber_id}")
+        else:
+            print(f"Successfully deleted barber account: {barber_id}")
+        
+        # Clear session
         session.clear()
         
         return jsonify({
             "success": True,
-            "message": "Account and subscription cancelled successfully"
+            "message": "Account, subscription, and all data deleted successfully"
         })
     except Exception as e:
-        print(f"Delete error: {e}")
+        print(f"Delete account error: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
