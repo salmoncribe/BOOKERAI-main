@@ -755,12 +755,48 @@ def logout():
 def delete_account():
     barber_id = session["barberId"]
     try:
-        # Hard delete from Supabase
+        # Get barber info first to find Stripe customer
+        barber = supabase.table("barbers").select("*").eq("id", barber_id).execute().data
+        if not barber:
+            return jsonify({"success": False, "error": "Account not found"}), 404
+        
+        barber = barber[0]
+        email = barber.get("email")
+        
+        # Cancel Stripe subscription if user has one
+        if email:
+            try:
+                # Find Stripe customer by email
+                customers = stripe.Customer.list(email=email, limit=1)
+                if customers.data:
+                    customer_id = customers.data[0].id
+                    
+                    # Get all subscriptions for this customer
+                    subscriptions = stripe.Subscription.list(customer=customer_id, status="active")
+                    
+                    # Cancel all active subscriptions
+                    for subscription in subscriptions.data:
+                        stripe.Subscription.cancel(subscription.id)
+                        print(f"Cancelled Stripe subscription {subscription.id} for {email}")
+                    
+                    print(f"Cancelled {len(subscriptions.data)} subscription(s) for {email}")
+            except Exception as stripe_error:
+                print(f"Error cancelling Stripe subscription: {stripe_error}")
+                # Continue with account deletion even if Stripe cancellation fails
+                # User should still be able to delete their account
+        
+        # Delete from database
         supabase.table("barbers").delete().eq("id", barber_id).execute()
         session.clear()
-        return jsonify({"success": True})
+        
+        return jsonify({
+            "success": True,
+            "message": "Account and subscription cancelled successfully"
+        })
     except Exception as e:
         print(f"Delete error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
