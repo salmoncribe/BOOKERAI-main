@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+import secrets
 import mimetypes
 # Enforce CSS MIME type to prevent registry issues on some OS/environments
 mimetypes.add_type('text/css', '.css')
