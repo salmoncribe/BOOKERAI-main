@@ -2025,11 +2025,6 @@ def cancel_page():
 @app.route("/api/create-portal-session", methods=["POST"])
 @login_required
 def create_portal_session():
-    # 1. Get User Email (Assuming we don't have cust_id logic perfect yet, try email lookup first?)
-    # Ideally we need the Customer ID. 
-    # Let's try to find a customer by email if we didn't store the ID.
-    # Note: This is "best effort" if ID is missing.
-    
     email = session["user_email"]
     
     try:
@@ -2041,23 +2036,31 @@ def create_portal_session():
             customer_id = customers.data[0].id
         
         if not customer_id:
-             # Fallback: Redirect to generic Stripe Login if customer not found
-             # Or show flash error
-             flash("Could not locate your subscription record. Please contact support.", "error")
-             return redirect(url_for("cancel_page"))
-             
+            # Return error for API requests
+            if request.is_json or request.headers.get("Accept") == "application/json":
+                return jsonify({"ok": False, "error": "Could not locate your subscription"}), 404
+            flash("Could not locate your subscription record. Please contact support.", "error")
+            return redirect(url_for("cancel_page"))
+              
         # Create Portal Session
-        # Return URL: Back to Cancel Page (or Dashboard)
         return_url = url_for("cancel_page", _external=True)
         
         portal_session = stripe.billing_portal.Session.create(
             customer=customer_id,
             return_url=return_url,
         )
+        
+        # Return JSON for API/mobile requests
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": True, "url": portal_session.url})
+        
+        # Return redirect for web requests
         return redirect(portal_session.url, code=303)
         
     except Exception as e:
         print(f"Portal Error: {e}")
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": "Unable to open billing portal"}), 500
         flash("Unable to open billing portal.", "error")
         return redirect(url_for("cancel_page"))
 
