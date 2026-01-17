@@ -382,165 +382,178 @@ def signup_premium():
     consent_accepted = str(data.get("consent_accepted", "")).lower() in ["true", "1", "on", "yes"]
     consent_version = data.get("consent_version")
 
-    # Try to redeem promo code FIRST (before creating account)
-    has_premium_promo = False
-    if promo_code:
-        # Check if this is a premium promo access code
+    try:
+        # Try to redeem promo code FIRST (before creating account)
+        has_premium_promo = False
+        if promo_code and supabase_admin:
+            # Check if this is a premium promo access code
+            try:
+                promo_check = supabase_admin.table("premium_promo_access")\
+                    .select("id")\
+                    .ilike("email", email)\
+                    .ilike("promo_code", promo_code)\
+                    .eq("is_active", True)\
+                    .is_("used_at", "null")\
+                    .execute()
+                
+                if promo_check.data and len(promo_check.data) > 0:
+                    has_premium_promo = True
+                    print(f"DEBUG: Valid premium promo code found for {email}")
+            except Exception as e:
+                print(f"Error checking premium promo: {e}")
+                # Continue with normal flow even if promo check fails
+
+        # Create the account with appropriate plan
+        initial_plan = "premium" if has_premium_promo else "pending_premium"
+        
+        barber = create_barber_and_login(
+            name=name, email=email, password=password, phone=phone,
+            bio=bio, address=address, profession=profession,
+            plan=initial_plan,
+            used_promo_code=promo_code.upper().strip() if promo_code else None,
+            consent_accepted=consent_accepted,
+            consent_version=consent_version
+        )
+        
+        if not barber:
+            msg = "Signup failed. Please try again."
+            if request.is_json:
+                 return jsonify({"ok": False, "error": msg}), 500
+            flash(msg)
+            return redirect(url_for("signup_premium"))
+
+        # ------------------------------------------------------------
+        # PROMO CODE HANDLING
+        # ------------------------------------------------------------
+        if has_premium_promo:
+            # Redeem the promo code
+            success = try_redeem_promo(email, promo_code, barber["id"])
+            if success:
+                # Add premium time (1 month or whatever your promo gives)
+                add_premium_month(barber["id"])
+                
+                # Update plan to premium (should already be premium from create, but double-check)
+                supabase.table("barbers").update({"plan": "premium"}).eq("id", barber["id"]).execute()
+                
+                if request.is_json:
+                    return jsonify({
+                        "ok": True, 
+                        "message": "Premium account created with promo code!",
+                        "barber": barber
+                    })
+                
+                flash("Premium account created successfully with your promo code!", "success")
+                return redirect(url_for("dashboard"))
+            else:
+                # Promo redemption failed, downgrade to pending and proceed to Stripe
+                print(f"DEBUG: Promo redemption failed for {email}, proceeding to Stripe")
+                supabase.table("barbers").update({"plan": "pending_premium"}).eq("id", barber["id"]).execute()
+
+        # ------------------------------------------------------------
+        # STRIPE CHECKOUT (For non-promo or failed promo redemption)
+        # ------------------------------------------------------------
+        print(f"DEBUG: Proceeding to Stripe for {email}")
+        
+        # Pricing Logic (Hardcoded Back-end Source of Truth)
+        # Base Price: $20.00 (2000 cents)
+        base_price = 2000
+        final_price = base_price
+        discounts = []
+        
+        code_norm = promo_code.upper().strip() if promo_code else ""
+        
+        if code_norm == "TEST":
+            # Create a 100% off coupon on the fly for TEST code
+            # This allows a $0 subscription checkout
+            try:
+                coupon = stripe.Coupon.create(
+                    percent_off=100,
+                    duration="once",
+                    name="TEST-100-OFF"
+                )
+                discounts = [{"coupon": coupon.id}]
+            except Exception as e:
+                print(f"Error creating TEST coupon: {e}")
+                final_price = 0 
+        elif code_norm == "LIVE25":
+            final_price = 1500 # $15.00
+        elif code_norm:
+            # Check for valid Referral Code (25% OFF)
+            try:
+                referrer = supabase.table("barbers").select("id").eq("promo_code", code_norm).execute().data
+                if referrer:
+                     final_price = 1500 # 25% OFF ($15.00)
+            except Exception as e:
+                print(f"Referral lookup error: {e}")
+            
         try:
-            promo_check = supabase_admin.table("premium_promo_access")\
-                .select("id")\
-                .ilike("email", email)\
-                .ilike("promo_code", promo_code)\
-                .eq("is_active", True)\
-                .is_("used_at", "null")\
-                .execute()
+            # Create Checkout Session with dynamic price
+            # Note: 'price' arg is mutually exclusive with 'price_data'
             
-            if promo_check.data and len(promo_check.data) > 0:
-                has_premium_promo = True
-                print(f"DEBUG: Valid premium promo code found for {email}")
-        except Exception as e:
-            print(f"Error checking premium promo: {e}")
-
-    # Create the account with appropriate plan
-    initial_plan = "premium" if has_premium_promo else "pending_premium"
-    
-    barber = create_barber_and_login(
-        name=name, email=email, password=password, phone=phone,
-        bio=bio, address=address, profession=profession,
-        plan=initial_plan,
-        used_promo_code=promo_code.upper().strip() if promo_code else None,
-        consent_accepted=consent_accepted,
-        consent_version=consent_version
-    )
-    
-    if not barber:
-        msg = "Signup failed. Please try again."
-        if request.is_json:
-             return jsonify({"ok": False, "error": msg}), 500
-        flash(msg)
-        return redirect(url_for("signup_premium"))
-
-    # ------------------------------------------------------------
-    # PROMO CODE HANDLING
-    # ------------------------------------------------------------
-    if has_premium_promo:
-        # Redeem the promo code
-        success = try_redeem_promo(email, promo_code, barber["id"])
-        if success:
-            # Add premium time (1 month or whatever your promo gives)
-            add_premium_month(barber["id"])
+            session_params = {
+                "mode": "subscription",
+                "customer_email": email,
+                "line_items": [{
+                    "price_data": {
+                        "currency": "usd",
+                        "product_data": {
+                            "name": "BookerAI Premium",
+                            "description": "Monthly subscription"
+                        },
+                        "unit_amount": final_price,
+                        "recurring": {
+                            "interval": "month"
+                        }
+                    },
+                    "quantity": 1
+                }],
+                "success_url": url_for("premium_success", _external=True),
+                "cancel_url": url_for("dashboard", _external=True),  # If they cancel, go to dashboard (Free)
+                "metadata": {
+                    "source": "signup",
+                    "plan": "premium",
+                    "barber_id": barber["id"],
+                    "email": email,
+                    "promo_code": code_norm
+                }
+            }
             
-            # Update plan to premium (should already be premium from create, but double-check)
-            supabase.table("barbers").update({"plan": "premium"}).eq("id", barber["id"]).execute()
+            if discounts:
+                session_params["discounts"] = discounts
+
+            checkout = stripe.checkout.Session.create(**session_params)
             
             if request.is_json:
-                return jsonify({
-                    "ok": True, 
-                    "message": "Premium account created with promo code!",
-                    "barber": barber
-                })
+                 return jsonify({"ok": True, "redirect_url": checkout.url})
+                 
+            return redirect(checkout.url, code=303)
             
-            flash("Premium account created successfully with your promo code!", "success")
+        except Exception as e:
+            print(f"Stripe Checkout Error: {e}")
+            # Expose error to user clearly
+            msg = f"Payment initialization failed: {str(e)}"
+            if request.is_json:
+                 return jsonify({"ok": False, "error": msg}), 500
+            
+            flash(msg)
+            # Stay on signup page so they can try again or see error, 
+            # but account IS created. Redirecting to settings or billing might be better, 
+            # but user asked to push to free dash if unsuccessful. 
+            # Actually user said "push them to the free dash bouard" if unsuccessful.
+            # But if we push to free dash, they don't see the error easily.
+            # I will redirect to dashboard with the flash message.
             return redirect(url_for("dashboard"))
-        else:
-            # Promo redemption failed, downgrade to pending and proceed to Stripe
-            print(f"DEBUG: Promo redemption failed for {email}, proceeding to Stripe")
-            supabase.table("barbers").update({"plan": "pending_premium"}).eq("id", barber["id"]).execute()
-
-    # ------------------------------------------------------------
-    # STRIPE CHECKOUT (For non-promo or failed promo redemption)
-    # ------------------------------------------------------------
-    print(f"DEBUG: Proceeding to Stripe for {email}")
     
-    # Pricing Logic (Hardcoded Back-end Source of Truth)
-    # Base Price: $20.00 (2000 cents)
-    base_price = 2000
-    final_price = base_price
-    discounts = []
-    
-    code_norm = promo_code.upper().strip() if promo_code else ""
-    
-    if code_norm == "TEST":
-        # Create a 100% off coupon on the fly for TEST code
-        # This allows a $0 subscription checkout
-        try:
-            coupon = stripe.Coupon.create(
-                percent_off=100,
-                duration="once",
-                name="TEST-100-OFF"
-            )
-            discounts = [{"coupon": coupon.id}]
-        except Exception as e:
-            print(f"Error creating TEST coupon: {e}")
-            final_price = 0 
-    elif code_norm == "LIVE25":
-        final_price = 1500 # $15.00
-    elif code_norm:
-        # Check for valid Referral Code (25% OFF)
-        try:
-            referrer = supabase.table("barbers").select("id").eq("promo_code", code_norm).execute().data
-            if referrer:
-                 final_price = 1500 # 25% OFF ($15.00)
-        except Exception as e:
-            print(f"Referral lookup error: {e}")
-        
-    try:
-        # Create Checkout Session with dynamic price
-        # Note: 'price' arg is mutually exclusive with 'price_data'
-        
-        session_params = {
-            "mode": "subscription",
-            "customer_email": email,
-            "line_items": [{
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {
-                        "name": "BookerAI Premium",
-                        "description": "Monthly subscription"
-                    },
-                    "unit_amount": final_price,
-                    "recurring": {
-                        "interval": "month"
-                    }
-                },
-                "quantity": 1
-            }],
-            "success_url": url_for("premium_success", _external=True),
-            "cancel_url": url_for("dashboard", _external=True),  # If they cancel, go to dashboard (Free)
-            "metadata": {
-                "source": "signup",
-                "plan": "premium",
-                "barber_id": barber["id"],
-                "email": email,
-                "promo_code": code_norm
-            }
-        }
-        
-        if discounts:
-            session_params["discounts"] = discounts
-
-        checkout = stripe.checkout.Session.create(**session_params)
-        
-        if request.is_json:
-             return jsonify({"ok": True, "redirect_url": checkout.url})
-             
-        return redirect(checkout.url, code=303)
-        
     except Exception as e:
-        print(f"Stripe Checkout Error: {e}")
-        # Expose error to user clearly
-        msg = f"Payment initialization failed: {str(e)}"
+        # Catch any unexpected errors
+        print(f"ERROR during premium signup: {e}")
+        import traceback
+        traceback.print_exc()
+        msg = f"Signup failed: {str(e)}"
         if request.is_json:
-             return jsonify({"ok": False, "error": msg}), 500
-        
+            return jsonify({"ok": False, "error": msg}), 500
         flash(msg)
-        # Stay on signup page so they can try again or see error, 
-        # but account IS created. Redirecting to settings or billing might be better, 
-        # but user asked to push to free dash if unsuccessful. 
-        # Actually user said "push them to the free dash bouard" if unsuccessful.
-        # But if we push to free dash, they don't see the error easily.
-        # I will redirect to dashboard with the flash message.
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("signup_premium"))
 
 @app.route("/signup/free", methods=["GET", "POST"])
 def signup_free():
