@@ -93,6 +93,10 @@ def login_required(fn):
     @wraps(fn)
     def w(*a, **kw):
         if "barberId" not in session:
+            # Check if this is an API request (starts with /api/)
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "Authentication required", "ok": False}), 401
+            # For web requests, redirect to login
             return redirect(url_for("login"))
         resp = make_response(fn(*a, **kw))
         resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -104,6 +108,9 @@ def premium_required(fn):
     @wraps(fn)
     def w(*a, **kw):
         if "barberId" not in session:
+            # Check if this is an API request
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "Authentication required", "ok": False}), 401
             return redirect(url_for("login"))
 
         barber_id = session["barberId"]
@@ -111,6 +118,9 @@ def premium_required(fn):
         plan = (barber[0].get("plan") if barber else "free") or "free"
 
         if plan != "premium":
+            # Check if this is an API request
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "Premium subscription required", "ok": False}), 403
             flash("That feature is Premium. Upgrade to unlock it.", "error")
             return redirect(url_for("dashboard"))
         resp = make_response(fn(*a, **kw))
