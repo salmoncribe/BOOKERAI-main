@@ -378,16 +378,36 @@ def signup_premium():
         flash("An account with this email already exists.")
         return redirect(url_for("login"))
 
-    # Create Account (Pending Payment or Premium if promo)
-    # We will start with pending_premium and upgrade immediately if promo works.
-    
+    # Create Account (Start with pending_premium, will upgrade if promo is valid)
     consent_accepted = str(data.get("consent_accepted", "")).lower() in ["true", "1", "on", "yes"]
     consent_version = data.get("consent_version")
 
+    # Try to redeem promo code FIRST (before creating account)
+    has_premium_promo = False
+    if promo_code:
+        # Check if this is a premium promo access code
+        try:
+            promo_check = supabase_admin.table("premium_promo_access")\
+                .select("id")\
+                .ilike("email", email)\
+                .ilike("promo_code", promo_code)\
+                .eq("is_active", True)\
+                .is_("used_at", "null")\
+                .execute()
+            
+            if promo_check.data and len(promo_check.data) > 0:
+                has_premium_promo = True
+                print(f"DEBUG: Valid premium promo code found for {email}")
+        except Exception as e:
+            print(f"Error checking premium promo: {e}")
+
+    # Create the account with appropriate plan
+    initial_plan = "premium" if has_premium_promo else "pending_premium"
+    
     barber = create_barber_and_login(
         name=name, email=email, password=password, phone=phone,
         bio=bio, address=address, profession=profession,
-        plan="pending_premium",
+        plan=initial_plan,
         used_promo_code=promo_code.upper().strip() if promo_code else None,
         consent_accepted=consent_accepted,
         consent_version=consent_version
@@ -401,7 +421,34 @@ def signup_premium():
         return redirect(url_for("signup_premium"))
 
     # ------------------------------------------------------------
-    # STRIPE CHECKOUT (ALWAYS REQUIRED)
+    # PROMO CODE HANDLING
+    # ------------------------------------------------------------
+    if has_premium_promo:
+        # Redeem the promo code
+        success = try_redeem_promo(email, promo_code, barber["id"])
+        if success:
+            # Add premium time (1 month or whatever your promo gives)
+            add_premium_month(barber["id"])
+            
+            # Update plan to premium (should already be premium from create, but double-check)
+            supabase.table("barbers").update({"plan": "premium"}).eq("id", barber["id"]).execute()
+            
+            if request.is_json:
+                return jsonify({
+                    "ok": True, 
+                    "message": "Premium account created with promo code!",
+                    "barber": barber
+                })
+            
+            flash("Premium account created successfully with your promo code!", "success")
+            return redirect(url_for("dashboard"))
+        else:
+            # Promo redemption failed, downgrade to pending and proceed to Stripe
+            print(f"DEBUG: Promo redemption failed for {email}, proceeding to Stripe")
+            supabase.table("barbers").update({"plan": "pending_premium"}).eq("id", barber["id"]).execute()
+
+    # ------------------------------------------------------------
+    # STRIPE CHECKOUT (For non-promo or failed promo redemption)
     # ------------------------------------------------------------
     print(f"DEBUG: Proceeding to Stripe for {email}")
     
@@ -411,7 +458,7 @@ def signup_premium():
     final_price = base_price
     discounts = []
     
-    code_norm = promo_code.upper().strip()
+    code_norm = promo_code.upper().strip() if promo_code else ""
     
     if code_norm == "TEST":
         # Create a 100% off coupon on the fly for TEST code
@@ -580,20 +627,30 @@ def login():
     if request.method == "GET":
         return render_template("login.html")
 
-    email = request.form.get("email", "").lower().strip()
-    password = request.form.get("password")
+    # Parse request robustly (support JSON and form)
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+    else:
+        data = request.form
+
+    email = (data.get("email") or "").lower().strip()
+    password = data.get("password")
 
     res = supabase.table("barbers").select("*").eq("email", email).execute()
     if not res.data:
-        flash("Invalid login")
+        msg = "Invalid login"
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": msg}), 401
+        flash(msg)
         return redirect(url_for("login"))
 
     barber = res.data[0]
 
     if not check_password_hash(barber["password_hash"], password):
-        flash("Invalid login")
+        msg = "Invalid login"
         if request.is_json or request.headers.get("Accept") == "application/json":
-             return jsonify({"ok": False, "error": "Invalid login"}), 401
+             return jsonify({"ok": False, "error": msg}), 401
+        flash(msg)
         return redirect(url_for("login"))
 
     session["barberId"] = barber["id"]
