@@ -828,6 +828,8 @@ def delete_account():
         barber = supabase.table("barbers").select("*").eq("id", barber_id).execute().data
         if not barber:
             return jsonify({"success": False, "error": "Account not found"}), 404
+
+
         
         barber = barber[0]
         email = barber.get("email")
@@ -905,6 +907,122 @@ def delete_account():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+
+# ============================================================
+# PASSWORD RESET
+# ============================================================
+@app.post("/api/auth/forgot-password")
+def forgot_password():
+    is_api = request.is_json or request.headers.get("Accept") == "application/json"
+    
+    if request.is_json:
+        data = request.json
+    else:
+        data = request.form
+        
+    email = data.get("email", "").lower().strip()
+    
+    if not email:
+        return jsonify({"ok": False, "error": "Email is required"}), 400
+        
+    # Check if user exists
+    user = supabase.table("barbers").select("id").eq("email", email).execute().data
+    
+    if user:
+        # Generate token
+        token = secrets.token_urlsafe(32)
+        expiry = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        
+        try:
+            supabase.table("password_resets").insert({
+               "email": email,
+               "token": token,
+               "expires_at": expiry
+            }).execute()
+            
+            # TODO: Integrate Email Service (SendGrid/SES)
+            # For now, print to logs so admin can assist
+            print(f"PASSWORD RESET REQUEST: Email={email}, Token={token}")
+            
+            # If API, return success
+            if is_api:
+                return jsonify({"ok": True, "message": "If this email exists, a reset link has been sent."})
+                
+        except Exception as e:
+            print(f"Error creating reset token: {e}")
+            if is_api: return jsonify({"ok": False, "error": "System error"}), 500
+    else:
+        # Don't reveal user existence
+        pass
+        
+    if is_api:
+        return jsonify({"ok": True, "message": "If this email exists, a reset link has been sent."})
+        
+    flash("If this email exists, a reset link has been sent.")
+    return redirect(url_for("login"))
+
+
+@app.post("/api/auth/reset-password")
+def reset_password():
+    is_api = request.is_json or request.headers.get("Accept") == "application/json"
+    
+    if request.is_json:
+        data = request.json
+    else:
+        data = request.form
+        
+    token = data.get("token")
+    new_password = data.get("password")
+    confirm_password = data.get("confirm_password")
+    
+    if not token or not new_password:
+        msg = "Token and New Password are required"
+        if is_api: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
+        return redirect(url_for("login"))
+        
+    if new_password != confirm_password:
+        msg = "Passwords do not match"
+        if is_api: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
+        return redirect(url_for("login"))
+        
+    # Verify token
+    try:
+        res = supabase.table("password_resets").select("*").eq("token", token).eq("used", False).gt("expires_at", datetime.utcnow().isoformat()).execute().data
+        
+        if not res:
+            msg = "Invalid or expired token"
+            if is_api: return jsonify({"ok": False, "error": msg}), 400
+            flash(msg)
+            return redirect(url_for("login"))
+            
+        email = res[0]["email"]
+        
+        # Check password strength
+        is_valid, err = validate_password_strength(new_password)
+        if not is_valid:
+            if is_api: return jsonify({"ok": False, "error": err}), 400
+            flash(err)
+            return redirect(url_for("login"))
+            
+        # Update Password
+        password_hash = generate_password_hash(new_password)
+        supabase.table("barbers").update({"password_hash": password_hash}).eq("email", email).execute()
+        
+        # Mark token used
+        supabase.table("password_resets").update({"used": True}).eq("id", res[0]["id"]).execute()
+        
+        msg = "Password has been reset. Please login."
+        if is_api: return jsonify({"ok": True, "message": msg})
+        flash(msg)
+        return redirect(url_for("login"))
+        
+    except Exception as e:
+        print(f"Password reset error: {e}")
+        if is_api: return jsonify({"ok": False, "error": "System error"}), 500
+        flash("System error")
+        return redirect(url_for("login"))
 
 # ============================================================
 # DASHBOARD (BARBER)
@@ -1964,11 +2082,18 @@ def results():
 # ============================================================
 @app.errorhandler(404)
 def not_found(e):
+    # Check if API request
+    is_api = request.is_json or request.path.startswith("/api/") or request.headers.get("Accept") == "application/json"
+    if is_api:
+        return jsonify({"ok": False, "error": "Resource not found"}), 404
     return render_template("404.html"), 404
 
 
 @app.errorhandler(500)
 def server_error(e):
+    is_api = request.is_json or request.path.startswith("/api/") or request.headers.get("Accept") == "application/json"
+    if is_api:
+        return jsonify({"ok": False, "error": "Internal Server Error"}), 500
     return render_template("error.html"), 500
 
 # ============================================================
