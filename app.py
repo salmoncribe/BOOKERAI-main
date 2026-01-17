@@ -989,9 +989,22 @@ def upload_media():
 # ============================================================
 @app.get("/api/barber/weekly-hours/<barber_id>")
 def get_weekly(barber_id):
-    rows = supabase.table("barber_weekly_hours").select("*")\
-        .eq("barber_id", barber_id).execute().data
-    return jsonify(rows)
+    try:
+        rows = supabase.table("barber_weekly_hours").select("*")\
+            .eq("barber_id", barber_id).execute().data
+        
+        # If no hours exist, create defaults
+        if not rows:
+            ensure_default_weekly_hours(barber_id)
+            rows = supabase.table("barber_weekly_hours").select("*")\
+                .eq("barber_id", barber_id).execute().data
+        
+        return jsonify(rows)
+    except Exception as e:
+        print(f"Error fetching weekly hours for {barber_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.post("/api/barber/weekly-hours/<barber_id>")
 def update_weekly(barber_id):
