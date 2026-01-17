@@ -547,75 +547,108 @@ def signup_free():
     if request.method == "GET":
         return render_template("signup_free.html")
 
+    # Parse request robustly (support JSON and form)
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+    else:
+        data = request.form
+
     # ------------------------------------------------------------
-    # Read form data
+    # Read data
     # ------------------------------------------------------------
-    name = (request.form.get("name") or "").strip()
-    email = (request.form.get("email") or "").lower().strip()
-    password = request.form.get("password")
-    phone = request.form.get("phone")
-    bio = request.form.get("bio", "")
-    address = request.form.get("address", "")
-    profession = request.form.get("profession", "")
-    promo_code = (request.form.get("promo_code") or "").strip()
-    # plan is always "free" here
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").lower().strip()
+    password = data.get("password")
+    confirm_password = data.get("confirm_password")
+    phone = data.get("phone")
+    bio = data.get("bio", "")
+    address = data.get("address", "")
+    profession = data.get("profession", "")
+    promo_code = (data.get("promo_code") or "").strip()
     
     # ------------------------------------------------------------
-    # REQUIRED
+    # VALIDATION
     # ------------------------------------------------------------
-    password = request.form.get("password")
-    confirm_password = request.form.get("confirm_password")
-
     if not email or not password:
-        flash("Email and password are required.")
+        msg = "Email and password are required."
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
         return redirect(url_for("signup_free"))
 
     if password != confirm_password:
-        flash("Passwords do not match.")
+        msg = "Passwords do not match."
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
         return redirect(url_for("signup_free"))
     
     if len(password) < 8:
-        flash("Password must be at least 8 characters long.")
+        msg = "Password must be at least 8 characters long."
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": msg}), 400
+        flash(msg)
         return redirect(url_for("signup_free"))
 
-    # Check for existing email in OUR system
-    existing = (
-        supabase.table("barbers")
-        .select("id")
-        .eq("email", email)
-        .execute()
-        .data
-    )
-    if existing:
-        flash("An account with this email already exists.")
-        return redirect(url_for("login"))
+    # Check for existing email
+    try:
+        existing = (
+            supabase.table("barbers")
+            .select("id")
+            .eq("email", email)
+            .execute()
+            .data
+        )
+        if existing:
+            msg = "An account with this email already exists."
+            if request.is_json or request.headers.get("Accept") == "application/json":
+                return jsonify({"ok": False, "error": msg}), 400
+            flash(msg)
+            return redirect(url_for("login"))
+    except Exception as e:
+        print(f"Error checking existing user: {e}")
+        msg = "Database error. Please try again."
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": msg}), 500
+        flash(msg)
+        return redirect(url_for("signup_free"))
 
     # ------------------------------------------------------------
     # FREE SIGNUP → CREATE ACCOUNT IMMEDIATELY
     # ------------------------------------------------------------
-    consent_accepted_raw = request.form.get("consent_accepted")
-    consent_accepted = str(consent_accepted_raw or "").lower() in ["true", "1", "on", "yes"]
-    consent_version = request.form.get("consent_version")
+    consent_accepted = str(data.get("consent_accepted", "")).lower() in ["true", "1", "on", "yes"]
+    consent_version = data.get("consent_version")
 
-    barber = create_barber_and_login(
-        name=name, email=email, password=password, phone=phone,
-        bio=bio, address=address, profession=profession,
-        plan="free",
-        used_promo_code=promo_code.upper() if promo_code else None,
-        consent_accepted=consent_accepted,
-        consent_version=consent_version
-    )
+    try:
+        barber = create_barber_and_login(
+            name=name, email=email, password=password, phone=phone,
+            bio=bio, address=address, profession=profession,
+            plan="free",
+            used_promo_code=promo_code.upper() if promo_code else None,
+            consent_accepted=consent_accepted,
+            consent_version=consent_version
+        )
 
-    if not barber:
-        flash("Signup failed. Please try again.")
+        if not barber:
+            msg = "Signup failed. Please try again."
+            if request.is_json or request.headers.get("Accept") == "application/json":
+                return jsonify({"ok": False, "error": msg}), 500
+            flash(msg)
+            return redirect(url_for("signup_free"))
+
         if request.is_json or request.headers.get("Accept") == "application/json":
-             return jsonify({"ok": False, "error": "Signup failed"}), 500
+            return jsonify({"ok": True, "barber": barber})
+
+        return redirect(url_for("dashboard"))
+    except Exception as e:
+        print(f"Error during free signup: {e}")
+        import traceback
+        traceback.print_exc()
+        msg = f"Signup failed: {str(e)}"
+        if request.is_json or request.headers.get("Accept") == "application/json":
+            return jsonify({"ok": False, "error": msg}), 500
+        flash(msg)
         return redirect(url_for("signup_free"))
-
-    if request.is_json or request.headers.get("Accept") == "application/json":
-         return jsonify({"ok": True, "barber": barber})
-
-    return redirect(url_for("dashboard"))
 
 
 
