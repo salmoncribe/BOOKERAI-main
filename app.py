@@ -608,7 +608,7 @@ def signup_premium():
             checkout = stripe.checkout.Session.create(**session_params)
             
             if request.is_json:
-                 return jsonify({"ok": True, "redirect_url": checkout.url})
+                 return jsonify({"ok": True, "redirect_url": checkout.url, "barber": barber})
                  
             return redirect(checkout.url, code=303)
             
