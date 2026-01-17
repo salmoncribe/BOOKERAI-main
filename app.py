@@ -244,13 +244,28 @@ def create_barber_and_login(name, email, password, phone, bio, address, professi
         "used_promo_code": used_promo_code,
     }
 
+    # Try to add consent fields if accepted
+    # These columns may not exist in older database schemas
     if consent_accepted:
-        # Note: These columns must exist in Supabase 'barbers' table
         payload["consent_accepted"] = True
         payload["consent_version"] = consent_version
         payload["consent_timestamp"] = datetime.utcnow().isoformat()
 
-    res = supabase.table("barbers").insert(payload).execute()
+    try:
+        res = supabase.table("barbers").insert(payload).execute()
+    except Exception as e:
+        # If error mentions consent columns, retry without them
+        error_str = str(e)
+        if "consent_accepted" in error_str or "consent_version" in error_str or "consent_timestamp" in error_str:
+            print(f"WARNING: Consent columns not found in database, retrying without them")
+            # Remove consent fields and retry
+            payload.pop("consent_accepted", None)
+            payload.pop("consent_version", None)
+            payload.pop("consent_timestamp", None)
+            res = supabase.table("barbers").insert(payload).execute()
+        else:
+            # Re-raise if it's a different error
+            raise
 
     if not res.data:
         return None
