@@ -911,6 +911,14 @@ def delete_account():
 # ============================================================
 # PASSWORD RESET
 # ============================================================
+@app.route("/forgot-password")
+def forgot_password_page():
+    return render_template("forgot_password.html")
+
+@app.route("/reset-password")
+def reset_password_page():
+    return render_template("reset_password.html")
+
 @app.post("/api/auth/forgot-password")
 def forgot_password():
     is_api = request.is_json or request.headers.get("Accept") == "application/json"
