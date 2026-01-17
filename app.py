@@ -19,6 +19,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import stripe
 import db  # Added db import
 from flask_caching import Cache
+from flask_cors import CORS
 from availability import AvailabilityService
 
 # ----------------------------------------------
@@ -38,11 +39,30 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY")
 
+# Enable CORS for API endpoints
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://booker-ai.net", 
+            "https://www.booker-ai.net",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
+
+# Enhanced session security configuration
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=4)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 app.config["SESSION_FILE_DIR"] = "./flask_session"
-os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
+app.config["SESSION_COOKIE_SECURE"] = True  # HTTPS only
+app.config["SESSION_COOKIE_HTTPONLY"] = True  # No JavaScript access
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # CSRF protection
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True  # Extend session on activity
 
 os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
 
@@ -192,6 +212,43 @@ PLAN_FEATURES = {
         "locations": True,
     }
 }
+
+def validate_password_strength(password):
+    """
+    Validate password meets security requirements:
+    - Minimum 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter  
+    - At least one number
+    - At least one special character
+    - Not in common passwords list
+    
+    Returns: (is_valid: bool, error_message: str)
+    """
+    if not password or len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter"
+    
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter"
+    
+    if not re.search(r"\d", password):
+        return False, "Password must contain at least one number"
+    
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>_\-+=\[\]\\;'/`~]", password):
+        return False, "Password must contain at least one special character (!@#$%^&* etc.)"
+    
+    # Check against common passwords
+    common_passwords = [
+        "password", "password123", "12345678", "qwerty123", "admin123",
+        "letmein", "welcome", "monkey", "dragon", "master"
+    ]
+    if password.lower() in common_passwords:
+        return False, "Password is too common. Please choose a more unique password"
+    
+    return True, ""
 
 def get_features(plan: str):
     plan = (plan or "free").lower().strip()
@@ -389,10 +446,11 @@ def signup_premium():
         flash(msg)
         return redirect(url_for("signup_premium"))
 
-    if len(password) < 8:
-        msg = "Password must be at least 8 characters long."
-        if request.is_json: return jsonify({"ok": False, "error": msg}), 400
-        flash(msg)
+    # Validate password strength
+    is_valid_pass, pass_error = validate_password_strength(password)
+    if not is_valid_pass:
+        if request.is_json: return jsonify({"ok": False, "error": pass_error}), 400
+        flash(pass_error)
         return redirect(url_for("signup_premium"))
 
     # Check existing user
@@ -621,11 +679,12 @@ def signup_free():
         flash(msg)
         return redirect(url_for("signup_free"))
     
-    if len(password) < 8:
-        msg = "Password must be at least 8 characters long."
+    # Validate password strength
+    is_valid_pass, pass_error = validate_password_strength(password)
+    if not is_valid_pass:
         if request.is_json or request.headers.get("Accept") == "application/json":
-            return jsonify({"ok": False, "error": msg}), 400
-        flash(msg)
+            return jsonify({"ok": False, "error": pass_error}), 400
+        flash(pass_error)
         return redirect(url_for("signup_free"))
 
     # Check for existing email
@@ -942,19 +1001,50 @@ from werkzeug.utils import secure_filename
 # I saw lines 1-50 earlier. It was NOT there.
 # I will do a multi_replace to add the import and the functions.
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.post("/upload-photo")
 @premium_required
 def upload_photo():
+    # Check if request via API
+    is_api = request.is_json or request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     if "photo" not in request.files:
-        flash("No file part", "error")
+        msg = "No file part"
+        if is_api: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg, "error")
         return redirect(url_for("dashboard"))
     
     file = request.files["photo"]
     if file.filename == "":
-        flash("No selected file", "error")
+        msg = "No selected file"
+        if is_api: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg, "error")
         return redirect(url_for("dashboard"))
 
     if file:
+        if not allowed_file(file.filename):
+            msg = "Invalid file type. Allowed: png, jpg, jpeg, gif, webp"
+            if is_api: return jsonify({"ok": False, "error": msg}), 400
+            flash(msg, "error")
+            return redirect(url_for("dashboard"))
+
+        # Check file size
+        file.seek(0, 2)
+        size = file.tell()
+        file.seek(0)
+        
+        if size > MAX_FILE_SIZE:
+            msg = "File too large (Max 5MB)"
+            if is_api: return jsonify({"ok": False, "error": msg}), 400
+            flash(msg, "error")
+            return redirect(url_for("dashboard"))
+
         filename = secure_filename(file.filename)
         barber_id = session["barberId"]
         file_path = f"avatars/{barber_id}/{int(datetime.utcnow().timestamp())}_{filename}"
@@ -963,7 +1053,6 @@ def upload_photo():
             # Read file data
             file_data = file.read()
             # Upload to Supabase Storage
-            # Note: upsert=True if you want to replace, or unique names
             res = supabase.storage.from_("barber_media").upload(file_path, file_data, {"content-type": file.content_type})
             
             # Get Public URL
@@ -972,60 +1061,84 @@ def upload_photo():
             # Update Database
             supabase.table("barbers").update({"photo_url": public_url}).eq("id", barber_id).execute()
             
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            if is_api:
                 return jsonify({"ok": True, "url": public_url})
 
             flash("Profile photo updated!", "success")
         except Exception as e:
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return jsonify({"ok": False, "error": str(e)}), 500
-            flash(f"Upload failed: {str(e)}", "error")
+            msg = f"Upload failed: {str(e)}"
+            if is_api: return jsonify({"ok": False, "error": msg}), 500
+            flash(msg, "error")
 
     return redirect(url_for("dashboard"))
 
 @app.post("/upload-media")
 @premium_required
 def upload_media():
+    # Check if request via API
+    is_api = request.is_json or request.headers.get("Accept") == "application/json" or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
     if "file" not in request.files:
-        flash("No file part", "error")
+        msg = "No file part"
+        if is_api: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg, "error")
         return redirect(url_for("dashboard"))
     
     file = request.files["file"]
     if file.filename == "":
-        flash("No selected file", "error")
+        msg = "No selected file"
+        if is_api: return jsonify({"ok": False, "error": msg}), 400
+        flash(msg, "error")
         return redirect(url_for("dashboard"))
 
     if file:
+        if not allowed_file(file.filename):
+            msg = "Invalid file type. Allowed: png, jpg, jpeg, gif, webp"
+            if is_api: return jsonify({"ok": False, "error": msg}), 400
+            flash(msg, "error")
+            return redirect(url_for("dashboard"))
+
+        # Check file size
+        file.seek(0, 2)
+        size = file.tell()
+        file.seek(0)
+        
+        if size > MAX_FILE_SIZE:
+            msg = "File too large (Max 5MB)"
+            if is_api: return jsonify({"ok": False, "error": msg}), 400
+            flash(msg, "error")
+            return redirect(url_for("dashboard"))
+
         filename = secure_filename(file.filename)
         barber_id = session["barberId"]
         file_path = f"portfolio/{barber_id}/{int(datetime.utcnow().timestamp())}_{filename}"
-
+        
         try:
+            # Read file data
             file_data = file.read()
+            # Upload to Supabase Storage
             res = supabase.storage.from_("barber_media").upload(file_path, file_data, {"content-type": file.content_type})
+            
+            # Get Public URL
             public_url = supabase.storage.from_("barber_media").get_public_url(file_path)
-
-            # Append to media_urls (CSV)
-            # Fetch current
-            barber = supabase.table("barbers").select("media_urls").eq("id", barber_id).execute().data[0]
-            current_urls = barber.get("media_urls") or ""
             
-            if current_urls:
-                new_urls = f"{current_urls},{public_url}"
-            else:
-                new_urls = public_url
+            # Add to Gallery Table
+            supabase.table("gallery").insert({
+                "barber_id": barber_id,
+                "url": public_url,
+                "type": "image", # We enforced image only
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
             
-            supabase.table("barbers").update({"media_urls": new_urls}).eq("id", barber_id).execute()
-            
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            if is_api:
                 return jsonify({"ok": True, "url": public_url})
 
-            flash("Media uploaded!", "success")
+            flash("Photo added to portfolio!", "success")
         except Exception as e:
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return jsonify({"ok": False, "error": str(e)}), 500
-            flash(f"Upload failed: {str(e)}", "error")
-            
+            msg = f"Upload failed: {str(e)}"
+            if is_api: return jsonify({"ok": False, "error": msg}), 500
+            flash(msg, "error")
+
     return redirect(url_for("dashboard"))
 
 
@@ -1374,16 +1487,32 @@ def calendar_slots(barber_id):
 def get_barber_appointments():
     barber_id = session["barberId"]
     
-    # Fetch all appointments for this barber
-    # TODO: Filter by month if dataset gets too large, but for now fetch all future
-    now = datetime.utcnow().strftime("%Y-%m-%d")
-    appts = supabase.table("appointments").select("*")\
-        .eq("barber_id", barber_id)\
-        .gte("date", now)\
-        .neq("status", "cancelled")\
-        .order("date").order("start_time").execute().data
+    # Optional date range filters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = supabase.table("appointments").select("*").eq("barber_id", barber_id).neq("status", "cancelled")
+    
+    if start_date:
+        query = query.gte("date", start_date)
+    else:
+        # Default: From today
+        now = datetime.utcnow().strftime("%Y-%m-%d")
+        query = query.gte("date", now)
         
-    return jsonify(appts)
+    if end_date:
+        query = query.lte("date", end_date)
+    elif not start_date:
+        # If no dates specified, limit to next 60 days to improve performance
+        # (Mobile app usually fetches by month, so it should send dates)
+        future_limit = (datetime.utcnow() + timedelta(days=60)).strftime("%Y-%m-%d")
+        query = query.lte("date", future_limit)
+        
+    try:
+        appts = query.order("date").order("start_time").execute().data
+        return jsonify(appts)
+    except Exception as e:
+        return jsonify({"error": str(e), "ok": False}), 500
 
 
 @app.get("/api/public/slots/<barber_id>")
