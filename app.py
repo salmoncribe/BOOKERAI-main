@@ -436,29 +436,68 @@ def signup_premium():
     
     # Validation
     if not email or not password:
+        missing = []
+        if not email: missing.append("email")
+        if not password: missing.append("password")
+        
+        print(f"❌ /signup/premium 400: Missing required fields")
+        print(f"   Content-Type: {request.content_type}")
+        print(f"   JSON data: {request.get_json(silent=True)}")
+        print(f"   Form data keys: {list(request.form.keys()) if request.form else 'None'}")
+        print(f"   Missing fields: {missing}")
+        
         msg = "Email and password are required."
-        if request.is_json: return jsonify({"ok": False, "error": msg}), 400
+        if request.is_json: 
+            return jsonify({
+                "ok": False, 
+                "error": msg, 
+                "missing": missing,
+                "code": "MISSING_REQUIRED_FIELDS"
+            }), 400
         flash(msg)
         return redirect(url_for("signup_premium"))
 
     if password != confirm_password:
+        print(f"❌ /signup/premium 400: Password mismatch")
+        print(f"   Email: {email}")
+        
         msg = "Passwords do not match."
-        if request.is_json: return jsonify({"ok": False, "error": msg}), 400
+        if request.is_json: 
+            return jsonify({
+                "ok": False, 
+                "error": msg,
+                "code": "PASSWORD_MISMATCH"
+            }), 400
         flash(msg)
         return redirect(url_for("signup_premium"))
 
     # Validate password strength
     is_valid_pass, pass_error = validate_password_strength(password)
     if not is_valid_pass:
-        if request.is_json: return jsonify({"ok": False, "error": pass_error}), 400
+        print(f"❌ /signup/premium 400: Weak password")
+        print(f"   Reason: {pass_error}")
+        
+        if request.is_json: 
+            return jsonify({
+                "ok": False, 
+                "error": pass_error,
+                "code": "WEAK_PASSWORD"
+            }), 400
         flash(pass_error)
         return redirect(url_for("signup_premium"))
 
     # Check existing user
     existing = supabase.table("barbers").select("id").eq("email", email).execute().data
     if existing:
+        print(f"❌ /signup/premium 400: Email already exists")
+        print(f"   Email: {email}")
+        
         if request.is_json:
-             return jsonify({"ok": False, "error": "An account with this email already exists."}), 400
+             return jsonify({
+                 "ok": False, 
+                 "error": "An account with this email already exists.",
+                 "code": "EMAIL_EXISTS"
+             }), 400
         flash("An account with this email already exists.")
         return redirect(url_for("login"))
 
@@ -814,9 +853,14 @@ def help_center():
         return redirect(url_for('login'))
     return render_template('help.html')
 
-@app.route("/logout")
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
     session.clear()
+    
+    # Support both web (redirect) and API (JSON) responses
+    if request.is_json or request.method == "POST":
+        return jsonify({"ok": True, "message": "Logged out successfully"})
+    
     flash("Logged out")
     return redirect(url_for("login"))
 
