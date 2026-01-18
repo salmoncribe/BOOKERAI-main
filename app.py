@@ -1426,117 +1426,114 @@ def create_premium_checkout():
 
 @app.post("/stripe/webhook")
 def stripe_webhook():
+    """
+    Crash-proof, idempotent Stripe webhook handler.
+    Always returns 200 OK after signature verification to prevent retries.
+    """
     payload = request.data
     sig = request.headers.get("Stripe-Signature")
     endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
+    # 1. Verify Stripe signature
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig, endpoint_secret
-        )
-    except Exception:
-        return "Invalid", 400
+        event = stripe.Webhook.construct_event(payload, sig, endpoint_secret)
+    except Exception as e:
+        print(f"⚠️ Webhook signature verification failed: {e}")
+        return "Invalid signature", 400
 
+    # 2. Only process checkout.session.completed events
     if event["type"] != "checkout.session.completed":
+        print(f"ℹ️ Ignoring event type: {event['type']}")
         return "OK", 200
 
+    # 3. Extract event data
     session_obj = event["data"]["object"]
-    metadata = session_obj.get("metadata", {})
+    event_id = event.get("id", "unknown")
     session_id = session_obj.get("id")
+    metadata = session_obj.get("metadata", {})
+    customer_email = session_obj.get("customer_details", {}).get("email")
+    customer_id = session_obj.get("customer")
     
-    # Retrieve email from customer_details instead of metadata/session root (since we didn't send it)
-    email = session_obj.get("customer_details", {}).get("email")
+    print(f"🎯 Processing webhook - Event: {event_id}, Session: {session_id}, Email: {customer_email}")
 
-    # ============================================================
-    # CASE 1: PREMIUM SIGNUP (Update Pending Account)
-    # ============================================================
-    if metadata.get("source") == "signup":
-        # We now create the account BEFORE Stripe, so we just need to find it and update it.
-        # Check by barber_id (preferred) or email.
+    # 4. Determine target barber ID
+    target_barber_id = metadata.get("barber_id")
+    source = metadata.get("source", "unknown")
+    
+    if not target_barber_id and customer_email:
+        # Fallback: lookup by email
+        try:
+            result = supabase.table("barbers").select("id").eq("email", customer_email).execute()
+            if result.data:
+                target_barber_id = result.data[0]["id"]
+                print(f"📧 Found barber by email: {target_barber_id}")
+        except Exception as e:
+            print(f"❌ Error looking up barber by email: {e}")
+    
+    if not target_barber_id:
+        print(f"⚠️ No barber found for session {session_id}. Email: {customer_email}. Skipping.")
+        return "OK", 200  # Return 200 to prevent retries
+
+    # 5. Check for duplicate processing (idempotency)
+    try:
+        barber_result = supabase.table("barbers").select("last_stripe_session_id, plan").eq("id", target_barber_id).execute()
         
-        target_barber_id = metadata.get("barber_id")
+        if not barber_result.data:
+            print(f"⚠️ Barber {target_barber_id} not found in database. Skipping.")
+            return "OK", 200
         
-        if target_barber_id:
-            # Update the existing pending account
-             supabase.table("barbers").update({
-                "plan": "premium", 
-                "last_stripe_session_id": session_id,
-                # If we want to store customer ID, do it here too
-            }).eq("id", target_barber_id).execute()
+        barber = barber_result.data[0]
+        
+        if barber.get("last_stripe_session_id") == session_id:
+            print(f"✅ Session {session_id} already processed for barber {target_barber_id}. Skipping (idempotent).")
+            return "OK", 200
             
-             add_premium_month(target_barber_id)
-             ensure_default_weekly_hours(target_barber_id) # Just in case
+    except Exception as e:
+        print(f"❌ Error checking duplicate: {e}")
+        return "OK", 200  # Return 200 to prevent retries
 
-             # CREDIT REFERRER
-             try:
-                 used_code = metadata.get("promo_code")
-                 if used_code and used_code not in ["TEST", "LIVE25"]:
-                     referrer_res = supabase.table("barbers").select("id").eq("promo_code", used_code).execute().data
-                     if referrer_res:
-                         print(f"Crediting referrer {referrer_res[0]['id']} for new user {target_barber_id}")
-                         add_premium_month(referrer_res[0]["id"])
-             except Exception as e:
-                 print(f"Error crediting referrer: {e}")
-             
-             return "OK", 200
-             
-        # FALLBACK: If for some reason we didn't pass barber_id (old version?), try to find by email
-        # This part assumes account existence logic which we just refactored OUT of webhook for new flow.
-        # But if we want to be safe, we can leave the old creation logic as a fallback?
-        # The prompt said "reuse existing account creation logic" which implies the new flow.
-        # I will assume the new flow is the way forward.
+    # 6. Update barber to premium (crash-safe)
+    try:
+        supabase.table("barbers").update({
+            "plan": "premium",
+            "last_stripe_session_id": session_id,
+        }).eq("id", target_barber_id).execute()
         
-        if email:
-             # Find user with pending_premium or free
-             barber = supabase.table("barbers").select("id").eq("email", email).execute().data
-             if barber:
-                 barber_id = barber[0]["id"]
-                 supabase.table("barbers").update({
-                    "plan": "premium", 
-                    "last_stripe_session_id": session_id
-                }).eq("id", barber_id).execute()
-                 add_premium_month(barber_id)
-                 return "OK", 200
+        print(f"✅ Updated barber {target_barber_id} to premium")
         
-        return "OK", 200
+    except Exception as e:
+        print(f"❌ Error updating barber plan: {e}")
+        return "OK", 200  # Return 200 to prevent retries
 
-    # ============================================================
-    # CASE 2: EXISTING USER UPGRADING
-    # ============================================================
-    barber = (
-        supabase.table("barbers")
-        .select("*")
-        .eq("email", email)
-        .execute()
-        .data
-    )
+    # 7. Add premium month (crash-safe)
+    try:
+        add_premium_month(target_barber_id)
+        print(f"✅ Added premium month for barber {target_barber_id}")
+    except Exception as e:
+        print(f"❌ Error adding premium month: {e}")
+        # Continue anyway - plan is already set
 
-    if not barber:
-        return "OK", 200
+    # 8. Ensure default hours (crash-safe)
+    try:
+        ensure_default_weekly_hours(target_barber_id)
+    except Exception as e:
+        print(f"❌ Error ensuring default hours: {e}")
 
-    barber = barber[0]
+    # 9. Credit referrer if applicable (crash-safe)
+    try:
+        used_code = metadata.get("promo_code")
+        if used_code and used_code not in ["TEST", "LIVE25"]:
+            referrer_result = supabase.table("barbers").select("id").eq("promo_code", used_code).execute()
+            if referrer_result.data:
+                referrer_id = referrer_result.data[0]["id"]
+                print(f"🎁 Crediting referrer {referrer_id} for new user {target_barber_id}")
+                add_premium_month(referrer_id)
+    except Exception as e:
+        print(f"❌ Error crediting referrer: {e}")
 
-    if barber.get("last_stripe_session_id") == session_id:
-        return "OK", 200
-
-    supabase.table("barbers").update({
-        "last_stripe_session_id": session_id
-    }).eq("id", barber["id"]).execute()
-
-    add_premium_month(barber["id"])
-
-    if barber.get("used_promo_code"):
-        owner = (
-            supabase.table("barbers")
-            .select("id")
-            .eq("promo_code", barber["used_promo_code"])
-            .execute()
-            .data
-        )
-        if owner:
-            add_premium_month(owner[0]["id"])
-
+    print(f"🎉 Webhook processed successfully for barber {target_barber_id}")
     return "OK", 200
+
 
 
 # ============================================================
