@@ -1332,9 +1332,15 @@ def add_calendar_months(source_date, months):
     return source_date.replace(year=year, month=month, day=day)
 
 def add_premium_month(barber_id):
-    barber = supabase.table("barbers")\
+    result = supabase.table("barbers")\
         .select("premium_expires_at")\
-        .eq("id", barber_id).execute().data[0]
+        .eq("id", barber_id).execute()
+    
+    if not result.data:
+        print(f"Warning: Barber {barber_id} not found in add_premium_month")
+        return
+    
+    barber = result.data[0]
 
     now = datetime.utcnow()
 
