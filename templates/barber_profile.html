@@ -1,10 +1,247 @@
 {% extends "layout.html" %}
 {% block title %}{{ barber.name }} — BookerAI{% endblock %}
+
+{% block head %}
+<style>
+    /* Modern Profile Theme */
+    :root {
+        --primary: #0ea5e9;
+        --primary-dark: #0284c7;
+        --surface: #ffffff;
+        --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 5px 15px -3px rgba(0, 0, 0, 0.02);
+    }
+
+    body {
+        background: var(--bg-gradient);
+        min-height: 100vh;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .profile-container {
+        max-width: 480px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    /* Profile Card */
+    .profile-card {
+        background: var(--surface);
+        border-radius: 24px;
+        padding: 2.5rem 1.5rem;
+        box-shadow: var(--card-shadow);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Decorative Background element */
+    .profile-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        opacity: 0.1;
+        z-index: 0;
+    }
+
+    /* Avatar */
+    .avatar-wrapper {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 1.5rem;
+        z-index: 1;
+    }
+
+    .avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--surface);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        border: 4px solid var(--surface);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Typography */
+    .name {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.025em;
+        z-index: 1;
+        position: relative;
+    }
+
+    .profession {
+        font-size: 0.95rem;
+        color: var(--primary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1.5rem;
+        z-index: 1;
+        position: relative;
+    }
+
+    .bio-box {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        text-align: left;
+    }
+
+    .bio-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .bio {
+        font-size: 0.95rem;
+        color: #334155;
+        line-height: 1.6;
+    }
+
+    /* CTA Button */
+    .btn-book {
+        display: block;
+        width: 100%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-book:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.4);
+    }
+
+    .btn-book::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+        transform: skewX(-20deg) translateX(-150%);
+        animation: shine 3s infinite;
+    }
+
+    /* Animations */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes shine {
+        0% {
+            transform: skewX(-20deg) translateX(-150%);
+        }
+
+        20% {
+            transform: skewX(-20deg) translateX(150%);
+        }
+
+        100% {
+            transform: skewX(-20deg) translateX(150%);
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card p-4">
-    <h1>{{ barber.name }}</h1>
-    <p>{{ barber.profession }}</p>
-    <p>{{ barber.bio }}</p>
-    <a href="{{ url_for('book_view', barber_id=barber.id) }}" class="btn">Book Now</a>
+<div class="profile-container">
+    <div class="profile-card">
+
+        <!-- Avatar -->
+        <div class="avatar-wrapper">
+            {% if barber.photo_url %}
+            <img src="{{ barber.photo_url }}?v={{ asset_ver }}" alt="{{ barber.name }}" class="avatar">
+            {% else %}
+            <div class="avatar-placeholder">
+                {{ (barber.name or 'B')[:1] | upper }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Info -->
+        <h1 class="name">{{ barber.name or 'Your Barber' }}</h1>
+        <div class="profession">{{ barber.profession or 'Professional Barber' }}</div>
+
+        <!-- Bio -->
+        {% if barber.bio %}
+        <div class="bio-box">
+            <span class="bio-label">ABOUT</span>
+            <p class="bio">{{ barber.bio }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Contact Links or Hours could go here -->
+
+        <!-- CTA -->
+        <a href="{{ url_for('book_view', barber_id=barber.id) }}" class="btn-book">
+            Book Appointment
+        </a>
+
+        <!-- Footer link -->
+        <div style="margin-top: 1.5rem;">
+            <a href="tel:{{ barber.phone }}"
+                style="color: #64748b; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                    </path>
+                </svg>
+                Contact
+            </a>
+        </div>
+    </div>
+
+    <!-- Branding -->
+    <div style="text-align: center; margin-top: 2rem;">
+        <p style="color: #94a3b8; font-size: 0.8rem; font-weight: 500;">
+            Powered by <span style="color: var(--primary);">BookerAI</span>
+        </p>
+    </div>
 </div>
 {% endblock %}
